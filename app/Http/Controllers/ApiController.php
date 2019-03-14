@@ -11,11 +11,45 @@ use Illuminate\Support\Facades\Storage;
 
 class ApiController extends Controller
 {
+
     public function newOrder(Request $request)
     {
-        $payload = @file_get_contents('php://input');
-        $payload = json_decode( $payload, true);
-        \Log::info(json_encode( $payload));
+        /*Get Header Request*/
+        $header = getallheaders();
+        $webhook_head = [
+            'x-wc-webhook-event' => trim($header['X-Wc-Webhook-Event']),
+            'x-wc-webhook-resource' => trim($header['X-Wc-Webhook-Resource']),
+            'x-wc-webhook-source' => trim($header['X-Wc-Webhook-Source'])
+        ];
+        $woo_id = $this->getStoreInfo($webhook_head);
+        \Log::info($woo_id);
+
+        /*Get data Request*/
+        $data = @file_get_contents('php://input');
+        $data = json_decode( $data, true);
+        \Log::info($data);
+
+        /*Send data to processing*/
+        if (sizeof($data) > 0 && $woo_id !== false)
+        {
+            $api = new Api();
+            $api->creatOrder($data,$woo_id);
+        }
+    }
+
+    public function getStoreInfo($webhook_head)
+    {
+        $url = substr($webhook_head['x-wc-webhook-source'],0,-1);
+        $store = DB::table('woo_infos')
+            ->where('url',$url)
+            ->pluck('id')
+            ->toArray();
+        $woo_id = false;
+        if (sizeof($store) > 0)
+        {
+            $woo_id = $store[0];
+        }
+        return $woo_id;
     }
 
     public function testNewOrder()
