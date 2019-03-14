@@ -12,10 +12,10 @@ class Api extends Model
     {
         \Log::info($str);
     }
+
     /*Create new order*/
     public function creatOrder($data , $woo_id)
     {
-        die($woo_id);
         $db = array();
         $this->log('=====================CREATE NEW ORDER=======================');
         if (sizeof($data['line_items']) > 0 )
