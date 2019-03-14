@@ -17,10 +17,8 @@ use Illuminate\Http\Request;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
-Route::get('/test','WooController@updateOrder');
-//Route::middleware('api')->group(function () {
-//    /*Woocommerce Webhook*/
-////    Route::get('update-order','WooController@updateOrder');
-//
-//});
+Route::post('/new-order/','ApiController@newOrder');
+
+Route::get('/test-new-order/','ApiController@testNewOrder');
+
 

@@ -1,0 +1,198 @@
+{
+  "id": 3156,
+  "parent_id": 0,
+  "number": "S247-USA-3156",
+  "order_key": "wc_order_xrsgTQr6xeCYA",
+  "created_via": "checkout",
+  "version": "3.5.6",
+  "status": "processing",
+  "currency": "GBP",
+  "date_created": "2019-03-12T19:37:18",
+  "date_created_gmt": "2019-03-12T19:37:18",
+  "date_modified": "2019-03-12T12:37:18",
+  "date_modified_gmt": "2019-03-12T12:37:18",
+  "discount_total": "0.00",
+  "discount_tax": "0.00",
+  "shipping_total": "8.95",
+  "shipping_tax": "0.00",
+  "cart_tax": "0.00",
+  "total": "1204.95",
+  "total_tax": "0.00",
+  "prices_include_tax": false,
+  "customer_id": 1,
+  "customer_ip_address": "42.113.173.77",
+  "customer_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36",
+  "customer_note": "",
+  "billing": {
+    "first_name": "Tran",
+    "last_name": "Anh 2",
+    "company": "Test Sản phẩm full 1",
+    "address_1": "10",
+    "address_2": "",
+    "city": "HN",
+    "state": "",
+    "postcode": "100000",
+    "country": "VN",
+    "email": "trananh211@gmail.com",
+    "phone": ""
+  },
+  "shipping": {
+    "first_name": "Tran",
+    "last_name": "Anh 2",
+    "company": "Test Sản phẩm full 1",
+    "address_1": "10",
+    "address_2": "",
+    "city": "HN",
+    "state": "",
+    "postcode": "100000",
+    "country": "VN"
+  },
+  "payment_method": "sb_test",
+  "payment_method_title": "Order Test Gateway",
+  "transaction_id": "",
+  "date_paid": "2019-03-12T05:37:18",
+  "date_paid_gmt": "2019-03-12T05:37:18",
+  "date_completed": null,
+  "date_completed_gmt": null,
+  "cart_hash": "dab9e64460130dae5e1766dee6d7bd72",
+  "meta_data": [
+    {
+      "id": 6267,
+      "key": "_wc_customer_order_csv_export_is_exported",
+      "value": "0"
+    },
+    {
+      "id": 6268,
+      "key": "_wc_customer_order_csv_export_customer_is_exported",
+      "value": "0"
+    },
+    {
+      "id": 6269,
+      "key": "_alg_wc_custom_order_number",
+      "value": ""
+    }
+  ],
+  "line_items": [
+    {
+      "id": 15,
+      "name": "Test",
+      "product_id": 953,
+      "variation_id": 0,
+      "quantity": 2,
+      "tax_class": "",
+      "subtotal": "476.00",
+      "subtotal_tax": "0.00",
+      "total": "476.00",
+      "total_tax": "0.00",
+      "taxes": [],
+      "meta_data": [
+        {
+          "id": 154,
+          "key": "File Upload",
+          "value": "http://sportgear247.com/wp-content/products/Screenshot_1-3.jpg, http://sportgear247.com/wp-content/products/Screenshot_7-3.jpg"
+        },
+        {
+          "id": 155,
+          "key": "Text Area",
+          "value": "123"
+        },
+        {
+          "id": 156,
+          "key": "Text",
+          "value": "444444"
+        }
+      ],
+      "sku": "",
+      "price": 238
+    },
+    {
+      "id": 16,
+      "name": "Product Test 2",
+      "product_id": 942,
+      "variation_id": 0,
+      "quantity": 2,
+      "tax_class": "",
+      "subtotal": "720.00",
+      "subtotal_tax": "0.00",
+      "total": "720.00",
+      "total_tax": "0.00",
+      "taxes": [],
+      "meta_data": [
+        {
+          "id": 166,
+          "key": "File name upload",
+          "value": "http://sportgear247.com/wp-content/uploads/2019/03/Screenshot_2-2.jpg, http://sportgear247.com/wp-content/uploads/2019/03/Screenshot_8-1.jpg"
+        },
+        {
+          "id": 167,
+          "key": "Color Picker",
+          "value": "#a70606"
+        },
+        {
+          "id": 168,
+          "key": "Date Picker",
+          "value": "13-03-2019"
+        },
+        {
+          "id": 169,
+          "key": "Select option",
+          "value": "value2"
+        },
+        {
+          "id": 170,
+          "key": "Radio Button",
+          "value": "R value 2"
+        },
+        {
+          "id": 171,
+          "key": "Check box",
+          "value": "C value 2"
+        },
+        {
+          "id": 172,
+          "key": "Text area 1",
+          "value": "Text area 1"
+        },
+        {
+          "id": 173,
+          "key": "email",
+          "value": "email@gmail.com"
+        },
+        {
+          "id": 174,
+          "key": "number",
+          "value": "12"
+        },
+        {
+          "id": 175,
+          "key": "text normal",
+          "value": "normal"
+        }
+      ],
+      "sku": "",
+      "price": 360
+    }
+  ],
+  "tax_lines": [],
+  "shipping_lines": [
+    {
+      "id": 17,
+      "method_title": "Flat rate",
+      "method_id": "flat_rate",
+      "instance_id": "2",
+      "total": "8.95",
+      "total_tax": "0.00",
+      "taxes": [],
+      "meta_data": [
+        {
+          "id": 181,
+          "key": "Items",
+          "value": "Test &times; 2, Product Test 2 &times; 2"
+        }
+      ]
+    }
+  ],
+  "fee_lines": [],
+  "coupon_lines": [],
+  "refunds": []
+}
