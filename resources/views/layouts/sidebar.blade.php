@@ -372,18 +372,7 @@
         <div class="sidebar-account-settings">
             <ul>
                 <li class="no-padding">
-                    <a class="waves-effect waves-grey"><i class="material-icons">mail_outline</i>Inbox</a>
-                </li>
-                <li class="no-padding">
-                    <a class="waves-effect waves-grey"><i class="material-icons">star_border</i>Starred<span
-                            class="new badge">18</span></a>
-                </li>
-                <li class="no-padding">
-                    <a class="waves-effect waves-grey"><i class="material-icons">done</i>Sent Mail</a>
-                </li>
-                <li class="no-padding">
-                    <a class="waves-effect waves-grey"><i class="material-icons">history</i>History<span
-                            class="new grey lighten-1 badge">3 new</span></a>
+                    <a class="waves-effect waves-grey"><i class="material-icons">mail_outline</i>Settings</a>
                 </li>
                 <li class="divider"></li>
                 <li class="no-padding">
@@ -399,9 +388,9 @@
             </ul>
         </div>
         <ul class="sidebar-menu collapsible collapsible-accordion" data-collapsible="accordion">
-            @if( Auth::user()->level == 1)
+            @if( Auth::user()->level == env('SADMIN'))
                 <li class="no-padding active"><a class="waves-effect waves-grey active" href="#"><i
-                            class="material-icons">settings_input_svideo</i>Dashboard S.Admin</a></li>
+                            class="material-icons">settings_input_svideo</i>Dashboard</a></li>
                 <li class="no-padding">
                     <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">apps</i>
                         Woocommerce
@@ -415,12 +404,29 @@
                         </ul>
                     </div>
                 </li>
-            @elseif( Auth::user()->level == 2)
-                <li class="no-padding active"><a class="waves-effect waves-grey active" href="index.html"><i
-                            class="material-icons">settings_input_svideo</i>Dashboard Admin</a></li>
-            @elseif( Auth::user()->level == 3)
-                <li class="no-padding active"><a class="waves-effect waves-grey active" href="index.html"><i
-                            class="material-icons">settings_input_svideo</i>Dashboard Staff</a></li>
+            @elseif( in_array(Auth::user()->level, array(env('ADMIN'),env('QC'))))
+                <li class="no-padding"><a class="waves-effect waves-grey" href="index.html"><i
+                            class="material-icons">settings_input_svideo</i>Dashboard</a></li>
+                <li class="no-padding">
+                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">trending_up</i>
+                        Workings
+                        <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
+                    </a>
+                    <div class="collapsible-body">
+                        <ul>
+                            <li><a href="{{ url('checking') }}">Kiểm tra lại mẫu</a></li>
+                            <li><a href="{{ url('send-customer') }}">Ý kiến khách hàng</a></li>
+                        </ul>
+                    </div>
+                </li>
+            @elseif( Auth::user()->level == env('WORKER'))
+                <li class="no-padding active">
+                    <a class="waves-effect waves-grey active" href="#"><i
+                            class="material-icons">settings_input_svideo</i>Dashboard</a>
+                </li>
+                <li class="no-padding"><a class="waves-effect waves-grey" href="{{ url('staff-dashboard') }}">
+                        <i class="material-icons">trending_up</i>Workings</a>
+                </li>
             @endif
 
 

@@ -9,6 +9,7 @@ use Redirect;
 use DB;
 use App\User; // this to add User Model
 use App\WooInfo;
+use App\Working;
 use Validator;
 
 class WooController extends Controller
@@ -26,7 +27,6 @@ class WooController extends Controller
     public function doConnect()
     {
         $woo = new WooInfo();
-
         \DB::beginTransaction();
         try {
             $woo->saveStore();
@@ -43,15 +43,48 @@ class WooController extends Controller
         return view('admin/woo/list_store',['stores' => $stores]);
     }
 
-    /*Webhooks*/
-    public function webhooks()
+    /*Staff */
+    public function staffDashboard()
     {
-        return view('admin/woo/webhooks');
+        $work = new Working();
+        return view('staff/staff',['lists' => $work->listOrder()]);
     }
 
-    public function updateOrder()
+    public function detailOrder($order_id)
     {
-        return "aaaa";
+        $work = new Working();
+        return view('staff/detail_order',['details' => $work->detailOrder($order_id)]);
     }
-    /*End Webhooks*/
+
+    public function staffGetJob()
+    {
+        $work = new Working();
+        return $work->staffGetJob();
+    }
+
+    public function staffDoneJob()
+    {
+        return view('staff/staff_done');
+    }
+
+    public function staffUpload()
+    {
+        $work = new Working();
+        return $work->staffUpload();
+    }
+
+    public function action(Request $request)
+    {
+        $work = new Working();
+        return $work->staffUpload($request);
+    }
+    /*End Staff*/
+
+    /*Admin + QC*/
+    public function checking()
+    {
+        $work = new Working();
+        return view('admin/checking',['lists' => $work->checking()]);
+    }
+    /*End Admin + QC*/
 }

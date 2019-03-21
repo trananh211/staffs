@@ -11,8 +11,6 @@
 |
 */
 
-
-
 Route::get('/home', 'UserController@index')->name('home');
 
 Auth::routes();
@@ -36,15 +34,24 @@ Route::middleware('auth')->group(function () {
     Route::get('woo_connect','WooController@connect');
     Route::post('woo_connect','WooController@doConnect');
 
+    /*S Admin*/
     Route::get('woo-list-store','WooController@listStore');
     Route::get('woo-webhooks','WooController@webhooks');
+    /*End S Admin*/
+    Route::get('checking','WooController@checking');
+    /**/
+
+    /*Staff*/
+    Route::get('staff-dashboard','WooController@staffDashboard');
+    Route::get('staff-get-job','WooController@staffGetJob');
+    Route::get('detail-order/{order_id}','WooController@detailOrder');
+
+    Route::get('staff-done-job','WooController@staffDoneJob');
+    Route::post('staff-upload', 'WooController@staffUpload')->name('staff.upload');
+    Route::post('/ajax_upload/action', 'WooController@action')->name('ajaxupload.action');
+    /*End Staff*/
 });
 
-//Route::middleware('web')->group(function () {
-//    /*Woocommerce Webhook*/
-//    Route::get('update-order','WooController@updateOrder');
-//});
-Route::get('/test','WooController@updateOrder');
 Auth::routes();
 
 

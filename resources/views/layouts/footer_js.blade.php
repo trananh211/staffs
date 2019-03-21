@@ -14,12 +14,20 @@
 <script src="source/assets/plugins/flot/jquery.flot.tooltip.min.js"></script>
 <script src="source/assets/plugins/curvedlines/curvedLines.js"></script>
 <script src="source/assets/plugins/peity/jquery.peity.min.js"></script>
+<script src="source/assets/plugins/google-code-prettify/prettify.js"></script>
 <script src="source/assets/js/alpha.min.js"></script>
+<script src="{{ asset('source/assets/js/pages/form_elements.js') }}"></script>
 <script src="source/assets/js/pages/dashboard.js"></script>
+<script src="source/assets/js/pages/ui-modals.js"></script>
 
 
 <script>
     function closeAler() {
         alert('Chưa làm xóa alert');
+    }
+</script>
+<script>
+    function newWindow(url, width, height) {
+        myWindow=window.open(url,'','width=' + width + ',height=' + height);
     }
 </script>

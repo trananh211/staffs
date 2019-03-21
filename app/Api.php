@@ -39,7 +39,7 @@ class Api extends Model
             foreach ($data['line_items'] as $key => $value) {
                 $str = "";
                 foreach ($value['meta_data'] as $item) {
-                    $str .= $item['key'] . " : " . $item['value'] . " ,\n";
+                    $str .= $item['key'] . " : " . $item['value'] . " -;-;-\n";
                 }
                 $db[] = [
                     'woo_info_id' => $woo_id,

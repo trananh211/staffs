@@ -15,7 +15,6 @@
     <link href="source/assets/plugins/metrojs/MetroJs.min.css" rel="stylesheet">
     <link href="source/assets/plugins/weather-icons-master/css/weather-icons.min.css" rel="stylesheet">
 
-
     <!-- Theme Styles -->
     <link href="source/assets/css/alpha.min.css" rel="stylesheet" type="text/css"/>
     <link href="source/assets/css/custom.css" rel="stylesheet" type="text/css"/>
@@ -26,6 +25,8 @@
     <!--[if lt IE 9]>
     <script src="http://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
     <script src="http://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+
+
     <![endif]-->
 
 </head>
