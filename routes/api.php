@@ -19,6 +19,6 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 });
 Route::post('/new-order/','ApiController@newOrder');
 
-Route::get('/test-new-order/','ApiController@testNewOrder');
+Route::get('/test-new-order/{filename}','ApiController@testNewOrder');
 
 

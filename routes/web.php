@@ -41,6 +41,11 @@ Route::middleware('auth')->group(function () {
     Route::get('checking','WooController@checking');
     /**/
 
+    /*QC + Admin*/
+    Route::get('send-customer/{order_id}','WooController@sendCustomer');
+    Route::get('redo-designer/{order_id}','WooController@redoDesigner');
+    /*End QC + Admin*/
+
     /*Staff*/
     Route::get('staff-dashboard','WooController@staffDashboard');
     Route::get('staff-get-job','WooController@staffGetJob');

@@ -7,17 +7,6 @@
         <div class="col s12 m12 l12">
             <div class="card">
                 <div class="card-content">
-                    <a class="waves-effect waves-light btn green m-b-xs">
-                        <i class="material-icons left">present_to_all</i>Gửi Khách Hàng
-                    </a>
-                    <a class="waves-effect waves-light btn red m-b-xs">
-                        <i class="material-icons left">thumb_down</i>Làm lại</a>
-                </div>
-            </div>
-        </div>
-        <div class="col s12 m12 l12">
-            <div class="card">
-                <div class="card-content">
                     <table class="responsive-table highlight">
                         <thead>
                         <tr>
@@ -27,7 +16,6 @@
                             <th class="center" data-field="price">Status</th>
                             <th class="center" data-field="price">Link</th>
                             <th class="center" data-field="price">Action</th>
-                            <th class="center" data-field="price">aaa</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -68,26 +56,51 @@
                                         </a>
                                     </td>
                                     <td class="center">
-                                        <a class="waves-effect waves-light btn m-b-xs"
-                                           onclick="newWindow('{{ url('/detail-order/'.$list->id) }}', 1200, 800)">
-                                            Info</a>
                                         <a class="waves-effect waves-grey btn white modal-trigger"
-                                           href="#modal2">Image</a>
-                                        <div id="modal2" class="modal modal-fixed-footer"
+                                           href="#modal{{ $key }}">Image</a>
+                                        <div id="modal{{ $key }}" class="modal"
                                              style="z-index: 1003; display: none; opacity: 0; transform: scaleX(0.7); top: 250.516304347826px;">
                                             <div class="modal-content">
-                                                <h4>Modal Header</h4>
                                                 <div class="card card-transparent">
                                                     <div class="card-content">
-                                                        <p class="card-title">Material Box</p>
+                                                        <div class="col s12 m12 l12">
+                                                            <div class="card">
+                                                                <div class="card-content">
+                                                                    <a class="waves-effect waves-light btn green m-b-xs"
+                                                                        href="{{ url('send-customer/'.$list->id) }}"
+                                                                    >
+                                                                        <i class="material-icons left">present_to_all</i>Gửi Khách Hàng
+                                                                    </a>
+                                                                    <a class="waves-effect waves-light btn red m-b-xs">
+                                                                        <i class="material-icons left">thumb_down</i>Làm lại</a>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                         <div class="row">
-                                                            <p class="col s12 m4 l4">
-                                                                {{ asset(env('WORKING_DIR').$list->filename) }}
-                                                            </p>
-                                                            <div class="col s12 m8 l8">
-                                                                <div class="material-placeholder">
-                                                                    <img class="materialboxed responsive-img initialized"
-                                                                         src="{{ asset(env('WORKING_DIR').$list->filename) }}" alt="">
+                                                            <div class="col s6">
+                                                                <div class="card white">
+                                                                    <span class="card-title">Ảnh Gốc</span>
+                                                                    <div class="card-content center">
+                                                                        @foreach(explode(",",$list->image) as $image)
+                                                                            <img class="materialboxed responsive-img initialized"
+                                                                                 src="{{ $image }}">
+                                                                        @endforeach
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col s6">
+                                                                <div class="card white">
+                                                                    <span class="card-title">Ảnh thiết kế</span>
+                                                                    <div class="card-content center">
+                                                                        <img class="materialboxed responsive-img initialized"
+                                                                             src="{{ asset(env('WORKING_DIR').$list->filename) }}" alt="">
+                                                                        <div class="divider"></div>
+                                                                        <ul class="collection">
+                                                                            @foreach(explode("-;-;-",$list->detail) as $detail)
+                                                                                <li class="collection-item">{{ $detail }}</li>
+                                                                            @endforeach
+                                                                        </ul>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -96,17 +109,12 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td>
-                                        <p class="p-v-xs">
-                                            <input type="checkbox"/> Redo
-                                        </p>
-                                    </td>
                                 </tr>
                             @endforeach
                         @else
                             <tr>
                                 <td colspan="6" class="center">
-                                    Bạn chưa có bất kỳ công việc nào. Vui lòng nhận công việc ở trên.
+                                    Đã hết công việc kiểm tra Design. Vui lòng chuyển sang công việc xem phản hồi khách hàng.
                                 </td>
                             </tr>
                         @endif
@@ -116,12 +124,6 @@
             </div>
         </div>
     </div>
-
-    <pre>
-        <?php
-            print_r($lists);
-        ?>
-    </pre>>
 @endsection
 
 

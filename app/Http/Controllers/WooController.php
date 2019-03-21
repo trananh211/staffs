@@ -93,5 +93,11 @@ class WooController extends Controller
         $work = new Working();
         return view('admin/checking',['lists' => $work->checking()]);
     }
+
+    public function sendCustomer($order_id)
+    {
+        $work = new Working();
+        return $work->sendCustomer($order_id);
+    }
     /*End Admin + QC*/
 }

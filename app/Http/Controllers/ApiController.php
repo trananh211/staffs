@@ -52,9 +52,9 @@ class ApiController extends Controller
         return $woo_id;
     }
 
-    public function testNewOrder()
+    public function testNewOrder($filename)
     {
-        $files = File::get(storage_path('file/2.json'));
+        $files = File::get(storage_path('file/'.$filename.'.json'));
         $data = json_decode($files,true);
         $api = new Api();
         $webhook_source = 'https://sportgear247.com';
