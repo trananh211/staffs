@@ -19,6 +19,7 @@ class WooController extends Controller
         $this->middleware('auth');
     }
 
+    /*S Admin*/
     public function connect()
     {
         return view('admin/woo/connect');
@@ -42,6 +43,12 @@ class WooController extends Controller
         $stores = WooInfo::get();
         return view('admin/woo/list_store',['stores' => $stores]);
     }
+
+    public function webhooks()
+    {
+        return view('admin/woo/webhooks');
+    }
+    /*End S Admin*/
 
     /*Staff */
     public function staffDashboard()
