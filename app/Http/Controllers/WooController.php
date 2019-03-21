@@ -99,5 +99,11 @@ class WooController extends Controller
         $work = new Working();
         return $work->sendCustomer($order_id);
     }
+
+    public function redoDesigner(Request $request)
+    {
+        $work = new Working();
+        return $work->redoDesigner($request);
+    }
     /*End Admin + QC*/
 }

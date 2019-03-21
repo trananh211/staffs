@@ -43,7 +43,7 @@ Route::middleware('auth')->group(function () {
 
     /*QC + Admin*/
     Route::get('send-customer/{order_id}','WooController@sendCustomer');
-    Route::get('redo-designer/{order_id}','WooController@redoDesigner');
+    Route::post('redo-designer','WooController@redoDesigner');
     /*End QC + Admin*/
 
     /*Staff*/

@@ -67,12 +67,32 @@
                                                             <div class="card">
                                                                 <div class="card-content">
                                                                     <a class="waves-effect waves-light btn green m-b-xs"
-                                                                        href="{{ url('send-customer/'.$list->id) }}"
+                                                                       href="{{ url('send-customer/'.$list->id) }}"
                                                                     >
-                                                                        <i class="material-icons left">present_to_all</i>Gửi Khách Hàng
+                                                                        <i class="material-icons left">present_to_all</i>Gửi
+                                                                        Khách Hàng
                                                                     </a>
-                                                                    <a class="waves-effect waves-light btn red m-b-xs">
-                                                                        <i class="material-icons left">thumb_down</i>Làm lại</a>
+                                                                    <a class="waves-effect waves-light btn red m-b-xs" order_id="{{ $list->id }}">
+                                                                        <i class="material-icons left">thumb_down</i>Làm
+                                                                        lại</a>
+                                                                    <div class="row js-redo-form-{{ $list->id }}">
+                                                                        <form action="{{ url('redo-designer') }}" method="post" class="col s12">
+                                                                            {{ csrf_field() }}
+                                                                            <div class="row">
+                                                                                <div class="input-field col s10">
+                                                                                    <i class="material-icons prefix">mode_edit</i>
+                                                                                    <input type="text" style="display: none;" name="order_id" value="{{ $list->id }}"/>
+                                                                                    <textarea id="icon_prefix2" name="reason"
+                                                                                              class="materialize-textarea"></textarea>
+                                                                                    <label for="icon_prefix2">Lý do</label>
+                                                                                </div>
+                                                                                <div class="col s2">
+                                                                                    <button type="submit" class="btn-floating btn-large waves-effect waves-light red"
+                                                                                    ><i class="material-icons">send</i></button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </form>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -82,8 +102,9 @@
                                                                     <span class="card-title">Ảnh Gốc</span>
                                                                     <div class="card-content center">
                                                                         @foreach(explode(",",$list->image) as $image)
-                                                                            <img class="materialboxed responsive-img initialized"
-                                                                                 src="{{ $image }}">
+                                                                            <img
+                                                                                class="materialboxed responsive-img initialized"
+                                                                                src="{{ $image }}">
                                                                         @endforeach
                                                                     </div>
                                                                 </div>
@@ -92,8 +113,10 @@
                                                                 <div class="card white">
                                                                     <span class="card-title">Ảnh thiết kế</span>
                                                                     <div class="card-content center">
-                                                                        <img class="materialboxed responsive-img initialized"
-                                                                             src="{{ asset(env('WORKING_DIR').$list->filename) }}" alt="">
+                                                                        <img
+                                                                            class="materialboxed responsive-img initialized"
+                                                                            src="{{ asset(env('WORKING_DIR').$list->filename) }}"
+                                                                            alt="">
                                                                         <div class="divider"></div>
                                                                         <ul class="collection">
                                                                             @foreach(explode("-;-;-",$list->detail) as $detail)
@@ -114,7 +137,8 @@
                         @else
                             <tr>
                                 <td colspan="6" class="center">
-                                    Đã hết công việc kiểm tra Design. Vui lòng chuyển sang công việc xem phản hồi khách hàng.
+                                    Đã hết công việc kiểm tra Design. Vui lòng chuyển sang công việc xem phản hồi khách
+                                    hàng.
                                 </td>
                             </tr>
                         @endif

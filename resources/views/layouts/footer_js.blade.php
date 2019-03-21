@@ -22,11 +22,11 @@
 
 
 <script>
-    function closeAler() {
-        alert('Chưa làm xóa alert');
+    if ($('#alert-dialog').length > 0)
+    {
+        $('#alert-dialog').delay(5000).fadeOut(500);
     }
-</script>
-<script>
+
     function newWindow(url, width, height) {
         myWindow=window.open(url,'','width=' + width + ',height=' + height);
     }

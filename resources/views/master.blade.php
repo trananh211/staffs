@@ -56,39 +56,38 @@
     @include('layouts.sidebar')
     <main class="mn-inner inner-active-sidebar">
         <div class="middle-content">
-            <div class="row">
-                @if (Session::has('error'))
+            @if (Session::has('error'))
+                <div class="row" id="alert-dialog">
                     <div class="col s12 m12 l12">
                         <div class="card">
-                            <div class="card-content">
+                            <div class="card-content red lighten-4 center">
                                 <div class="widget-content alert-content">
                                     <div class="alert alert-success alert-block">
-                                        <a class="close" onclick="closeAler()" data-dismiss="alert" href="#">×</a>
-                                        <h4 class="alert-heading">Success!!</h4>
+                                        <h5 class="alert-heading">Cảnh báo!!</h5>
                                         {{ Session('error') }}
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                @endif
-
-                @if (Session::has('success'))
+                </div>
+            @endif
+            @if (Session::has('success'))
+                <div class="row" id="alert-dialog">
                     <div class="col s12 m12 l12">
                         <div class="card">
-                            <div class="card-content">
+                            <div class="card-content green lighten-1">
                                 <div class="widget-content alert-content">
                                     <div class="alert alert-success alert-block">
-                                        <a class="close" onclick="closeAler()" data-dismiss="alert" href="#">×</a>
-                                        <h4 class="alert-heading">Success!!</h4>
+                                        <h5 class="alert-heading">Thành Công!!</h5>
                                         {{ Session('success') }}
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                @endif
-            </div>
+                </div>
+            @endif
             @yield('content')
         </div>
         @include('layouts.inner-sidebar')

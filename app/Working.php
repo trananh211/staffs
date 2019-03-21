@@ -297,5 +297,31 @@ class Working extends Model
         $this->log($save);
         return back();
     }
+
+    public function redoDesigner($request)
+    {
+        $rq = $request->all();
+        $update = [
+            'status' => env('STATUS_WORKING_NEW'),
+            'redo' => 1,
+            'reason' => $rq['reason'],
+            'updated_at' => date("Y-m-d H:i:s"),
+        ];
+        \DB::beginTransaction();
+        try {
+            \DB::table('workings')->where('id', $rq['order_id'])->update($update);
+            $return = true;
+            $save = "Yêu cầu nhân viên làm lại thành công. Tiếp tục kiểm tra những đơn hàng còn lại.";
+            \Session::flash('success', $save);
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $return = false;
+            $save = "Yêu cầu nhân viên làm lại thất bại. Mời bạn thử lại";
+            \Session::flash('error', $save);
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        $this->log($save . "\n");
+        return back();
+    }
     /*End Admin + QC*/
 }
