@@ -7,19 +7,31 @@
         <div class="col s12 m12 l12">
             <div class="card">
                 <div class="card-content">
-                    <table class="responsive-table highlight">
+                    <table id="review-job" class="display responsive-table datatable-example">
                         <thead>
                         <tr>
                             <th class="center">#</th>
-                            <th class="center" data-field="id">Order</th>
-                            <th class="center" data-field="name">Item Name</th>
-                            <th class="center" data-field="price">Designer</th>
-                            <th class="center" data-field="price">Date</th>
-                            <th class="center" data-field="price">Status</th>
-                            <th class="center" data-field="price">Link</th>
-                            <th class="center" data-field="price">Action</th>
+                            <th class="center">Order</th>
+                            <th class="center">Item Name</th>
+                            <th class="center">Date</th>
+                            <th class="center">Status</th>
+                            <th class="center">Designer</th>
+                            <th class="center">QC</th>
+                            <th class="center">Action</th>
                         </tr>
                         </thead>
+                        <tfoot>
+                        <tr>
+                            <th class="center">#</th>
+                            <th class="center">Order</th>
+                            <th class="center">Item Name</th>
+                            <th class="center">Date</th>
+                            <th class="center">Status</th>
+                            <th class="center">Designer</th>
+                            <th class="center">QC</th>
+                            <th class="center">Action</th>
+                        </tr>
+                        </tfoot>
                         <tbody>
                         @if(sizeof($lists) > 0)
                             @foreach($lists as $key => $list)
@@ -27,14 +39,13 @@
                                     <td class="center">{{ $key+1 }}</td>
                                     <td class="center"> {{ $list->number.'-PID-'.$list->id }}</td>
                                     <td class="center">{{ $list->name }}</td>
-                                    <td class="center">{{ $list->worker_name }}</td>
                                     <td class="center">
                                         @if(time() - strtotime($list->updated_at) > 86400)
-                                            <div class="red darken-1" style="color: rgba(255, 255, 255, 0.901961);">
+                                            <div class="center red darken-1" style="color: rgba(255, 255, 255, 0.901961);">
                                                 Nhanh lên
                                             </div>
                                         @else
-                                            <div class="green lighten-1">Hôm Nay</div>
+                                            <div class="center green lighten-1">Hôm Nay</div>
                                         @endif
                                     </td>
                                     <td class="center">
@@ -57,16 +68,20 @@
                                             $status = 'Redo';
                                         }
                                         ?>
-                                        <div class="{{ $class }}">{{ $status }}</div>
+                                        <div class="center {{ $class }}">{{ $status }}</div>
                                     </td>
                                     <td class="center">
-                                        <a class="waves-effect m-b-xs" href="{{ url($list->permalink) }}"
-                                           target="_blank">
-                                            {{ substr($list->permalink,0,30) }} ...
+                                        {{ $list->worker_name }}
+                                    </td>
+                                    <td class="center">
+                                        {{ $list->qc_name }}
+                                    </td>
+                                    <td class="center">
+                                        <a working_id="{{ $list->id }}" order_id="{{ $list->woo_order_id }}"
+                                            class="waves-effect waves-light btn green m-b-xs js-done-job">
+                                            Supplier
                                         </a>
-                                    </td>
-                                    <td class="center">
-                                        <a class="waves-effect waves-grey btn white modal-trigger"
+                                        <a class="waves-effect waves-grey btn white modal-trigger m-b-xs"
                                            href="#modal{{ $key }}">Image</a>
                                         <div id="modal{{ $key }}" class="modal"
                                              style="z-index: 1003; display: none; opacity: 0; transform: scaleX(0.7); top: 250.516304347826px;">
@@ -76,12 +91,6 @@
                                                         <div class="col s12 m12 l12">
                                                             <div class="card">
                                                                 <div class="card-content">
-                                                                    <a class="waves-effect waves-light btn green m-b-xs"
-                                                                       href="{{ url('send-customer/'.$list->id) }}"
-                                                                    >
-                                                                        <i class="material-icons left">present_to_all</i>Gửi
-                                                                        Khách Hàng
-                                                                    </a>
                                                                     <a class="waves-effect waves-light btn red m-b-xs js-btn-redo" order_id="{{ $list->id }}">
                                                                         <i class="material-icons left">thumb_down</i>Làm lại</a>
                                                                     <div class="row js-redo-form-{{ $list->id }}" style="display: none;">
@@ -124,7 +133,7 @@
                                                                     <div class="card-content center">
                                                                         <img
                                                                             class="materialboxed responsive-img initialized"
-                                                                            src="{{ asset(env('WORKING_DIR').$list->filename) }}"
+                                                                            src="{{ asset(env('DONE_DIR').$list->filename) }}"
                                                                             alt="">
                                                                     </div>
                                                                 </div>
@@ -158,7 +167,7 @@
                         @else
                             <tr>
                                 <td colspan="6" class="center">
-                                    Đã hết công việc kiểm tra Design. Vui lòng chuyển sang công việc xem phản hồi khách
+                                    Đã gửi toàn bộ . Vui lòng chuyển sang công việc xem phản hồi khách
                                     hàng.
                                 </td>
                             </tr>
@@ -170,6 +179,3 @@
         </div>
     </div>
 @endsection
-
-
-

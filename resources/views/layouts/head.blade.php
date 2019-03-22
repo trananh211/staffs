@@ -14,10 +14,12 @@
     <link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="source/assets/plugins/metrojs/MetroJs.min.css" rel="stylesheet">
     <link href="source/assets/plugins/weather-icons-master/css/weather-icons.min.css" rel="stylesheet">
+    <link href="{{ asset('source/assets/plugins/material-preloader/css/materialPreloader.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('source/assets/plugins/datatables/css/jquery.dataTables.min.css') }}" rel="stylesheet">
 
     <!-- Theme Styles -->
-    <link href="source/assets/css/alpha.min.css" rel="stylesheet" type="text/css"/>
-    <link href="source/assets/css/custom.css" rel="stylesheet" type="text/css"/>
+    <link href="{{ asset('source/assets/css/alpha.min.css') }}" rel="stylesheet" type="text/css"/>
+    <link href="{{ asset('source/assets/css/custom.css') }}" rel="stylesheet" type="text/css"/>
 
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
@@ -28,5 +30,5 @@
 
 
     <![endif]-->
-
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
 </head>

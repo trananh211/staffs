@@ -38,29 +38,35 @@
                                     <td class="center"> {{ $list->number.'-PID-'.$list->id }}</td>
                                     <td class="center">{{ $list->name }}</td>
                                     <td class="center">
-                                        @if(time() - strtotime($list->created_at) > 86400)
-                                            <a class="waves-effect waves-red btn-flat m-b-xs">Làm nhanh lên.</a>
+                                        @if(time() - strtotime($list->updated_at) > 86400)
+                                            <div class="red darken-1" style="color: rgba(255, 255, 255, 0.901961);">
+                                                Nhanh lên
+                                            </div>
                                         @else
-                                            <a class="waves-effect waves-green btn-flat m-b-xs">Today</a>
+                                            <div class="green lighten-1">Hôm Nay</div>
                                         @endif
                                     </td>
                                     <td class="center">
                                         <?php
                                         if ($list->status == 0) {
-                                            $class = 'orange';
+                                            $class = 'amber lighten-3';
                                             $status = 'Working';
                                         } else if ($list->status == 1) {
-                                            $class = 'blue';
+                                            $class = 'blue lighten-3';
                                             $status = 'Check Again';
                                         } else if ($list->status == 2) {
-                                            $class = 'purple';
-                                            $status = 'Send_Customer';
+                                            $class = 'purple lighten-3';
+                                            $status = 'Customer';
                                         } else if ($list->status == 3) {
-                                            $class = 'green';
+                                            $class = 'green lighten-3';
                                             $status = 'Done';
                                         }
+                                        if ($list->redo == 1){
+                                            $class = 'red lighten-1';
+                                            $status = 'Redo';
+                                        }
                                         ?>
-                                        <a class="waves-effect waves-{{$class}} btn-flat">{{ $status }}</a>
+                                        <div class="{{ $class }}">{{ $status }}</div>
                                     </td>
                                     <td class="center">
                                         <a class="waves-effect m-b-xs" href="{{ url($list->permalink) }}"
@@ -71,7 +77,7 @@
                                     <td class="center">
                                         <a class="waves-effect waves-light btn m-b-xs"
                                            onclick="newWindow('{{ url('/detail-order/'.$list->id) }}', 1200, 800)">
-                                            Xem thông tin</a>
+                                            <i class="material-icons left">visibility</i> Xem thông tin</a>
                                     </td>
                                 </tr>
                             @endforeach

@@ -416,7 +416,8 @@
                     <div class="collapsible-body">
                         <ul>
                             <li><a href="{{ url('checking') }}">Kiểm tra Design</a></li>
-                            <li><a href="{{ url('send-customer') }}">Phản hồi khách hàng</a></li>
+                            <li><a href="{{ url('review-customer') }}">Phản hồi khách hàng</a></li>
+                            <li><a href="{{ url('supplier') }}">Supplier</a></li>
                         </ul>
                     </div>
                 </li>

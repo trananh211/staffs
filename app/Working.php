@@ -43,8 +43,32 @@ class Working extends Model
         $lists = \DB::table('workings')
             ->join('woo_orders', 'workings.woo_order_id', '=', 'woo_orders.id')
             ->join('woo_products', 'workings.product_id', '=', 'woo_products.product_id')
+            ->join('users as worker', 'workings.worker_id', '=', 'worker.id')
             ->select(
-                'workings.id', 'workings.status', 'workings.created_at', 'workings.filename',
+                'workings.id', 'workings.status', 'workings.updated_at', 'workings.filename',
+                'workings.qc_id','workings.worker_id','workings.reason','workings.redo',
+                'worker.id as worker_id','worker.name as worker_name',
+                'woo_orders.number', 'woo_orders.detail',
+                'woo_products.name', 'woo_products.permalink', 'woo_products.image'
+            )
+            ->where($where)
+            ->orderBy('workings.id', 'ASC')
+            ->get()
+            ->toArray();
+        return $lists;
+    }
+
+    private static function reviewWork($where)
+    {
+        $lists = \DB::table('workings')
+            ->join('woo_orders', 'workings.woo_order_id', '=', 'woo_orders.id')
+            ->join('woo_products', 'workings.product_id', '=', 'woo_products.product_id')
+            ->join('users as worker', 'workings.worker_id', '=', 'worker.id')
+            ->join('users as qc', 'workings.qc_id', '=', 'qc.id')
+            ->select(
+                'workings.id', 'workings.status', 'workings.updated_at', 'workings.filename',
+                'workings.qc_id','workings.worker_id', 'workings.woo_order_id','workings.reason','workings.redo',
+                'worker.id as worker_id','worker.name as worker_name','qc.id as qc_id','qc.name as qc_name',
                 'woo_orders.number', 'woo_orders.detail',
                 'woo_products.name', 'woo_products.permalink', 'woo_products.image'
             )
@@ -73,7 +97,7 @@ class Working extends Model
                 $this->log(' Nhân viên ' . $username . ' xin job mới.');
                 $jobs = DB::table('woo_orders')
                     ->select('id', 'woo_info_id', 'order_id', 'product_id', 'number')
-                    ->where('status', 0)
+                    ->where('status', env('STATUS_WORKING_NEW'))
                     ->orderBy('id', 'ASC')
                     ->limit(2)
                     ->get()->toArray();
@@ -181,7 +205,7 @@ class Working extends Model
             /*tìm kiếm file có tồn tại trong Database hay không*/
             if (sizeof($list_order_id) > 0) {
                 $lst = \DB::table('workings')
-                    ->select('id', 'number')
+                    ->select('id', 'number', 'woo_order_id')
                     ->whereIn('id', $list_order_id)
                     ->get()->toArray();
                 if (sizeof($lst) > 0) {
@@ -193,16 +217,19 @@ class Working extends Model
                         if (isset($number_order_id[$item->id]) && $item->number == $number_order_id[$item->id]) {
                             $new_name = $array_filename[$item->id]->getClientOriginalName();
                             if ($array_filename[$item->id]->move(public_path(env('WORKING_DIR')), $new_name)) {
-//                                $db_update[] = $item->id;
                                 $message .= "<li class='green lighten-1'>Upload thành công file " . $new_name . "</li>";
                                 $uploaded_image .= '<img src="' . env('WORKING_DIR') . '/' . $new_name . '" 
                                 class="img-thumbnail" width="150" title="' . $new_name . '"/>';
-                                \DB::table('workings')->where('id', $item->id)
+                                $ud_working = \DB::table('workings')->where('id', $item->id)
                                     ->update([
                                         'filename' => $new_name,
                                         'status' => env('STATUS_WORKING_CHECK'),
                                         'updated_at' => date("Y-m-d H:i:s")
                                     ]);
+                                if ($ud_working)
+                                {
+                                    $update_woo_order[] = $item->woo_order_id;
+                                }
                             } else {
                                 $message .= '<li class="red lighten-3">Upload lỗi file :' . $new_name . '. Làm ơn thử lại nhé.</li>';
                             }
@@ -210,13 +237,13 @@ class Working extends Model
                             $message .= "<li class='red lighten-3'>File " . $item->number . " không tồn tại trong hệ thống. Kiểm tra lại tên file.</li>";
                         }
                     }
-//                    if (sizeof($db_update) > 0) {
-//                        \DB::table('workings')->whereIn('id', $db_update)
-//                            ->update([
-//                                'status' => env('STATUS_WORKING_CHECK'),
-//                                'updated_at' => date("Y-m-d H:i:s")
-//                            ]);
-//                    }
+                    if (sizeof($update_woo_order) > 0) {
+                        \DB::table('woo_orders')->whereIn('id', $update_woo_order)
+                            ->update([
+                                'status' => env('STATUS_WORKING_CHECK'),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ]);
+                    }
                 } else {
                     $message .= "<li class='red lighten-3' >File " . implode(',', $number_order_id) . " không tồn tại trong hệ thống. Kiểm tra lại tên file.</li>";
                 }
@@ -322,6 +349,59 @@ class Working extends Model
         }
         $this->log($save . "\n");
         return back();
+    }
+
+    /*phản hồi khách hàng*/
+    public function reviewCustomer()
+    {
+        $where = [
+            ['workings.status', '=', env('STATUS_WORKING_CUSTOMER')],
+        ];
+        return $this->reviewWork($where);
+    }
+
+    public function supplier()
+    {
+        $where = [
+            ['workings.status', '=', env('STATUS_WORKING_DONE')],
+        ];
+        return $this->reviewWork($where);
+    }
+
+    public function eventQcDone($request)
+    {
+        if (Auth::check())
+        {
+            $working_id = $request->all()['working_id'];
+            $order_id = $request->all()['order_id'];
+            \DB::beginTransaction();
+            try {
+                $update = [
+                    'status' => env('STATUS_WORKING_DONE'),
+                    'updated_at' => date("Y-m-d H:i:s"),
+                ];
+                \DB::table('workings')->where('id', $working_id)->update($update);
+                \DB::table('woo_orders')->where('id', $order_id)->update($update);
+                $status = 'success';
+                $message = "Yêu cầu chuyển cho supplier thành công. Tiếp tục kiểm tra các đơn hàng còn lại.";
+                \DB::commit(); // if there was no errors, your query will be executed
+            } catch (\Exception $e) {
+                $status = 'error';
+                $message = "Yêu cầu chưa được thực hiện. Vui lòng tải lại trang và tiếp tục với đơn khác nếu vẫn lỗi.";
+                \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+            }
+            $response = [
+                'status' => $status,
+                'message' => $message,
+            ];
+            return json_encode($response);
+        } else {
+            $error = [
+                'status' => 'error',
+                'message' => 'Bạn đã quá thời gian đăng nhập. Bạn cần đăng nhập lại',
+            ];
+            return json_encode($error);
+        }
     }
     /*End Admin + QC*/
 }

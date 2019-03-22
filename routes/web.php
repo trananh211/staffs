@@ -44,6 +44,9 @@ Route::middleware('auth')->group(function () {
     /*QC + Admin*/
     Route::get('send-customer/{order_id}','WooController@sendCustomer');
     Route::post('redo-designer','WooController@redoDesigner');
+    Route::get('review-customer','WooController@reviewCustomer');
+    Route::post('ajax_done_job/action', 'WooController@eventQcDone')->name('ajaxdonejob.action');
+    Route::get('supplier','WooController@supplier');
     /*End QC + Admin*/
 
     /*Staff*/
@@ -59,5 +62,17 @@ Route::middleware('auth')->group(function () {
 
 Auth::routes();
 
-
-
+//Route::filter('auth', function()
+//{
+//    if (Auth::guest())
+//    {
+//        if (Request::ajax())
+//        {
+//            return Response::make('Unauthorized', 401);
+//        }
+//        else
+//        {
+//            return Redirect::guest('your_desired_route');
+//        }
+//    }
+//});

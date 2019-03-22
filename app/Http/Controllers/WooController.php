@@ -105,5 +105,23 @@ class WooController extends Controller
         $work = new Working();
         return $work->redoDesigner($request);
     }
+
+    public function reviewCustomer()
+    {
+        $work = new Working();
+        return view('/admin/review_customer',['lists'=> $work->reviewCustomer()]);
+    }
+
+    public function eventQcDone(Request $request)
+    {
+        $work = new Working();
+        return $work->eventQcDone($request);
+    }
+
+    public function supplier()
+    {
+        $work = new Working();
+        return view('/admin/supplier',['lists'=> $work->supplier()]);
+    }
     /*End Admin + QC*/
 }

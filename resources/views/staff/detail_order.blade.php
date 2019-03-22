@@ -10,7 +10,10 @@
             <div class="card">
                 <div class="card-content">
                     <ul>
-                        <li>Bạn phải lưu file với tên : <b>{{ $details->number.'-PID-'.$details->id }} </b></li>
+                        <li>Bạn phải lưu file Mockup với tên : <b>{{ $details->number.'-PID-'.$details->id }}
+                                _mockup </b></li>
+                        <li>Bạn phải lưu file Design với tên : <b>{{ $details->number.'-PID-'.$details->id }}_1, _2, _3
+                                ... </b></li>
                         <li>Tên sản phẩm : {{ $details->name }}</li>
                         <li>Link gốc sản phẩm : {{ $details->permalink }}</li>
                         <li>Và sử dụng những yêu cầu dưới đây để làm file sản xuất.</li>
@@ -31,6 +34,15 @@
             </div>
         </div>
         <div class="col s16 m12 l6">
+            @if ($details->redo == 1)
+                <div class="card red lighten-1">
+                    <div class="card-content">
+                        <p class="card-title">Redo</p>
+                            {{ $details->reason }}
+                        </p>
+                    </div>
+                </div>
+            @endif
             <div class="card">
                 <div class="card-content">
                     <p class="card-title">Note</p>
