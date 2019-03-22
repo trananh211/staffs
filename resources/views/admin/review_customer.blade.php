@@ -166,9 +166,8 @@
                             @endforeach
                         @else
                             <tr>
-                                <td colspan="6" class="center">
-                                    Đã gửi toàn bộ . Vui lòng chuyển sang công việc xem phản hồi khách
-                                    hàng.
+                                <td colspan="8" class="center">
+                                    Đã hết phản hồi khách hàng. Liên hệ với quản lý để làm công việc tiếp theo.
                                 </td>
                             </tr>
                         @endif

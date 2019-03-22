@@ -53,9 +53,8 @@
                             @endforeach
                         @else
                             <tr>
-                                <td colspan="6" class="center">
-                                    Đã gửi toàn bộ . Vui lòng chuyển sang công việc xem phản hồi khách
-                                    hàng.
+                                <td colspan="7" class="center">
+                                    Hiện tại chưa có đơn hàng nào gửi tới supplier.
                                 </td>
                             </tr>
                         @endif
