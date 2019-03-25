@@ -15,7 +15,7 @@
                         </thead>
                         <tbody>
                         <tr>
-                            <td>/api/new-order/</td>
+                            <td>{{ url('/api/new-order/') }}</td>
                             <td>Get new order from Woocommerce Store</td>
                         </tr>
 
