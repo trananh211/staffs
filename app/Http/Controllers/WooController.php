@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Auth;
-use Session;
-use Redirect;
 use DB;
 use App\User; // this to add User Model
 use App\WooInfo;

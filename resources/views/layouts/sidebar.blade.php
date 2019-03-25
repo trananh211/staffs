@@ -389,7 +389,8 @@
         </div>
         <ul class="sidebar-menu collapsible collapsible-accordion" data-collapsible="accordion">
 
-            <li class="no-padding"><a class="waves-effect waves-grey" href="#"><i
+            <li class="no-padding">
+                <a class="waves-effect waves-grey" href="{{ url('/') }}"><i
                         class="material-icons">settings_input_svideo</i>Dashboard</a></li>
             @if( Auth::user()->level == env('SADMIN'))
                 <li class="no-padding">

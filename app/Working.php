@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use DB;
 use File;
 use Illuminate\Http\UploadFile;
+use Carbon\Carbon;
 
 class Working extends Model
 {
@@ -18,6 +19,93 @@ class Working extends Model
     {
         \Log::info($str);
     }
+
+    /*DASHBOARD*/
+    public function adminDashboard()
+    {
+        $new_order = $this->getNewOrder();
+        $working_order = $this->getworkingOrder();
+        $checking_order = $this->getCheckingOrder();
+        $late_order = $this->getLateOrder();
+        $list_order = $this->getListOrderOfMonth(30);
+        return view('/admin/dashboard')
+            ->with(compact('new_order','working_order','checking_order','late_order','list_order'));
+    }
+
+    public function staffDashboard()
+    {
+        $new_order = $this->getNewOrder();
+        $working_order = $this->getworkingOrder();
+        $checking_order = $this->getCheckingOrder();
+        $late_order = $this->getLateOrder();
+        return view('/staff/dashboard')
+            ->with(compact('new_order','working_order','checking_order','late_order'));
+    }
+
+    public function qcDashboard()
+    {
+        $new_order = $this->getNewOrder();
+        $working_order = $this->getworkingOrder();
+        $checking_order = $this->getCheckingOrder();
+        $late_order = $this->getLateOrder();
+        return view('/staff/qc_dashboard')
+            ->with(compact('new_order','working_order','checking_order','late_order'));;
+    }
+
+    private function getNewOrder()
+    {
+        return \DB::table('woo_orders')->where('status',env('STATUS_WORKING_NEW'))->count();
+    }
+
+    private function getworkingOrder()
+    {
+        return \DB::table('woo_orders')->where('status',env('STATUS_WORKING_CHECK'))->count();
+    }
+
+    private function getCheckingOrder()
+    {
+        return \DB::table('woo_orders')->where('status',env('STATUS_WORKING_CUSTOMER'))->count();
+    }
+
+    private static function getLateOrder()
+    {
+        $cur_date=Carbon::now();
+        return \DB::table('woo_orders')
+            ->where('status','<>',env('STATUS_WORKING_DONE'))
+            ->whereRaw("DATEDIFF('" . Carbon::now() . "',updated_at)  > 1")
+            ->count();
+    }
+
+    private function getListOrderOfMonth($subday)
+    {
+        $dt     = Carbon::now();
+//        $end = Carbon::parse('2019-03-22 03:55:54');
+//        $past   = $dt->subMonth();
+//        $future = $dt->addMonth();
+//
+//        echo $end->diffInDays($dt);
+//        echo $end->diffForHumans($dt);
+//        echo $dt->subDays(10)->diffForHumans();     // 10 days ago
+//        echo $dt->diffForHumans($past);             // 1 month ago
+//        echo $dt->diffForHumans($future);           // 1 month before
+
+        $now = Carbon::now()->subDays($subday)->toDateString();
+        $where = [
+            ['woo_orders.created_at', '>', "'".$now."'"],
+        ];
+        $lists = \DB::table('woo_orders')
+            ->join('woo_infos', 'woo_orders.woo_info_id', '=', 'woo_infos.id')
+            ->select(
+                'woo_orders.id','woo_orders.number','woo_orders.status','woo_orders.product_name',
+                'woo_orders.quantity','woo_orders.created_at',
+                'woo_infos.id','woo_infos.name'
+                )
+            ->where($where)
+            ->orderBy('woo_orders.id', 'DESC')
+            ->get();
+        return $lists;
+    }
+        /*END DASHBOARD*/
 
     /*Hàm hiển thị toàn bộ danh sách order ra ngoài màn hình nhân viên*/
     public function listOrder()
