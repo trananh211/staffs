@@ -11,7 +11,7 @@
 
     <!-- Styles -->
     <link type="text/css" rel="stylesheet" href="source/assets/plugins/materialize/css/materialize.min.css"/>
-    <link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="source/assets/plugins/metrojs/MetroJs.min.css" rel="stylesheet">
     <link href="source/assets/plugins/weather-icons-master/css/weather-icons.min.css" rel="stylesheet">
     <link href="{{ asset('source/assets/plugins/material-preloader/css/materialPreloader.min.css') }}" rel="stylesheet">
