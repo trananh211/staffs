@@ -33,6 +33,8 @@ class Api extends Model
     {
         $db = array();
         $this->log('=====================CREATE NEW ORDER=======================');
+        echo "<pre>";
+        print_r($data);
         if (sizeof($data['line_items']) > 0) {
             $this->log('Store ' . $woo_id . ' has new ' . sizeof($data['line_items']) . ' order item.');
             $lst_product = array();
@@ -53,6 +55,11 @@ class Api extends Model
                     'product_id' => $value['product_id'],
                     'product_name' => $value['name'],
                     'quantity' => $value['quantity'],
+                    'payment_method' => $data['payment_method_title'],
+                    'customer_note' => trim(htmlentities($data['customer_note'])),
+                    'transaction_id' => $data['transaction_id'],
+                    'price' => $value['price'],
+                    'variation_id' => $value['variation_id'],
                     'email' => $data['billing']['email'],
                     'detail' => trim(htmlentities($str)),
                     'created_at' => date("Y-m-d H:i:s"),

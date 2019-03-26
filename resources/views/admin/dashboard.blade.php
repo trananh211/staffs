@@ -55,11 +55,11 @@
                             <th>Store</th>
                             <th>Order</th>
                             <th>Name</th>
-                            <th>quantity</th>
-                            <th>Date</th>
                             <th>Status</th>
-                            <th>Designer</th>
-                            <th>QC</th>
+                            <th>quantity</th>
+                            <th>Price</th>
+                            <th>Payment</th>
+                            <th>Date</th>
                             <th>Tracking</th>
                         </tr>
                         </thead>
@@ -69,11 +69,11 @@
                             <th>Store</th>
                             <th>Order</th>
                             <th>Name</th>
-                            <th>quantity</th>
-                            <th>Date</th>
                             <th>Status</th>
-                            <th>Designer</th>
-                            <th>QC</th>
+                            <th>quantity</th>
+                            <th>Price</th>
+                            <th>Payment</th>
+                            <th>Date</th>
                             <th>Tracking</th>
                         </tr>
                         </tfoot>
@@ -83,14 +83,14 @@
                                 <tr>
                                     <td>{{ $key+1 }}</td>
                                     <td>{{ $order->name }}</td>
-                                    <td>{{ $order->number }}</td>
+                                    <td>{{ $order->number }}-{{ $order->id }}</td>
                                     <td>{{ $order->product_name }}</td>
-                                    <td>{{ $order->quantity }}</td>
-                                    <td>{{ $order->created_at }}</td>
                                     <td>{{ $order->status }}</td>
-                                    <td>Designer</td>
-                                    <td>QC</td>
-                                    <td>Tracking</td>
+                                    <td>{{ $order->quantity }}</td>
+                                    <td>{{ $order->price }}$</td>
+                                    <td>{{ $order->payment_method }}</td>
+                                    <td>{{ $order->created_at }}</td>
+                                    <td>LCN12395068</td>
                                 </tr>
                             @endforeach
                         @else
