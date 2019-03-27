@@ -135,6 +135,11 @@ class WooController extends Controller
         return $work->saveNewJob($request);
     }
 
+    public function listIdea()
+    {
+        $work = new Working();
+        return $work->listIdea();
+    }
 
     /*End Admin + QC*/
 }

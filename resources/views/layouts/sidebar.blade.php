@@ -413,6 +413,7 @@
                     </a>
                     <div class="collapsible-body">
                         <ul>
+                            <li><a href="{{ url('list-idea') }}">List Idea</a></li>
                             <li><a href="{{ url('new-job-idea') }}">Create New Job</a></li>
                         </ul>
                     </div>

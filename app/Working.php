@@ -51,6 +51,28 @@ class Working extends Model
         return '<img src="' . $path.$name . '" class="img-thumbnail" width="150" title="' . $name . '"/>';
     }
 
+    private static function statusJob($status, $redo, $reason)
+    {
+        if ($status == env('STATUS_WORKING_NEW')) {
+            $class = 'amber lighten-3';
+            $st = 'New';
+        } else if ($status == env('STATUS_WORKING_CHECK')) {
+            $class = 'blue lighten-3';
+            $st = 'Check';
+        } else if ($status == env('STATUS_WORKING_CUSTOMER')) {
+            $class = 'purple lighten-3';
+            $st = 'ReCheck';
+        } else if ($status == env('STATUS_WORKING_DONE')) {
+            $class = 'green lighten-3';
+            $st = 'Done';
+        }
+        $str = '<div class="'. $class .'">'. $st .'</div>';
+        if ($redo == 1){
+            $str .= '<div class="btn-floating btn-large waves-effect waves-light red" title="'.$reason.'">R</div>';
+        }
+        return $str;
+    }
+
     /*DASHBOARD*/
     public function adminDashboard()
     {
@@ -374,6 +396,9 @@ class Working extends Model
     }
 
     /*Admin + QC*/
+    /*
+     *  Idea Job
+     * */
     public function saveNewJob($request)
     {
         $uid = $this->checkAuth();
@@ -399,18 +424,19 @@ class Working extends Model
                         $delete_file[] = env('DIR_TMP') . $file;
                         continue;
                     }
+                    File::move(env('DIR_TMP') . $file, env('DIR_NEW') . $file);
                     $db[] = [
                         'name' => $file,
                         'title' => $title,
-                        'path' => env('DIR_TMP') . $file,
+                        'path' => env('DIR_NEW') . $file,
                         'require' => $require,
                         'qc_id' => $uid,
-                        'status' => env('STATUS_WORKING_CHECK'),
+                        'status' => env('STATUS_WORKING_NEW'),
                         'worker_id' => $worker_id,
                         'created_at' => date("Y-m-d H:i:s"),
                         'updated_at' => date("Y-m-d H:i:s")
                     ];
-                    File::move(env('DIR_TMP') . $file, env('DIR_NEW') . $file);
+
                     $message .= $this->getSuccessMessage('Tạo job thành công : ' . $file);
                     $img .= $this->getImageThumb(env('DIR_NEW'), $file);
                 }
@@ -437,6 +463,51 @@ class Working extends Model
             'message' => (strlen(trim($message)) > 0) ? $this->getMessage($message) : $message,
             'img' => $img
         ]);
+    }
+
+    public function listIdea()
+    {
+        $users = \DB::table('users')->pluck('name','id')->toArray();
+        $where = [
+            ['status','<',env('STATUS_WORKING_DONE')],
+//            ['created_at', '<=', $now],
+//            ['created_at', '>=', "'" . $past . "'"],
+        ];
+        $tmp = $this->getListIdea($where);
+        $lists = array();
+        if (sizeof($tmp) > 0)
+        {
+            $now = Carbon::now();
+            foreach ($tmp as $idea)
+            {
+                $created = new Carbon($idea->updated_at);
+                $lists[] = [
+                    'id' => $idea->id,
+                    'name' => $idea->name,
+                    'title' => $idea->title,
+                    'path' => $idea->path,
+                    'require' => $idea->require,
+                    'worker' => (array_key_exists($idea->worker_id,$users))? $users[$idea->worker_id] : '',
+                    'qc' => (array_key_exists($idea->qc_id,$users))? $users[$idea->qc_id] : '',
+                    'status' => $this->statusJob($idea->status, $idea->redo, $idea->reason),
+                    'updated_at' => $idea->updated_at,
+                    'date' => ($created->diff($now)->days < 1) ? 'today' : $created->diffForHumans($now)
+
+                ];
+            }
+        }
+        return view('admin/list_idea',compact('lists'));
+    }
+
+    private static function getListIdea($where)
+    {
+        $lists = \DB::table('ideas')
+            ->select('id','name','title','path','require','worker_id','qc_id','status','redo','reason','updated_at')
+            ->where($where)
+            ->orderBy('id','DESC')
+            ->get()
+            ->toArray();
+        return $lists;
     }
 
     /*

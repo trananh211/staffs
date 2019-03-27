@@ -49,6 +49,7 @@ Route::middleware('auth')->group(function () {
     Route::get('supplier','WooController@supplier');
     Route::get('new-job-idea','WooController@createNewJob');
     Route::post('new-job-idea','WooController@saveNewJob')->name('ajaxnewjob.action');
+    Route::get('list-idea','WooController@listIdea');
     /*End QC + Admin*/
 
     /*Staff*/
