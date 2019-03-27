@@ -121,5 +121,20 @@ class WooController extends Controller
         $work = new Working();
         return view('/admin/supplier',['lists'=> $work->supplier()]);
     }
+
+    public function createNewJob()
+    {
+        $work = new Working();
+        $users = $work->listWorker();
+        return view('/admin/newjob')->with(compact('users'));
+    }
+
+    public function saveNewJob(Request $request)
+    {
+        $work = new Working();
+        return $work->saveNewJob($request);
+    }
+
+
     /*End Admin + QC*/
 }

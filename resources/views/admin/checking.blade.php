@@ -124,7 +124,7 @@
                                                                     <div class="card-content center">
                                                                         <img
                                                                             class="materialboxed responsive-img initialized"
-                                                                            src="{{ asset(env('WORKING_DIR').$list->filename) }}"
+                                                                            src="{{ asset(env('DIR_WORKING').$list->filename) }}"
                                                                             alt="">
                                                                     </div>
                                                                 </div>
