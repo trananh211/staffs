@@ -11,11 +11,12 @@
                         <thead>
                         <tr>
                             <th>#</th>
-                            <th>Job</th>
+                            <th>Image</th>
                             <th>Name</th>
-                            <th>Status</th>
+                            <th>Job</th>
                             <th>Designer</th>
                             <th>Qc</th>
+                            <th>Status</th>
                             <th>Date</th>
                             <th>Action</th>
                         </tr>
@@ -23,11 +24,12 @@
                         <tfoot>
                         <tr>
                             <th>#</th>
-                            <th>Job</th>
+                            <th>Image</th>
                             <th>Name</th>
-                            <th>Status</th>
+                            <th>Job</th>
                             <th>Designer</th>
                             <th>Qc</th>
+                            <th>Status</th>
                             <th>Date</th>
                             <th>Action</th>
                         </tr>
@@ -36,14 +38,15 @@
                         @if(sizeof($lists) > 0)
                             @foreach($lists as $key => $list)
                                 <tr>
-                                    <th>{{ $key+1 }}</th>
-                                    <th>{{ $list['id'] }}</th>
-                                    <th>{{ $list['name'] }}</th>
-                                    <th>{{ $list['status'] }}</th>
-                                    <th>{{ $list['worker'] }}</th>
-                                    <th>{{ $list['qc'] }}</th>
-                                    <th>{{ $list['date'] }}</th>
-                                    <th>Action</th>
+                                    <td>{{ $key+1 }}</td>
+                                    <td>{!! thumb($list['path'],50,$list['name']) !!}</td>
+                                    <td>{{ $list['title'] }}</td>
+                                    <td>Idea-{{ $list['id'] }}</td>
+                                    <td>{{ $list['worker'] }}</td>
+                                    <td>{{ $list['qc'] }}</td>
+                                    <td>{!! statusJob($list['status'], $list['redo'], $list['reason']) !!}</td>
+                                    <td>{!! $list['date'] !!}</td>
+                                    <td>Action</td>
                                 </tr>
                             @endforeach
                         @else

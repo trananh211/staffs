@@ -51,28 +51,6 @@ class Working extends Model
         return '<img src="' . $path.$name . '" class="img-thumbnail" width="150" title="' . $name . '"/>';
     }
 
-    private static function statusJob($status, $redo, $reason)
-    {
-        if ($status == env('STATUS_WORKING_NEW')) {
-            $class = 'amber lighten-3';
-            $st = 'New';
-        } else if ($status == env('STATUS_WORKING_CHECK')) {
-            $class = 'blue lighten-3';
-            $st = 'Check';
-        } else if ($status == env('STATUS_WORKING_CUSTOMER')) {
-            $class = 'purple lighten-3';
-            $st = 'ReCheck';
-        } else if ($status == env('STATUS_WORKING_DONE')) {
-            $class = 'green lighten-3';
-            $st = 'Done';
-        }
-        $str = '<div class="'. $class .'">'. $st .'</div>';
-        if ($redo == 1){
-            $str .= '<div class="btn-floating btn-large waves-effect waves-light red" title="'.$reason.'">R</div>';
-        }
-        return $str;
-    }
-
     /*DASHBOARD*/
     public function adminDashboard()
     {
@@ -395,6 +373,20 @@ class Working extends Model
         ]);
     }
 
+    public function doNewIdea()
+    {
+        $uid = Auth::id();
+        $users = \DB::table('users')->pluck('name','id')->toArray();
+        $where = [
+            ['worker_id','=',$uid],
+            ['status','=',env('STATUS_WORKING_NEW')],
+        ];
+        $lists = $this->getListIdea($where);
+        $now = date("Y-m-d H:i:s");
+        return view('staff/new_idea',compact('lists','users','now'));
+    }
+    /*Staff*/
+
     /*Admin + QC*/
     /*
      *  Idea Job
@@ -489,10 +481,11 @@ class Working extends Model
                     'require' => $idea->require,
                     'worker' => (array_key_exists($idea->worker_id,$users))? $users[$idea->worker_id] : '',
                     'qc' => (array_key_exists($idea->qc_id,$users))? $users[$idea->qc_id] : '',
-                    'status' => $this->statusJob($idea->status, $idea->redo, $idea->reason),
+                    'status' => $idea->status,
+                    'redo' => $idea->redo,
+                    'reason' => $idea->reason,
                     'updated_at' => $idea->updated_at,
-                    'date' => ($created->diff($now)->days < 1) ? 'today' : $created->diffForHumans($now)
-
+                    'date' => compareTime($idea->updated_at, date("Y-m-d H:i:s"))
                 ];
             }
         }

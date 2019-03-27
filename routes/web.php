@@ -60,6 +60,7 @@ Route::middleware('auth')->group(function () {
     Route::get('staff-done-job','WooController@staffDoneJob');
     Route::post('staff-upload', 'WooController@staffUpload')->name('staff.upload');
     Route::post('/ajax_upload/action', 'WooController@action')->name('ajaxupload.action');
+    Route::get('new-idea','WooController@doNewIdea');
     /*End Staff*/
 });
 

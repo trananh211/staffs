@@ -83,6 +83,12 @@ class WooController extends Controller
         $work = new Working();
         return $work->staffUpload($request);
     }
+
+    public function doNewIdea()
+    {
+        $work = new Working();
+        return $work->doNewIdea();
+    }
     /*End Staff*/
 
     /*Admin + QC*/

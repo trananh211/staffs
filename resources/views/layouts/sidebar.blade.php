@@ -406,18 +406,6 @@
                         </ul>
                     </div>
                 </li>
-                <li class="no-padding">
-                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">ring_volume</i>
-                        New Idea
-                        <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
-                    </a>
-                    <div class="collapsible-body">
-                        <ul>
-                            <li><a href="{{ url('list-idea') }}">List Idea</a></li>
-                            <li><a href="{{ url('new-job-idea') }}">Create New Job</a></li>
-                        </ul>
-                    </div>
-                </li>
             @endif
 
             @if( in_array( Auth::user()->level, array( env('ADMIN'),env('QC'),env('SADMIN')) ) )
@@ -434,10 +422,26 @@
                         </ul>
                     </div>
                 </li>
+
+                <li class="no-padding">
+                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">ring_volume</i>
+                        New Idea
+                        <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
+                    </a>
+                    <div class="collapsible-body">
+                        <ul>
+                            <li><a href="{{ url('list-idea') }}">List Idea</a></li>
+                            <li><a href="{{ url('new-job-idea') }}">Create New Job</a></li>
+                        </ul>
+                    </div>
+                </li>
             @endif
             @if( Auth::user()->level == env('WORKER'))
                 <li class="no-padding"><a class="waves-effect waves-grey" href="{{ url('staff-dashboard') }}">
                         <i class="material-icons">trending_up</i>Workings</a>
+                </li>
+                <li class="no-padding"><a class="waves-effect waves-grey" href="{{ url('new-idea') }}">
+                        <i class="material-icons">ring_volume</i>New Idea</a>
                 </li>
             @endif
         </ul>
