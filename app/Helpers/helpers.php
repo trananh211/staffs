@@ -2,11 +2,6 @@
 
 use Carbon\Carbon;
 
-function helloWorld()
-{
-    return '<b>Hello, World!</b>';
-}
-
 function statusJob($status, $redo, $reason)
 {
     if ($status == env('STATUS_WORKING_NEW')) {

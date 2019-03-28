@@ -48,7 +48,7 @@
                                     <td>{!! statusJob($list['status'], $list['redo'], $list['reason']) !!}</td>
                                     <td>{!! $list['date'] !!}</td>
                                     <td>
-                                        <a class="waves-effect waves-light btn modal-trigger"
+                                        <a class="waves-effect waves-light btn modal-trigger m-b-xs"
                                            href="#modal{{ $key }}">
                                             Chi tiết
                                         </a>
@@ -56,58 +56,6 @@
                                             <div class="modal-content">
                                                 <h4>Check Idea</h4>
                                                 <div class="card-content">
-                                                    @if(array_key_exists($list['id'],$idea_files))
-                                                        <div class="col s12 m12 l12">
-                                                            <div class="card">
-                                                                <div class="card-content">
-                                                                    <a class="js-send-qc waves-effect waves-light btn green m-b-xs"
-                                                                       href="#"
-                                                                       data-url="{{ url('ajax-idea-send-qc') }}"
-                                                                       data-id="{{ $list['id'] }}"
-                                                                    >
-                                                                        <i class="material-icons left">present_to_all</i>Gửi
-                                                                        Support
-                                                                    </a>
-                                                                    <a class="waves-effect waves-light btn red m-b-xs js-btn-redo"
-                                                                       order_id="{{ $list['id'] }}">
-                                                                        <i class="material-icons left">thumb_down</i>Làm
-                                                                        lại</a>
-                                                                    <div class="row js-redo-form-{{ $list['id'] }}"
-                                                                         style="display: none;">
-                                                                        <form action="#" id="js-redo-idea" enctype="multipart/form-data"
-                                                                              class="col s12" >
-                                                                            {{ csrf_field() }}
-                                                                            <div class="row">
-                                                                                <div class="input-field col s10">
-                                                                                    <i class="material-icons prefix">mode_edit</i>
-                                                                                    <input type="text" style="display: none;"
-                                                                                           data-url="{{ url('ajax-redo-idea') }}"
-                                                                                           class="url"
-                                                                                    />
-                                                                                    <input type="text"
-                                                                                           style="display: none;"
-                                                                                           class="js-idea-id"
-                                                                                           name="idea_id"
-                                                                                           value="{{ $list['id'] }}"/>
-                                                                                    <textarea id="icon_prefix2"
-                                                                                              name="reason"
-                                                                                              class="js-idea-reason materialize-textarea"></textarea>
-                                                                                    <label for="icon_prefix2">Lý
-                                                                                        do</label>
-                                                                                </div>
-                                                                                <div class="col s2">
-                                                                                    <a class="js-redo-button btn-floating btn-large waves-effect waves-light red"
-                                                                                        data-id="{{ $list['id'] }}"
-                                                                                    ><i class="material-icons">send</i>
-                                                                                    </a>
-                                                                                </div>
-                                                                            </div>
-                                                                        </form>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    @endif
                                                     <div class="col s6 m12 l6">
                                                         @if ($list['redo'] == 1)
                                                             <div class="card red lighten-1">
@@ -157,6 +105,10 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        <a class="js-upload-idea waves-effect waves-light btn green m-b-xs"
+                                            data-id="{{ $list['id'] }}}" data-url="{{ url('ajax-upload-idea') }}"
+                                        >Đã upload
+                                        </a>
                                     </td>
                                 </tr>
                             @endforeach

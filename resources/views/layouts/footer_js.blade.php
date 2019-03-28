@@ -28,8 +28,6 @@
         myWindow=window.open(url,'','width=' + width + ',height=' + height);
     }
 
-
-
     $(document).ready(function () {
         $.ajaxSetup({
             headers: {

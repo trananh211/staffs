@@ -67,9 +67,9 @@ class WooController extends Controller
         return $work->staffGetJob();
     }
 
-    public function staffDoneJob()
+    public function staffDoneJob($up_id)
     {
-        return view('staff/staff_done');
+        return view('staff/staff_done',['up_id'=>$up_id]);
     }
 
     public function staffUpload()
@@ -82,6 +82,12 @@ class WooController extends Controller
     {
         $work = new Working();
         return $work->staffUpload($request);
+    }
+
+    public function uploadIdea(Request $request)
+    {
+        $work = new Working();
+        return $work->uploadIdea($request);
     }
 
     public function doNewIdea()
@@ -147,5 +153,28 @@ class WooController extends Controller
         return $work->listIdea();
     }
 
+    public function listIdeaDone()
+    {
+        $work = new Working();
+        return $work->listIdeaDone();
+    }
+
+    public function axIdeaSendQc(Request $request)
+    {
+        $work = new Working();
+        return $work->axIdeaSendQc($request);
+    }
+
+    public function axRedoIdea(Request $request)
+    {
+        $work = new Working();
+        return $work->axRedoIdea($request);
+    }
+
+    public function axUploadIdea(Request $request)
+    {
+        $work = new Working();
+        return $work->axUploadIdea($request);
+    }
     /*End Admin + QC*/
 }

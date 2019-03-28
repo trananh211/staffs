@@ -27,10 +27,12 @@
     $(document).ready(function () {
         $('#upload_form').on('submit', function (event) {
             event.preventDefault();
+            var url = $('#js-info-job span.url').attr('data-url');
             $.ajax({
-                url: "{{ route('ajaxupload.action') }}",
+                url: url,
                 method: "POST",
                 data: new FormData(this),
+                // dataType: 'html',
                 dataType: 'JSON',
                 contentType: false,
                 cache: false,
@@ -41,7 +43,7 @@
                     if ($.trim(data.uploaded_image).length > 0){
                         $('#uploaded_image').html(data.uploaded_image);
                     }
-                    // console.log(data);
+                    console.log(data);
                 }
             })
         });

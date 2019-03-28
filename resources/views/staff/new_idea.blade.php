@@ -7,7 +7,7 @@
         <div class="col s12 m12 l12">
             <div class="card">
                 <div class="card-content">
-                    <a onclick="newWindow('{{ url('staff-done-job') }}', 1200, 800)"
+                    <a onclick="newWindow('{{ url('staff-done-job/'.env('UP_IDEA')) }}', 1200, 800)"
                        class="waves-effect waves-light btn green m-b-xs">
                         <i class="material-icons left">present_to_all</i>Trả hàng
                     </a>
@@ -46,9 +46,9 @@
                                 <tr>
                                     <td>{{ $key+1 }}</td>
                                     <td>{{ $list->title }}</td>
-                                    <td>Idea-{{ $list->id }}</td>
+                                    <td>Idea-PID-{{ $list->idea_id }}</td>
                                     <td>{{ (array_key_exists($list->qc_id,$users))? $users[$list->qc_id] : '' }}</td>
-                                    <td>{!! statusJob($list->status, $list->redo, $list->reason) !!}</td>
+                                    <td>{!! statusJob($list->ideas_status, $list->redo, $list->reason) !!}</td>
                                     <td>{!! compareTime($list->updated_at, $now) !!}</td>
                                     <td>
                                         <!-- Modal Trigger -->
@@ -63,8 +63,8 @@
                                                     <div class="card">
                                                         <div class="card-content">
                                                             <ul>
-                                                                <li>Bạn phải lưu file Mockup với tên : <b>Idea-{{ $list->id }}_mockup </b></li>
-                                                                <li>Bạn phải lưu file Design với tên : <b>Idea-{{ $list->id }}_1, Idea-{{ $list->id }}_2,
+                                                                <li>Bạn phải lưu file Mockup với tên : <b>Idea-PID-{{ $list->idea_id }}_mockup </b></li>
+                                                                <li>Bạn phải lưu file Design với tên : <b>Idea-PID-{{ $list->idea_id }}_1, Idea-{{ $list->idea_id }}_2,
                                                                         ... </b></li>
                                                                 <li>Và sử dụng những yêu cầu dưới đây để làm file sản xuất.</li>
                                                             </ul>
@@ -77,10 +77,10 @@
                                                         <div class="card-content">
                                                             <p class="card-title">Image</p>
                                                             <div class="material-placeholder" style="">
-                                                                 {!!   thumb_w($list->path, '320' ,$list->name) !!}
+                                                                 {!!   thumb_w($list->ideas_path, '320' ,$list->ideas_name) !!}
                                                             </div>
                                                             <div>
-                                                                <a class="btn" href="{{ url($list->path) }}" download>Download</a>
+                                                                <a class="btn" href="{{ url($list->ideas_path) }}" download>Download</a>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -91,7 +91,7 @@
                                                         <div class="card red lighten-1">
                                                             <div class="card-content">
                                                                 <p class="card-title">Redo</p>
-                                                                {{ $list->reason }}
+                                                                {!! html_entity_decode($list->reason) !!}
                                                             </div>
                                                         </div>
                                                     @endif
