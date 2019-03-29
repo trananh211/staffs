@@ -14,6 +14,7 @@ class Api extends Model
         \Log::info($str);
     }
 
+    /*WooCommerce API*/
     protected function getConnectStore($url, $consumer_key, $consumer_secret)
     {
         $woocommerce = new Client(
@@ -40,8 +41,7 @@ class Api extends Model
             $lst_product = array();
             foreach ($data['line_items'] as $key => $value) {
                 $str = "";
-                if (in_array($data['status'], array('failed','cancelled')))
-                {
+                if (in_array($data['status'], array('failed', 'cancelled'))) {
                     continue;
                 }
                 foreach ($value['meta_data'] as $item) {
@@ -68,8 +68,7 @@ class Api extends Model
                 $lst_product[] = $value['product_id'];
             }
         }
-        if (sizeof($db) > 0)
-        {
+        if (sizeof($db) > 0) {
             \DB::beginTransaction();
             try {
                 \DB::table('woo_orders')->insert($db);
@@ -81,7 +80,7 @@ class Api extends Model
                 $save = "[Error] Save to database error.";
                 \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
             }
-            $this->log($save."\n");
+            $this->log($save . "\n");
         }
 
         /*Create new product*/
@@ -145,4 +144,8 @@ class Api extends Model
             $this->log('All ' . sizeof($lst) . ' products had add to database before.');
         }
     }
+
+    /*End WooCommerce API*/
+
+
 }

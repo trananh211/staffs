@@ -113,7 +113,7 @@
                                                             <div class="card red lighten-1">
                                                                 <div class="card-content">
                                                                     <p class="card-title">Redo</p>
-                                                                    {{ $list['reason'] }}
+                                                                    {!! html_entity_decode($list['reason']) !!}
                                                                 </div>
                                                             </div>
                                                         @endif

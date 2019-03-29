@@ -70,6 +70,8 @@ Route::middleware('auth')->group(function () {
     /*End Staff*/
 });
 
+Route::get('test','GoogleController@test');
+
 Auth::routes();
 
 //Route::filter('auth', function()
