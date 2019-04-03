@@ -28,17 +28,11 @@
         myWindow=window.open(url,'','width=' + width + ',height=' + height);
     }
 
-
-
     $(document).ready(function () {
         $.ajaxSetup({
-
             headers: {
-
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-
             }
-
         });
         var table = $('#review-job').DataTable();
 
@@ -73,5 +67,35 @@
                 }
             })
         } );
+
+        $('#js_new_job').on('submit', function (event) {
+            event.preventDefault();
+            $.ajax({
+                url: "{{ route('ajaxnewjob.action') }}",
+                method: "POST",
+                data: new FormData(this),
+                dataType: 'json',
+                // dataType: 'html',
+                cache: false,
+                processData: false,
+                contentType: false,
+                success: function (data) {
+                    $('#message').css('display', 'block');
+                    $('#message').html(data.message);
+                    if ($.trim(data.img).length > 0){
+                        $('#uploaded_image').html(data.img);
+                    }
+                    $('#js_new_job')[0].reset();
+                    // console.log(data);
+                    // console.log(data.message);
+                    // console.log(data.img);
+                },
+                error: function (error) {
+                    console.log('error');
+                    Materialize.toast('Xảy ra lỗi. Mời bạn thử lại 1 lần nữa', 5000);
+                    window.location.reload().delay(5000);
+                }
+            })
+        });
     });
 </script>

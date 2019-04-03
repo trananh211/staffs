@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 class ApiController extends Controller
 {
 
+    /*WOOCOMMERCE API*/
     public function newOrder(Request $request)
     {
         /*Get Header Request*/
@@ -64,5 +65,7 @@ class ApiController extends Controller
             ->toArray();
         $api->creatOrder($data,$store[0]);
     }
+
+    /*END WOOCOMMERCE API*/
 }
 

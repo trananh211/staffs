@@ -14,6 +14,7 @@ class Api extends Model
         \Log::info($str);
     }
 
+    /*WooCommerce API*/
     protected function getConnectStore($url, $consumer_key, $consumer_secret)
     {
         $woocommerce = new Client(
@@ -33,13 +34,14 @@ class Api extends Model
     {
         $db = array();
         $this->log('=====================CREATE NEW ORDER=======================');
+        echo "<pre>";
+        print_r($data);
         if (sizeof($data['line_items']) > 0) {
             $this->log('Store ' . $woo_id . ' has new ' . sizeof($data['line_items']) . ' order item.');
             $lst_product = array();
             foreach ($data['line_items'] as $key => $value) {
                 $str = "";
-                if (in_array($data['status'], array('failed','cancelled')))
-                {
+                if (in_array($data['status'], array('failed', 'cancelled'))) {
                     continue;
                 }
                 foreach ($value['meta_data'] as $item) {
@@ -53,6 +55,11 @@ class Api extends Model
                     'product_id' => $value['product_id'],
                     'product_name' => $value['name'],
                     'quantity' => $value['quantity'],
+                    'payment_method' => $data['payment_method_title'],
+                    'customer_note' => trim(htmlentities($data['customer_note'])),
+                    'transaction_id' => $data['transaction_id'],
+                    'price' => $value['price'],
+                    'variation_id' => $value['variation_id'],
                     'email' => $data['billing']['email'],
                     'detail' => trim(htmlentities($str)),
                     'created_at' => date("Y-m-d H:i:s"),
@@ -61,8 +68,7 @@ class Api extends Model
                 $lst_product[] = $value['product_id'];
             }
         }
-        if (sizeof($db) > 0)
-        {
+        if (sizeof($db) > 0) {
             \DB::beginTransaction();
             try {
                 \DB::table('woo_orders')->insert($db);
@@ -74,7 +80,7 @@ class Api extends Model
                 $save = "[Error] Save to database error.";
                 \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
             }
-            $this->log($save."\n");
+            $this->log($save . "\n");
         }
 
         /*Create new product*/
@@ -138,4 +144,8 @@ class Api extends Model
             $this->log('All ' . sizeof($lst) . ' products had add to database before.');
         }
     }
+
+    /*End WooCommerce API*/
+
+
 }

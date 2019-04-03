@@ -47,6 +47,14 @@ Route::middleware('auth')->group(function () {
     Route::get('review-customer','WooController@reviewCustomer');
     Route::post('ajax_done_job/action', 'WooController@eventQcDone')->name('ajaxdonejob.action');
     Route::get('supplier','WooController@supplier');
+    Route::get('new-job-idea','WooController@createNewJob');
+    Route::post('new-job-idea','WooController@saveNewJob')->name('ajaxnewjob.action');
+    Route::get('list-idea','WooController@listIdea');
+    Route::get('list-idea-done','WooController@listIdeaDone');
+    Route::post('ajax-idea-send-qc','WooController@axIdeaSendQc');
+    Route::post('ajax-redo-idea','WooController@axRedoIdea')->name('ajaxredoidea.action');
+    Route::post('ajax-upload-idea','WooController@axUploadIdea');
+
     /*End QC + Admin*/
 
     /*Staff*/
@@ -54,11 +62,15 @@ Route::middleware('auth')->group(function () {
     Route::get('staff-get-job','WooController@staffGetJob');
     Route::get('detail-order/{order_id}','WooController@detailOrder');
 
-    Route::get('staff-done-job','WooController@staffDoneJob');
+    Route::get('staff-done-job/{up_id}','WooController@staffDoneJob');
     Route::post('staff-upload', 'WooController@staffUpload')->name('staff.upload');
-    Route::post('/ajax_upload/action', 'WooController@action')->name('ajaxupload.action');
+    Route::post('ajax_upload/action', 'WooController@action')->name('ajaxupload.action');
+    Route::get('new-idea','WooController@doNewIdea');
+    Route::post('ideaUpload', 'WooController@uploadIdea')->name('ajaxIdeaUpload.action');
     /*End Staff*/
 });
+
+Route::get('test','GoogleController@test');
 
 Auth::routes();
 

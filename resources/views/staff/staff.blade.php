@@ -10,7 +10,7 @@
                     <a href="{{ url('staff-get-job') }}" class="waves-effect waves-light btn indigo m-b-xs">
                         <i class="material-icons left">play_for_work</i>Nhận việc mới
                     </a>
-                    <a onclick="newWindow('{{ url('staff-done-job') }}', 1200, 800)"
+                    <a onclick="newWindow('{{ url('staff-done-job/'.env('UP_ORDER')) }}', 1200, 800)"
                        class="waves-effect waves-light btn green m-b-xs">
                         <i class="material-icons left">present_to_all</i>Trả hàng
                     </a>
