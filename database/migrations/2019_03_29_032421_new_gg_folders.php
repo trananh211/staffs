@@ -17,7 +17,8 @@ class NewGgFolders extends Migration
             $table->bigIncrements('id');
             $table->string('name',255);
             $table->string('path',255);
-            $table->string('google_id', 255);
+            $table->string('parent_path',255);
+            $table->string('dir', 355);
             $table->tinyInteger('status')->default(0)->comment('0: chưa tạo, 1: đã tạo');
             $table->timestamps();
         });
