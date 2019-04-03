@@ -38,10 +38,9 @@ Route::middleware('auth')->group(function () {
     Route::get('woo-list-store','WooController@listStore');
     Route::get('woo-webhooks','WooController@webhooks');
     /*End S Admin*/
-    Route::get('checking','WooController@checking');
-    /**/
 
     /*QC + Admin*/
+    Route::get('checking','WooController@checking');
     Route::get('send-customer/{order_id}','WooController@sendCustomer');
     Route::post('redo-designer','WooController@redoDesigner');
     Route::get('review-customer','WooController@reviewCustomer');

@@ -284,91 +284,92 @@ class Working extends Model
     /*Hàm trả job của nhân viên*/
     public function staffUpload($request)
     {
-        $rq = $request->all();
-        $files = $rq['files'];
-        $ext = ['jpg', 'jpeg', 'png'];
-        $return = array();
-        $message = '';
-        $uploaded_image = '';
-        if ($request->hasfile('staff_done')) {
-            $list_order_id = array(); /*liệt kê toàn bộ id order cho vào mảng để query*/
-            $number_order_id = array(); /*nhóm các number id với 1 order id vào chung 1 mảng*/
-            $array_filename = array(); /*nhóm các number id với filename vào chung 1 mảng giống với $number_order_id*/
-            /*Validate định dạng file*/
-            foreach ($files as $file) {
-                $extension = strtolower($file->getClientOriginalExtension());
-                $filename = $file->getClientOriginalName();
-                if (in_array(strtolower($extension), $ext)) {
-                    if ($file->getSize() <= 10000000) {
-                        /*Kiểm tra tên xem có đúng định dạng upload hay không*/
-                        $name = pathinfo($filename, PATHINFO_FILENAME);
-                        if (strpos($name, '-PID-') === false) {
-                            $message .= $this->getErrorMessage('File ' . $filename . ' sai định dạng tên hoặc -PID- cần viết hoa. Mời đổi lại tên.');
+        $uid = $this->checkAuth();
+        if ($uid) {
+            $rq = $request->all();
+            //ham lọc file ảnh trước khi upload - sẽ move vào DIR_TMP trước tiên
+            $tmp = $this->filterFileUpload($rq['files'], '-PID-');
+            $message = $tmp['message'];
+            $files = $tmp['files'];
+            $img = '';
+            if (sizeof($files) > 0) {
+                /*Kiểm tra file đang làm việc*/
+                $lsts = \DB::table('workings')->select('id', 'number')
+                    ->where([
+                        'status' => env('STATUS_WORKING_NEW'),
+                        'worker_id' => $uid
+                    ])->get()->toArray();
+                if (sizeof($lsts) > 0) {
+                    $ar_filecheck = array();
+                    foreach ($lsts as $lst) {
+                        $ar_filecheck[$lst->number][] = $lst->id;
+                    }
+                    $mockup = array();
+                    $file_upload = array();
+                    /*Bắt đầu lọc file design up lên*/
+                    foreach ($files as $file) {
+                        $temp = explode('-PID-', $file);
+                        $file_key = $temp[0];
+                        $file_id = (int)$temp[1];
+                        $file_id_text = $temp[1];
+                        /*Nếu định dạng file trả về đúng kiểu*/
+                        if (array_key_exists($file_key, $ar_filecheck) && in_array($file_id, $ar_filecheck[$file_key])) {
+                            if (strpos(strtolower($file_id_text), 'mockup') !== false) {
+                                $mockup[] = $file_id;
+                            }
+                            $file_upload[$file_id][] = $file;
                         } else {
-                            /*Định dạng file: S247-USA-3156-PID-3.jpg*/
-                            $split_name = explode('-PID-', $name);
-                            $list_order_id[] = $split_name[1];
-                            $number_order_id[$split_name[1]] = $split_name[0];
-                            $array_filename[$split_name[1]] = $file;
+                            $message .= $this->getErrorMessage('File ' . $file . ': Bạn không làm job này.');
                         }
-                    } else {
-                        $message .= $this->getErrorMessage('File ' . $filename . ' lớn hơn 10MB');
                     }
-                } else {
-                    $message .= $this->getErrorMessage('File ' . $filename . ' không phải là file ảnh');
-                }
-            }
-            /*tìm kiếm file có tồn tại trong Database hay không*/
-            if (sizeof($list_order_id) > 0) {
-                $lst = \DB::table('workings')
-                    ->select('id', 'number', 'woo_order_id')
-                    ->whereIn('id', $list_order_id)
-                    ->get()->toArray();
-                if (sizeof($lst) > 0) {
-                    if (!File::exists(public_path(env('DIR_WORKING')))) {
-                        File::makeDirectory(public_path(env('DIR_WORKING')), $mode = 0777, true, true);
-                    }
-//                    $db_update = array();
-                    foreach ($lst as $item) {
-                        if (isset($number_order_id[$item->id]) && $item->number == $number_order_id[$item->id]) {
-                            $new_name = $array_filename[$item->id]->getClientOriginalName();
-                            if ($array_filename[$item->id]->move(public_path(env('DIR_WORKING')), $new_name)) {
-                                $message .= $this->getSuccessMessage('Upload thành công file ' . $new_name);
-                                $uploaded_image .= thumb(env('DIR_WORKING'), 50, $new_name);
-                                $ud_working = \DB::table('workings')->where('id', $item->id)
-                                    ->update([
-                                        'filename' => $new_name,
+                    $deleted = array();
+                    $db_new_working_files = array();
+                    /*Bắt đầu upload file và delete file*/
+                    foreach ($file_upload as $key_id => $f_up) {
+                        /*Nếu tồn tại file mockup*/
+                        if (in_array($key_id, $mockup)) {
+                            foreach ($f_up as $f) {
+                                if (\File::move(env('DIR_TMP') . $f, env('DIR_CHECK') . $f)) {
+                                    $db_new_working_files[] = [
+                                        'name' => $f,
+                                        'path' => env('DIR_CHECK'),
+                                        'worker_id' => $uid,
+                                        'working_id' => $key_id,
+                                        'is_mockup' => (strpos(strtolower($f), 'mockup') !== false) ? 1 : 0,
                                         'status' => env('STATUS_WORKING_CHECK'),
+                                        'created_at' => date("Y-m-d H:i:s"),
                                         'updated_at' => date("Y-m-d H:i:s")
-                                    ]);
-                                if ($ud_working) {
-                                    $update_woo_order[] = $item->woo_order_id;
+                                    ];
+                                    $message .= $this->getSuccessMessage('File ' . $f . ' tải lên thành công');
+                                    $img .= thumb(env('DIR_CHECK') . $f, 50, $f);
+                                } else {
+                                    $message .= $this->getErrorMessage('File ' . $f . ' không thể tải lên lúc này. Mời thử lại');
                                 }
-                            } else {
-                                $message .= $this->getErrorMessage('Upload lỗi file :' . $new_name . '. Làm ơn thử lại nhé.');
                             }
                         } else {
-                            $message .= $this->getErrorMessage('File ' . $item->number . ' không tồn tại trong hệ thống.
-                             Kiểm tra lại tên file.');
+                            $deleted = array_merge($deleted, $f_up);
                         }
                     }
-                    if (sizeof($update_woo_order) > 0) {
-                        \DB::table('woo_orders')->whereIn('id', $update_woo_order)
+                    if (sizeof($db_new_working_files) > 0) {
+                        \DB::table('workings')->whereIn('id', $mockup)
                             ->update([
                                 'status' => env('STATUS_WORKING_CHECK'),
                                 'updated_at' => date("Y-m-d H:i:s")
                             ]);
+                        \DB::table('working_files')->insert($db_new_working_files);
+                    }
+                    if (sizeof($deleted) > 0) {
+                        \File::delete($deleted);
                     }
                 } else {
-                    $message .= $this->getErrorMessage('File ' . implode(',', $number_order_id) . ' 
-                    không tồn tại trong hệ thống. Kiểm tra lại tên file.');
+                    $message .= $this->getErrorMessage('Hiện tại bạn không có job. Bạn làm sai quy trình.');
                 }
             }
+            return response()->json([
+                'message' => $this->getMessage($message),
+                'uploaded_image' => $img
+            ]);
         }
-        return response()->json([
-            'message' => $this->getMessage($message),
-            'uploaded_image' => $uploaded_image
-        ]);
     }
 
     public function doNewIdea()
@@ -419,7 +420,7 @@ class Working extends Model
                             ];
                             $db_update_ideas[] = $idea_id;
                             $message .= $this->getSuccessMessage('Trả ' . $file . ' hàng thành công.');
-                            $img .= thumb(env('DIR_NEW'), 50, $file);
+                            $img .= thumb(env('DIR_NEW') . $file, 50, $file);
                         } else {
                             $message .= $this->getErrorMessage('File ' . $file . ' không thể trả vào lúc này. Vui lòng thử lại');
                         }
@@ -493,7 +494,7 @@ class Working extends Model
                     ];
 
                     $message .= $this->getSuccessMessage('Tạo job thành công : ' . $file);
-                    $img .= thumb(env('DIR_NEW'), 50, $file);
+                    $img .= thumb(env('DIR_NEW') . $file, 50, $file);
                 }
                 if (sizeof($delete_file) > 0) {
                     File::delete($delete_file);
@@ -648,93 +649,96 @@ class Working extends Model
         $where = [
             ['workings.status', '=', env('STATUS_WORKING_CHECK')]
         ];
-        return $this->orderStaff($where);
+        $lists = $this->orderStaff($where);
+
+        $where_working_file = [
+            ['working_files.status', '=', env('STATUS_WORKING_CHECK')]
+        ];
+        $images = $this->getWorkingFile($where_working_file);
+        return view('admin/checking')->with(compact('lists', 'images'));
+    }
+
+    private function getWorkingFile($where)
+    {
+        $return = array();
+        $files = \DB::table('working_files')->select('working_id', 'name', 'path')
+            ->where($where)
+            ->get();
+        if (sizeof($files) > 0) {
+            $return = array();
+            foreach ($files as $file) {
+                $return[$file->working_id][] = $file->path . $file->name;
+            }
+        }
+        return $return;
     }
 
     public function sendCustomer($order_id)
     {
-        \DB::beginTransaction();
-        try {
-            if (!File::exists(public_path(env('DIR_DONE')))) {
-                File::makeDirectory(public_path(env('DIR_DONE')), $mode = 0777, true, true);
-            }
-            /*Move file về thư mục done*/
-            $where = [
-                ['id', '=', $order_id],
-            ];
-            $working = \DB::table('workings')
-                ->select('id', 'filename', 'number', 'status', 'woo_order_id')
-                ->where($where)
-                ->first();
-            if ($working !== NULL) {
-                $path_file = public_path(env('DIR_WORKING')) . $working->filename;
-                if (File::exists($path_file) && $working->status == env('STATUS_WORKING_CHECK')) {
-                    if (File::move($path_file, public_path(env('DIR_DONE')) . $working->filename)) {
-                        \DB::table('workings')->where('id', $order_id)
-                            ->update([
-                                'status' => env('STATUS_WORKING_CUSTOMER'),
-                                'qc_id' => Auth::id(),
-                                'updated_at' => date("Y-m-d H:i:s")
-                            ]);
-                        \DB::table('woo_orders')->where('id', $working->woo_order_id)
-                            ->update([
-                                'status' => env('STATUS_WORKING_CUSTOMER'),
-                                'updated_at' => date("Y-m-d H:i:s")
-                            ]);
-                        /*Todo: Xây dựng hàm gửi email tới khách hàng ở đây */
+        /*Move file về thư mục done*/
+        $where = [
+            ['id', '=', $order_id],
+        ];
+        $working = \DB::table('workings')
+            ->select('id', 'number', 'status', 'woo_order_id')
+            ->where($where)
+            ->first();
+        if ($working !== NULL) {
+            \DB::table('workings')->where('id', $order_id)
+                ->update([
+                    'status' => env('STATUS_WORKING_CUSTOMER'),
+                    'qc_id' => Auth::id(),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+            \DB::table('woo_orders')->where('id', $working->woo_order_id)
+                ->update([
+                    'status' => env('STATUS_WORKING_CUSTOMER'),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+            \DB::table('working_files')->where('working_id', $order_id)
+                ->update([
+                    'status' => env('STATUS_WORKING_CUSTOMER'),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+            /*Todo: Xây dựng hàm gửi email tới khách hàng ở đây */
 
-                        /*End todo: Xây dựng hàm gửi email */
-                        $status = 'success';
-                        $message = "Thành công. Tiếp tục kiểm tra các đơn hàng còn lại.";
-                    } else {
-                        $status = 'error';
-                        $message = "Xảy ra lỗi. Không thể chuyển file " . $working->filename . " sang thư mục sẵn sàng.";
-                    }
-
-                } else {
-                    $status = 'error';
-                    $message = "Xảy ra lỗi. File không tồn tại hoặc đã được kiểm tra trước đó rồi.";
-                }
-            } else {
-                $status = 'error';
-                $message = "Xảy ra lỗi. Mời bạn thử lại. Nếu vẫn không được hãy báo với quản lý của bạn và kiểm tra đơn kế tiếp";
-            }
-            \Session::flash($status, $message);
-            $return = true;
-            $save = "Move products to database and folder successfully";
-            \DB::commit(); // if there was no errors, your query will be executed
-        } catch (\Exception $e) {
-            $return = false;
-            $save = "[Error] Can't move product to database and folder.";
-            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+            /*End todo: Xây dựng hàm gửi email */
+            $status = 'success';
+            $message = "Thành công. Tiếp tục kiểm tra các đơn hàng còn lại.";
+        } else {
+            $status = 'error';
+            $message = "Xảy ra lỗi. Mời bạn thử lại. Nếu vẫn không được hãy báo với quản lý của bạn và kiểm tra đơn kế tiếp";
         }
-        $this->log($save);
+        \Session::flash($status, $message);
         return back();
     }
 
     public function redoDesigner($request)
     {
         $rq = $request->all();
+        $reason = htmlentities(str_replace("\n", "<br />", trim($rq['reason'])));
         $update = [
             'status' => env('STATUS_WORKING_NEW'),
             'redo' => 1,
-            'reason' => $rq['reason'],
+            'reason' => $reason,
             'updated_at' => date("Y-m-d H:i:s"),
         ];
-        \DB::beginTransaction();
-        try {
-            \DB::table('workings')->where('id', $rq['order_id'])->update($update);
-            $return = true;
+        $files = \DB::table('working_files')->select('name', 'path')->where('working_id', $rq['order_id'])->get();
+        $deleted = array();
+        foreach ($files as $file) {
+            $deleted[] = public_path($file->path . $file->name);
+        }
+        if (\File::delete($deleted)) {
+            $status = 'success';
             $save = "Yêu cầu nhân viên làm lại thành công. Tiếp tục kiểm tra những đơn hàng còn lại.";
-            \Session::flash('success', $save);
-            \DB::commit(); // if there was no errors, your query will be executed
-        } catch (\Exception $e) {
-            $return = false;
+            \DB::table('workings')->where('id', $rq['order_id'])->update($update);
+            \DB::table('working_files')->where('working_id', $rq['order_id'])->delete();
+        } else {
+            $status = 'error';
             $save = "Yêu cầu nhân viên làm lại thất bại. Mời bạn thử lại";
-            \Session::flash('error', $save);
-            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
         }
         $this->log($save . "\n");
+        \Session::flash($status, $save);
         return back();
     }
 
@@ -744,7 +748,12 @@ class Working extends Model
         $where = [
             ['workings.status', '=', env('STATUS_WORKING_CUSTOMER')],
         ];
-        return $this->reviewWork($where);
+        $lists = $this->reviewWork($where);
+        $where_working_file = [
+            ['working_files.status', '=', env('STATUS_WORKING_CUSTOMER')]
+        ];
+        $images = $this->getWorkingFile($where_working_file);
+        return view('/admin/review_customer',compact('lists','images'));
     }
 
     public function supplier()

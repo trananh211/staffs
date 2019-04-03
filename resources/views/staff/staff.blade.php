@@ -38,35 +38,10 @@
                                     <td class="center"> {{ $list->number.'-PID-'.$list->id }}</td>
                                     <td class="center">{{ $list->name }}</td>
                                     <td class="center">
-                                        @if(time() - strtotime($list->updated_at) > 86400)
-                                            <div class="red darken-1" style="color: rgba(255, 255, 255, 0.901961);">
-                                                Nhanh lên
-                                            </div>
-                                        @else
-                                            <div class="green lighten-1">Hôm Nay</div>
-                                        @endif
+                                        {!! compareTime($list->updated_at, date("Y-m-d H:i:s")) !!}
                                     </td>
                                     <td class="center">
-                                        <?php
-                                        if ($list->status == 0) {
-                                            $class = 'amber lighten-3';
-                                            $status = 'Working';
-                                        } else if ($list->status == 1) {
-                                            $class = 'blue lighten-3';
-                                            $status = 'Check Again';
-                                        } else if ($list->status == 2) {
-                                            $class = 'purple lighten-3';
-                                            $status = 'Customer';
-                                        } else if ($list->status == 3) {
-                                            $class = 'green lighten-3';
-                                            $status = 'Done';
-                                        }
-                                        if ($list->redo == 1){
-                                            $class = 'red lighten-1';
-                                            $status = 'Redo';
-                                        }
-                                        ?>
-                                        <div class="{{ $class }}">{{ $status }}</div>
+                                        {!! statusJob($list->status, $list->redo, $list->reason) !!}
                                     </td>
                                     <td class="center">
                                         <a class="waves-effect m-b-xs" href="{{ url($list->permalink) }}"

@@ -39,43 +39,10 @@
                                     <td class="center">{{ $key+1 }}</td>
                                     <td class="center"> {{ $list->number.'-PID-'.$list->id }}</td>
                                     <td class="center">{{ $list->name }}</td>
-                                    <td class="center">
-                                        @if(time() - strtotime($list->updated_at) > 86400)
-                                            <div class="center red darken-1" style="color: rgba(255, 255, 255, 0.901961);">
-                                                Nhanh lên
-                                            </div>
-                                        @else
-                                            <div class="center green lighten-1">Hôm Nay</div>
-                                        @endif
-                                    </td>
-                                    <td class="center">
-                                        <?php
-                                        if ($list->status == 0) {
-                                            $class = 'amber lighten-3';
-                                            $status = 'Working';
-                                        } else if ($list->status == 1) {
-                                            $class = 'blue lighten-3';
-                                            $status = 'Check Again';
-                                        } else if ($list->status == 2) {
-                                            $class = 'purple lighten-3';
-                                            $status = 'Customer';
-                                        } else if ($list->status == 3) {
-                                            $class = 'green lighten-3';
-                                            $status = 'Done';
-                                        }
-                                        if ($list->redo == 1){
-                                            $class = 'red lighten-1';
-                                            $status = 'Redo';
-                                        }
-                                        ?>
-                                        <div class="center {{ $class }}">{{ $status }}</div>
-                                    </td>
-                                    <td class="center">
-                                        {{ $list->worker_name }}
-                                    </td>
-                                    <td class="center">
-                                        {{ $list->qc_name }}
-                                    </td>
+                                    <td class="center">{!! compareTime($list->updated_at, date("Y-m-d H:i:s")) !!}</td>
+                                    <td class="center">{!! statusJob($list->status, $list->redo, $list->reason) !!}</td>
+                                    <td class="center">{{ $list->worker_name }}</td>
+                                    <td class="center">{{ $list->qc_name }}</td>
                                     <td class="center">
                                         <a working_id="{{ $list->id }}" order_id="{{ $list->woo_order_id }}"
                                             class="waves-effect waves-light btn green m-b-xs js-done-job">
@@ -131,17 +98,22 @@
                                                                 <div class="card white">
                                                                     <span class="card-title">Ảnh thiết kế</span>
                                                                     <div class="card-content center">
-                                                                        <img
-                                                                            class="materialboxed responsive-img initialized"
-                                                                            src="{{ asset(env('DIR_DONE').$list->filename) }}"
-                                                                            alt="">
+                                                                        @if(array_key_exists($list->id, $images))
+                                                                            @foreach($images[$list->id] as $img)
+                                                                                <img
+                                                                                    class="materialboxed responsive-img initialized"
+                                                                                    src="{{ asset($img) }}"
+                                                                                    alt="">
+                                                                                <div>{{ pathinfo($img)['basename'] }}</div>
+                                                                            @endforeach
+                                                                        @endif
                                                                     </div>
                                                                 </div>
                                                                 @if ($list->redo == 1)
                                                                     <div class="card red lighten-1">
                                                                         <div class="card-content">
                                                                             <p class="card-title">Redo</p>
-                                                                            {{ $list->reason }}
+                                                                            {!! html_entity_decode($list->reason) !!}
                                                                             </p>
                                                                         </div>
                                                                     </div>
