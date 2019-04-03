@@ -613,7 +613,11 @@ class Working extends Model
     {
         $ext = ['jpg', 'jpeg', 'png'];
         $message = '';
-        $paths = array(env('DIR_TMP'), env('DIR_TMP'), env('DIR_WORKING'), env('DIR_CHECK'));
+        $paths = array(
+            env('DIR_TMP'),
+            env('DIR_NEW'),
+            env('DIR_WORKING'),
+            env('DIR_CHECK'));
         foreach ($paths as $path) {
             if (!File::exists(public_path($path))) {
                 File::makeDirectory(public_path($path), $mode = 0777, true, true);
