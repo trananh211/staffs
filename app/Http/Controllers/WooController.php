@@ -101,7 +101,7 @@ class WooController extends Controller
     public function checking()
     {
         $work = new Working();
-        return view('admin/checking',['lists' => $work->checking()]);
+        return $work->checking();
     }
 
     public function sendCustomer($order_id)
@@ -119,7 +119,7 @@ class WooController extends Controller
     public function reviewCustomer()
     {
         $work = new Working();
-        return view('/admin/review_customer',['lists'=> $work->reviewCustomer()]);
+        return $work->reviewCustomer();
     }
 
     public function eventQcDone(Request $request)
