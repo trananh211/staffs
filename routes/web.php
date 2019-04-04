@@ -70,6 +70,7 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::get('test','GoogleController@test');
+Route::get('test2','GoogleController@Fulfillment');
 
 Auth::routes();
 
