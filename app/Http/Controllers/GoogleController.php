@@ -116,4 +116,24 @@ class GoogleController extends Controller
     }
 
     /*END GOOGLE API*/
+
+
+    /*Fulfillment*/
+    public function fulfillment()
+    {
+        $lists = \DB::table('workings')
+            ->join('woo_orders', 'workings.woo_order_id', '=', 'woo_orders.id')
+            ->select(
+                'workings.id as working_id', 'workings.woo_order_id',
+                'woo_orders.id as woo_order_id', 'woo_orders.order_status','woo_orders.product_name'
+            )
+            ->where([
+                ['workings.status','=',env('STATUS_WORKING_DONE')]
+            ])
+            ->orderBy('workings.woo_order_id','ASC')
+            ->get()->toArray();
+        echo "<pre>";
+        print_r($lists);
+    }
+    /*End Fulfillment*/
 }

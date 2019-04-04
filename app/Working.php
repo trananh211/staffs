@@ -216,7 +216,7 @@ class Working extends Model
                     ->select('id', 'woo_info_id', 'order_id', 'product_id', 'number')
                     ->where('status', env('STATUS_WORKING_NEW'))
                     ->orderBy('id', 'ASC')
-                    ->limit(2)
+                    ->limit(5)
                     ->get()->toArray();
                 if (sizeof($jobs) > 0) {
                     $db = array();
@@ -781,6 +781,7 @@ class Working extends Model
                 ];
                 \DB::table('workings')->where('id', $working_id)->update($update);
                 \DB::table('woo_orders')->where('id', $order_id)->update($update);
+                \DB::table('working_files')->where('working_id', $working_id)->update($update);
                 $status = 'success';
                 $message = "Yêu cầu chuyển cho supplier thành công. Tiếp tục kiểm tra các đơn hàng còn lại.";
                 \DB::commit(); // if there was no errors, your query will be executed
