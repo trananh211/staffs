@@ -30,7 +30,7 @@ class Kernel extends ConsoleKernel
         $schedule->call('App\Http\Controllers\GoogleController@fulfillment')->everyMinute();
         /*Upload file image lên thư mục fulfill*/
         $schedule->call('App\Http\Controllers\GoogleController@uploadFileDriver')
-            ->everyTenMinutes();
+            ->everyMinute();
         $schedule->call('App\Http\Controllers\ApiController@checkPaymentAgain')->everyMinute()
         ->skip( function(){
             return false;
