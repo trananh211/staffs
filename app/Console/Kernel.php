@@ -26,8 +26,10 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')
         //          ->hourly();
-//        $schedule->call('App\Http\Controllers\ApiController@fulFill')
-//            ->dailyAt('00:30')->withoutOverlapping(10);
+        /*Export file excel lên thư mục fulfill*/
+        $schedule->call('App\Http\Controllers\GoogleController@fulfillment')
+            ->dailyAt('00:30')
+            ->withoutOverlapping(10);
     }
 
     /**

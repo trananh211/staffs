@@ -1,6 +1,12 @@
 <?php
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+
+function logfile($str)
+{
+    \Log::info($str);
+}
 
 function statusJob($status, $redo, $reason)
 {
