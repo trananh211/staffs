@@ -185,7 +185,9 @@ class Api extends Model
                 $return = false;
                 \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
             }
+            logfile('Đã kiểm tra check payment');
         } else {
+            logfile('Check Payment không tìm thấy pending');
             return false;
         }
     }
