@@ -19,6 +19,8 @@ class NewGgFolders extends Migration
             $table->string('path',255);
             $table->string('parent_path',255);
             $table->string('dir', 355);
+            $table->integer('product_id');
+            $table->smallInteger('level')->default(1);
             $table->tinyInteger('status')->default(0)->comment('0: chưa tạo, 1: đã tạo');
             $table->timestamps();
         });

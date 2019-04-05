@@ -17,6 +17,9 @@ $(document).ready(function () {
             data: {idea_id: idea_id},
             dataType: 'JSON',
             // dataType: 'html',
+            beforeSend: function() {
+                $('#loading').fadeIn();
+            },
             success: function (data) {
                 if (data.status === 'success') {
                     Materialize.toast(data.message, 5000);
@@ -29,10 +32,12 @@ $(document).ready(function () {
                     $('.js-remove-table').removeClass('js-remove-table');
                     Materialize.toast(data.message, 5000);
                 }
+                $('#loading').fadeOut();
                 // console.log('success');
                 // console.log(data);
             },
             error: function (error) {
+                $('#loading').fadeOut();
                 window.location.reload();
                 // console.log('error');
                 // console.log(error);

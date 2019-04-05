@@ -53,6 +53,12 @@ class ApiController extends Controller
         return $woo_id;
     }
 
+    public function checkPaymentAgain()
+    {
+        $api = new Api();
+        return $api->checkPaymentAgain();
+    }
+
     public function testNewOrder($filename)
     {
         $files = File::get(storage_path('file/'.$filename.'.json'));
