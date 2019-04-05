@@ -152,7 +152,42 @@ class Api extends Model
         }
     }
 
+    public function checkPaymentAgain()
+    {
+        $lists = \DB::table('woo_orders')
+            ->join('woo_infos','woo_orders.woo_info_id', '=', 'woo_infos.id')
+            ->select(
+                'woo_orders.id','woo_orders.woo_info_id','woo_orders.order_id','woo_orders.order_status',
+                'woo_infos.url','woo_infos.consumer_key','woo_infos.consumer_secret'
+                )
+            ->where('woo_orders.status',env('STATUS_NOTFULFILL'))
+            ->get();
+        if (sizeof($lists) > 0)
+        {
+            \DB::beginTransaction();
+            try {
+                foreach( $lists as $list)
+                {
+                    $woocommerce = $this->getConnectStore($list->url, $list->consumer_key, $list->consumer_secret);
+                    $info = $woocommerce->get('orders/'.$list->order_id);
+                    if ($info && $list->order_status !== $info->status)
+                    {
+                        \DB::table('woo_orders')->where('id',$list->id)
+                            ->update([
+                                'order_status' => $info->status,
+                                'status' => env('STATUS_WORKING_DONE')
+                                ]);
+                    }
+                }
+                $return = true;
+                \DB::commit(); // if there was no errors, your query will be executed
+            } catch (\Exception $e) {
+                $return = false;
+                \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+            }
+        } else {
+            return false;
+        }
+    }
     /*End WooCommerce API*/
-
-
 }

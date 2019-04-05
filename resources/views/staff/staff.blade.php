@@ -52,7 +52,7 @@
                                     <td class="center">
                                         <a class="waves-effect waves-light btn m-b-xs"
                                            onclick="newWindow('{{ url('/detail-order/'.$list->id) }}', 1200, 800)">
-                                            <i class="material-icons left">visibility</i> Xem thông tin</a>
+                                            <i class="material-icons left">visibility</i>See More</a>
                                     </td>
                                 </tr>
                             @endforeach
