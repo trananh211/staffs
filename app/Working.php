@@ -816,19 +816,43 @@ class Working extends Model
         if ($uid) {
             $rq = $request->all();
             $idea_id = $rq['idea_id'];
+
             \DB::beginTransaction();
             try {
-                \DB::table('idea_files')->where('idea_id', $idea_id)
-                    ->update([
-                        'status' => env('STATUS_WORKING_CHECK'),
-                        'updated_at' => date("Y-m-d H:i:s")
-                    ]);
-                \DB::table('ideas')->where('id', $idea_id)
-                    ->update([
-                        'qc_id' => $uid,
-                        'status' => env('STATUS_WORKING_CUSTOMER'),
-                        'updated_at' => date("Y-m-d H:i:s")
-                    ]);
+                /*Lấy toàn bộ file Idea up lên google driver*/
+                $lists = \DB::table('idea_files')
+                    ->select('id','name','path','idea_id')
+                    ->where('idea_id',$idea_id)->get();
+                $db_google_files = array();
+                foreach( $lists as $list)
+                {
+                    $path = upFile(public_path($list->path),env('GOOGLE_DRIVER_FOLDER_IDEA'));
+                    if ($path){
+                        $db_google_files[] = [
+                            'name' => $list->name,
+                            'path' => $path,
+                            'parent_path' => env('GOOGLE_DRIVER_FOLDER_IDEA'),
+                            'idea_id' => $list->idea_id,
+                            'idea_file_id' => $list->id,
+                            'created_at' => date("Y-m-d H:i:s"),
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
+                    }
+                }
+                if (sizeof($db_google_files) > 0) {
+                    \DB::table('gg_files')->insert($db_google_files);
+                    \DB::table('idea_files')->where('idea_id', $idea_id)
+                        ->update([
+                            'status' => env('STATUS_WORKING_CHECK'),
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ]);
+                    \DB::table('ideas')->where('id', $idea_id)
+                        ->update([
+                            'qc_id' => $uid,
+                            'status' => env('STATUS_WORKING_CUSTOMER'),
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ]);
+                }
                 $status = 'success';
                 $message = 'Đã chuyển công việc upload sang cho bộ phận support. Tiếp tục công việc của bạn.';
                 \DB::commit(); // if there was no errors, your query will be executed
