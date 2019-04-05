@@ -75,18 +75,19 @@ class GoogleController extends Controller
         return $return;
     }
 
-    public function upFile($path_info, $path = null)
+    public function upFile($path_info, $path = null, $new_name = null)
     {
         $return = false;
         if (\File::exists($path_info)) {
             $filename = pathinfo($path_info)['basename'];
             $contents = File::get($path_info);
-            if (Storage::cloud()->put($path . '/' . $filename, $contents)) {
+            $new_name = (strlen($new_name) > 0)? $new_name : $filename;
+            if (Storage::cloud()->put($path . '/' . $new_name, $contents)) {
                 $recursive = false; // Get subdirectories also?
                 $file = collect(Storage::cloud()->listContents($path, $recursive))
                     ->where('type', '=', 'file')
-                    ->where('filename', '=', pathinfo($filename, PATHINFO_FILENAME))
-                    ->where('extension', '=', pathinfo($filename, PATHINFO_EXTENSION))
+                    ->where('filename', '=', pathinfo($new_name, PATHINFO_FILENAME))
+                    ->where('extension', '=', pathinfo($new_name, PATHINFO_EXTENSION))
                     ->sortBy('timestamp')
                     ->last();
                 $return = $file['path'];
@@ -117,7 +118,6 @@ class GoogleController extends Controller
 
 
     /*Fulfillment*/
-
     public function fulfillment()
     {
         logfile('================= Fulfillment ==================');
@@ -181,30 +181,27 @@ class GoogleController extends Controller
                 }
             }
             /*Tạo thư mục trên google driver*/
-            $check_google_driver = \DB::table('gg_folders')->select('name','dir')
-                ->where('level','1')
-                ->whereIn('product_id',$ar_google_driver)
+            $check_google_driver = \DB::table('gg_folders')->select('name', 'dir')
+                ->where('level', '1')
+                ->whereIn('product_id', $ar_google_driver)
                 ->get();
-            if (sizeof($check_google_driver) > 0)
-            {
-                foreach($check_google_driver as $item)
-                {
+            if (sizeof($check_google_driver) > 0) {
+                foreach ($check_google_driver as $item) {
                     if (array_key_exists($item->name, $ar_google_driver)) {
                         unset($ar_google_driver[$item->name]);
                     }
                 }
             }
-            if (sizeof($ar_google_driver) > 0)
-            {
+            if (sizeof($ar_google_driver) > 0) {
                 $db_google_folder = array();
-                foreach( $ar_google_driver as $product_name => $product_id) {
-                    $path = $this->createDir(trim($product_name),env('GOOGLE_DRIVER_FOLDER_PUBLIC'));
+                foreach ($ar_google_driver as $product_name => $product_id) {
+                    $path = $this->createDir(trim($product_name), env('GOOGLE_DRIVER_FOLDER_PUBLIC'));
                     if ($path) {
                         $db_google_folder[] = [
                             'name' => $product_name,
                             'path' => $path,
                             'parent_path' => env('GOOGLE_DRIVER_FOLDER_PUBLIC'),
-                            'dir' => '/'.$product_name."/",
+                            'dir' => trim($product_name) . "/",
                             'product_id' => $product_id,
                             'level' => 1,
                             'created_at' => date("Y-m-d H:i:s"),
@@ -212,40 +209,36 @@ class GoogleController extends Controller
                         ];
                     }
                 }
-                if ( sizeof($db_google_folder))
-                {
+                if (sizeof($db_google_folder)) {
                     \DB::table('gg_folders')->insert($db_google_folder);
                 }
             }
             /*End tạo thư mục trên google driver*/
             $ud_working_move = array();
             foreach ($ar_product as $product_name => $dt) {
-                $name = date("Y-m-d-His").'-'.$product_name ;
+                $name = date("Ymd-His") . '-' . $product_name;
                 $check = Excel::create($name, function ($excel) use ($dt) {
                     $excel->sheet('Sheet 1', function ($sheet) use ($dt) {
                         $sheet->fromArray($dt);
                     });
                 })->store('csv', public_path(env('DIR_EXCEL_EXPORT')), true);
-                if ( $check)
-                {
-                    $check_up = $this->upFile($check['full'],env('GOOGLE_DRIVER_FOLDER_PUBLIC'));
-                    if ($check_up)
-                    {
+                if ($check) {
+                    $check_up = $this->upFile($check['full'], env('GOOGLE_DRIVER_FOLDER_PUBLIC'));
+                    if ($check_up) {
                         $ud_working_move = array_merge($ud_working_move, $ar_file_fulfill[$product_name]);
-                        logfile('Fulfillment file excel thành công đơn hàng :'. $product_name.' số lượng: '.sizeof($dt));
+                        logfile('Fulfillment file excel thành công đơn hàng :' . $product_name . ' số lượng: ' . sizeof($dt));
                     }
                     \File::delete($check['full']);
 
                 }
             }
             /*Nếu export file excel thành công. Tiến hành cập nhật file workings và move lên google driver*/
-            if (sizeof($ud_working_move) > 0)
-            {
-                \DB::table('workings')->whereIn('id',$ud_working_move)
+            if (sizeof($ud_working_move) > 0) {
+                \DB::table('workings')->whereIn('id', $ud_working_move)
                     ->update([
                         'status' => env('STATUS_WORKING_MOVE'),
                         'updated_at' => date("Y-m-d H:i:s")
-                        ]);
+                    ]);
             }
 
             /*Nếu phát hiện ra có đơn hàng chưa trả tiền. Kiểm tra lại và fulfill vào ngày hôm sau*/
@@ -258,18 +251,147 @@ class GoogleController extends Controller
 
     }
 
-    public function exportExcel($name, $data)
+    public function uploadFileDriver()
     {
-        echo 'aaa';
-        Excel::create($name, function ($excel) use ($data) {
-            $excel->sheet('Sheet 1', function ($sheet) use ($data) {
-                $sheet->fromArray($data);
-            });
-        })->export('xls');
-//            ->store('csv', public_path('excel/exports'))
+        $lists = \DB::table('workings')
+            ->join('woo_orders as wod', 'workings.woo_order_id', '=', 'wod.id')
+            ->join('working_files as file', 'workings.id', '=', 'file.working_id')
+            ->join('woo_products as wpd', 'workings.product_id', '=', 'wpd.product_id')
+            ->select(
+                'workings.id as working_id', 'wod.product_id', 'wod.product_name',
+                'wpd.name as product_name_origin', 'file.name as filename', 'file.path','file.id as working_file_id'
+            )
+            ->where('workings.status', env('STATUS_WORKING_MOVE'))
+            ->get();
+        if (sizeof($lists) > 0) {
+            /*Phân loại file theo product*/
+            $ar_product = array();
+            $ar_file_info = array();
+            $ar_product_id = array();
+            $ar_google_level2 = array();
+            foreach ($lists as $list) {
+                $ar_product_id[$list->product_id] = $list->product_id;
+                $ar_product[$list->product_id] = $list->product_name_origin;
+                $ar_google_level2[$list->product_name] = $list->product_id;
+                $ar_file_info[$list->product_name][] = $list;
+            }
+            /*Tìm trên google driver các thư mục con của product*/
+            $lst_google_folder = \DB::table('gg_folders')
+                ->where('level', 1)
+                ->whereIn('product_id', $ar_product_id)
+                ->pluck('path', 'product_id')
+                ->toArray();
 
-        echo 'bbb';
-//        return $return;
+            $db_google_folder = array();
+            foreach ($ar_product as $product_id => $product_name) {
+                if (!array_key_exists($product_id, $lst_google_folder)) {
+                    $path = $this->createDir(trim($product_name), env('GOOGLE_DRIVER_FOLDER_PUBLIC'));
+                    if ($path) {
+                        $db_google_folder[] = [
+                            'name' => $product_name,
+                            'path' => $path,
+                            'parent_path' => env('GOOGLE_DRIVER_FOLDER_PUBLIC'),
+                            'dir' => trim($product_name) . "/",
+                            'product_id' => $product_id,
+                            'level' => 1,
+                            'created_at' => date("Y-m-d H:i:s"),
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
+                    }
+                }
+            }
+            if (sizeof($db_google_folder) > 0) {
+                \DB::table('gg_folders')->insert($db_google_folder);
+                $lst_google_folder = \DB::table('gg_folders')
+                    ->where('level', 1)
+                    ->whereIn('product_id', $ar_product_id)
+                    ->pluck('path', 'product_id')
+                    ->toArray();
+            }
+            /*Lấy ra danh sách google folder level 2*/
+            $lst_google_level2 = \DB::table('gg_folders')
+                ->where('level',2)->whereIn('product_id',$ar_product_id)
+                ->pluck('path','name')
+                ->toArray();
+            $db_google_level2 = array();
+            foreach($ar_google_level2 as $product_name => $product_id)
+            {
+                if (!array_key_exists($product_name,$lst_google_level2))
+                {
+                    $path = $this->createDir(trim($product_name), $lst_google_folder[$product_id]);
+                    if ($path) {
+                        $db_google_level2[] = [
+                            'name' => $product_name,
+                            'path' => $path,
+                            'parent_path' => $lst_google_folder[$product_id],
+                            'dir' => trim($product_name) . "/",
+                            'product_id' => $product_id,
+                            'level' => 2,
+                            'created_at' => date("Y-m-d H:i:s"),
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
+                    }
+                }
+            }
+            if (sizeof($db_google_level2) > 0) {
+                \DB::table('gg_folders')->insert($db_google_level2);
+                $lst_google_level2 = \DB::table('gg_folders')
+                    ->where('level',2)->whereIn('product_id',$ar_product_id)
+                    ->pluck('path','name')
+                    ->toArray();
+            }
+
+            $db_google_files = array();
+            $ud_status_workings = array();
+            /*Up file lên google Driver*/
+            $i= 0;
+            $alias = date('Ymd');
+            foreach ($ar_file_info as $product_name => $files)
+            {
+                if ($i > 2) break;
+                $i++;
+                foreach($files as $file)
+                {
+
+                    $parent_path = $lst_google_level2[$product_name];
+                    $dir_info = public_path($file->path.$file->filename);
+//                    $tmp = [
+//                        'parent_path' => $parent_path,
+//                        'dir' => $dir_info,
+//                        'product_id' => $file->product_id,
+//
+//                    ];
+                    $new_name = $alias.'-'.$file->filename;
+                    $path = $this->upFile($dir_info, $parent_path , $new_name);
+                    if ( $path)
+                    {
+                        $db_google_files[] = [
+                            'name' => $new_name,
+                            'path' => $path,
+                            'parent_path' => $parent_path,
+                            'product_id' => $file->product_id,
+                            'working_file_id' => $file->working_file_id,
+                            'created_at' => date("Y-m-d H:i:s"),
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
+                        $ud_status_workings[$file->working_id] = $file->working_id;
+                    }
+                }
+            }
+
+            if (sizeof($db_google_files) > 0)
+            {
+                \DB::table('gg_files')->insert($db_google_files);
+                \DB::table('workings')->whereIn('id',$ud_status_workings)->update([
+                    'status' => env('STATUS_UPLOADED'),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+                \DB::table('working_files')->whereIn('working_id',$ud_status_workings)->update([
+                    'status' => env('STATUS_UPLOADED'),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+            }
+        }
     }
     /*End Fulfillment*/
 }

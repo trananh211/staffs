@@ -162,7 +162,7 @@ class Working extends Model
             ->join('woo_products', 'workings.product_id', '=', 'woo_products.product_id')
             ->join('users as worker', 'workings.worker_id', '=', 'worker.id')
             ->select(
-                'workings.id', 'workings.status', 'workings.updated_at', 'workings.filename',
+                'workings.id', 'workings.status', 'workings.updated_at',
                 'workings.qc_id', 'workings.worker_id', 'workings.reason', 'workings.redo',
                 'worker.id as worker_id', 'worker.name as worker_name',
                 'woo_orders.number', 'woo_orders.detail',
@@ -183,7 +183,7 @@ class Working extends Model
             ->join('users as worker', 'workings.worker_id', '=', 'worker.id')
             ->join('users as qc', 'workings.qc_id', '=', 'qc.id')
             ->select(
-                'workings.id', 'workings.status', 'workings.updated_at', 'workings.filename',
+                'workings.id', 'workings.status', 'workings.updated_at',
                 'workings.qc_id', 'workings.worker_id', 'workings.woo_order_id', 'workings.reason', 'workings.redo',
                 'worker.id as worker_id', 'worker.name as worker_name', 'qc.id as qc_id', 'qc.name as qc_name',
                 'woo_orders.number', 'woo_orders.detail',
@@ -257,7 +257,7 @@ class Working extends Model
                             \DB::table('workings')->insert($data);
                             \DB::table('woo_orders')
                                 ->whereIn('id', $update_order)
-                                ->update(['status' => env('STATUS_WORKING_NEW')]);
+                                ->update(['status' => env('STATUS_WORKING_CHECK')]);
                             $return = true;
                             $save = "Chia " . sizeof($data) . " order cho '" . $username . "' thanh cong.";
                             \Session::flash('success', 'Nhận việc thành công. Vui lòng hoành thành sớm.');
