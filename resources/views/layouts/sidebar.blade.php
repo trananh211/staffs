@@ -412,12 +412,21 @@
                 <li class="no-padding">
                     <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">trending_up</i>
                         Workings
+                        {!!  notiSideBar($data['pub']['order_checking'] + $data['private']['order_review']) !!}
                         <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
                     </a>
                     <div class="collapsible-body">
                         <ul>
-                            <li><a href="{{ url('checking') }}">Kiểm tra Design</a></li>
-                            <li><a href="{{ url('review-customer') }}">Phản hồi khách hàng</a></li>
+                            <li>
+                                <a href="{{ url('checking') }}">Kiểm tra Design
+                                    {!!  notiSideBar($data['pub']['order_checking']) !!}
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ url('review-customer') }}">Phản hồi khách hàng
+                                    {!!  notiSideBar($data['private']['order_review']) !!}
+                                </a>
+                            </li>
                             <li><a href="{{ url('supplier') }}">Supplier</a></li>
                         </ul>
                     </div>
@@ -426,12 +435,15 @@
                 <li class="no-padding">
                     <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">ring_volume</i>
                         New Idea
+                        {!!  notiSideBar($data['private']['check_idea'] + $data['private']['idea_send_support']) !!}
                         <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
                     </a>
                     <div class="collapsible-body">
                         <ul>
-                            <li><a href="{{ url('list-idea') }}">List Idea New</a></li>
-                            <li><a href="{{ url('list-idea-done') }}">List Idea Up Shop</a></li>
+                            <li><a href="{{ url('list-idea') }}">
+                                    List Idea New{!!  notiSideBar($data['private']['check_idea']) !!}</a></li>
+                            <li><a href="{{ url('list-idea-done') }}">List Idea Up Shop
+                                    {!!  notiSideBar($data['private']['idea_send_support']) !!}</a></li>
                             <li><a href="{{ url('new-job-idea') }}">Create New Job</a></li>
                         </ul>
                     </div>
@@ -439,10 +451,14 @@
             @endif
             @if( Auth::user()->level == env('WORKER'))
                 <li class="no-padding"><a class="waves-effect waves-grey" href="{{ url('staff-dashboard') }}">
-                        <i class="material-icons">trending_up</i>Workings</a>
+                        <i class="material-icons">trending_up</i>Workings
+                        {!!  notiSideBar($data['private']['order_new']) !!}
+                    </a>
                 </li>
                 <li class="no-padding"><a class="waves-effect waves-grey" href="{{ url('new-idea') }}">
-                        <i class="material-icons">ring_volume</i>New Idea</a>
+                        <i class="material-icons">ring_volume</i>New Idea
+                        {!!  notiSideBar($data['private']['idea_new']) !!}
+                    </a>
                 </li>
             @endif
         </ul>

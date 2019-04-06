@@ -20,7 +20,8 @@ class WooController extends Controller
     /*S Admin*/
     public function connect()
     {
-        return view('admin/woo/connect');
+        $data = infoShop();
+        return view('admin/woo/connect',compact('data'));
     }
 
     public function doConnect()
@@ -39,12 +40,14 @@ class WooController extends Controller
     public function listStore()
     {
         $stores = WooInfo::get();
-        return view('admin/woo/list_store',['stores' => $stores]);
+        $data = infoShop();
+        return view('admin/woo/list_store',compact('stores','data'));
     }
 
     public function webhooks()
     {
-        return view('admin/woo/webhooks');
+        $data = infoShop();
+        return view('admin/woo/webhooks',compact('data'));
     }
     /*End S Admin*/
 
@@ -52,7 +55,9 @@ class WooController extends Controller
     public function staffDashboard()
     {
         $work = new Working();
-        return view('staff/staff',['lists' => $work->listOrder()]);
+        $lists = $work->listOrder();
+        $data = infoShop();
+        return view('staff/staff',compact('data','lists'));
     }
 
     public function detailOrder($order_id)
@@ -131,14 +136,17 @@ class WooController extends Controller
     public function supplier()
     {
         $work = new Working();
-        return view('/admin/supplier',['lists'=> $work->supplier()]);
+        $lists = $work->supplier();
+        $data = infoShop();
+        return view('/admin/supplier',compact('lists','data'));
     }
 
     public function createNewJob()
     {
         $work = new Working();
         $users = $work->listWorker();
-        return view('/admin/newjob')->with(compact('users'));
+        $data = infoShop();
+        return view('/admin/newjob')->with(compact('users','data'));
     }
 
     public function saveNewJob(Request $request)

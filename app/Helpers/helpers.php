@@ -58,6 +58,14 @@ function compareTime($from, $to)
 
 }
 
+function notiSideBar($count){
+    $badge = '';
+    if ($count > 0) {
+        $badge = '<span class="new badge">'.$count.'</span>';
+    }
+    return $badge;
+}
+
 /*GOOGLE API*/
 function createDir($name, $path = null)
 {
@@ -150,3 +158,99 @@ function deleteFile($filename, $path, $parent_path = null)
 }
 
 /*END GOOGLE API*/
+
+/*Ham hien thi thong tin shop*/
+function infoShop()
+{
+    $data = array();
+    $user = DB::table('users')
+        ->select('name','level','id')
+        ->where('id',\Auth::user()->id)
+        ->first();
+    $ar_qc = array(env('SADMIN'),env('ADMIN'),env('QC'));
+    $order_new = getNewOrder();
+    $order_working = getworkingOrder();
+    $order_checking = getCheckingOrder();
+
+    $idea_new = getIdeaNew();
+    $idea_check = getIdeaCheck();
+    $data['pub'] = [
+        'new' => $order_new,
+        'working' => $order_working,
+        'order_checking' => $order_checking,
+        'idea_new' => $idea_new,
+        'idea_check' => $idea_check
+    ];
+    /*Nếu là QC và Admin*/
+    if (in_array($user->level, $ar_qc)){
+        $order_review = getOrderReview();
+        $check_idea = getIdeaCheck();
+        $idea_send_support = getIdeaDone();
+        $data['private'] = [
+            'order_review' => $order_review,
+            'idea_send_support' => $idea_send_support,
+            'check_idea' => $check_idea,
+        ];
+    } else if($user->level == env('WORKER')) {
+        $idea_new = getIdeaNewWorker($user->id);
+        $order_new = getOrderNewWorker($user->id);
+        $data['private'] = [
+            'order_new' => $order_new,
+            'idea_new' => $idea_new
+        ];
+    }
+    return $data;
+}
+
+function getNewOrder()
+{
+    return \DB::table('woo_orders')->where('status', env('STATUS_WORKING_NEW'))->count();
+}
+
+function getworkingOrder()
+{
+    return \DB::table('workings')->where('status', env('STATUS_WORKING_CHECK'))->count();
+}
+
+function getCheckingOrder()
+{
+    return \DB::table('workings')->where('status', env('STATUS_WORKING_CHECK'))->count();
+}
+
+function getIdeaNew()
+{
+    return \DB::table('ideas')->where('status',env('STATUS_WORKING_CHECK'))->count();
+}
+
+function getIdeaNewWorker($wid)
+{
+    return \DB::table('ideas')
+        ->where([
+            ['status','=',env('STATUS_WORKING_NEW')],
+            ['worker_id','=', $wid]
+        ])->count();
+}
+
+function getOrderNewWorker($wid)
+{
+    return \DB::table('workings')
+        ->where([
+            ['status','=',env('STATUS_WORKING_NEW')],
+            ['worker_id','=', $wid]
+        ])->count();
+}
+
+function getIdeaCheck()
+{
+    return \DB::table('ideas')->where('status',env('STATUS_WORKING_CHECK'))->count();
+}
+
+function getOrderReview()
+{
+    return \DB::table('workings')->where('status',env('STATUS_WORKING_CUSTOMER'))->count();
+}
+
+function getIdeaDone()
+{
+    return \DB::table('ideas')->where('status',env('STATUS_WORKING_CUSTOMER'))->count();
+}
