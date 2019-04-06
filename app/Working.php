@@ -50,59 +50,23 @@ class Working extends Model
     }
 
     /*DASHBOARD*/
-    public function adminDashboard()
+    public function adminDashboard($data)
     {
-        $new_order = $this->getNewOrder();
-        $working_order = $this->getworkingOrder();
-        $checking_order = $this->getCheckingOrder();
-        $late_order = $this->getLateOrder();
         $list_order = $this->getListOrderOfMonth(30);
         return view('/admin/dashboard')
-            ->with(compact('new_order', 'working_order', 'checking_order', 'late_order', 'list_order'));
+            ->with(compact('list_order','data'));
     }
 
-    public function staffDashboard()
+    public function staffDashboard($data)
     {
-        $new_order = $this->getNewOrder();
-        $working_order = $this->getworkingOrder();
-        $checking_order = $this->getCheckingOrder();
-        $late_order = $this->getLateOrder();
         return view('/staff/dashboard')
-            ->with(compact('new_order', 'working_order', 'checking_order', 'late_order'));
+            ->with(compact('data'));
     }
 
-    public function qcDashboard()
+    public function qcDashboard($data)
     {
-        $new_order = $this->getNewOrder();
-        $working_order = $this->getworkingOrder();
-        $checking_order = $this->getCheckingOrder();
-        $late_order = $this->getLateOrder();
         return view('/staff/qc_dashboard')
-            ->with(compact('new_order', 'working_order', 'checking_order', 'late_order'));;
-    }
-
-    private function getNewOrder()
-    {
-        return \DB::table('woo_orders')->where('status', env('STATUS_WORKING_NEW'))->count();
-    }
-
-    private function getworkingOrder()
-    {
-        return \DB::table('woo_orders')->where('status', env('STATUS_WORKING_CHECK'))->count();
-    }
-
-    private function getCheckingOrder()
-    {
-        return \DB::table('woo_orders')->where('status', env('STATUS_WORKING_CUSTOMER'))->count();
-    }
-
-    private static function getLateOrder()
-    {
-        $cur_date = Carbon::now();
-        return \DB::table('woo_orders')
-            ->where('status', '<>', env('STATUS_WORKING_DONE'))
-            ->whereRaw("DATEDIFF('" . Carbon::now() . "',updated_at)  > 1")
-            ->count();
+            ->with(compact('data'));
     }
 
     private function getListOrderOfMonth($subday)
@@ -382,7 +346,8 @@ class Working extends Model
         ];
         $lists = $this->getListIdea($where);
         $now = date("Y-m-d H:i:s");
-        return view('staff/new_idea', compact('lists', 'users', 'now'));
+        $data = infoShop();
+        return view('staff/new_idea', compact('lists', 'users', 'now','data'));
     }
 
     public function uploadIdea($request)
@@ -533,7 +498,8 @@ class Working extends Model
         $list_ideas = $this->filterListIdea($tmp);
         $lists = $list_ideas['lists'];
         $idea_files = $list_ideas['idea_files'];
-        return view('admin/list_idea', compact('lists', 'idea_files'));
+        $data = infoShop();
+        return view('admin/list_idea', compact('lists', 'idea_files','data'));
     }
 
     public function listIdeaDone()
@@ -547,7 +513,8 @@ class Working extends Model
         $list_ideas = $this->filterListIdea($tmp);
         $lists = $list_ideas['lists'];
         $idea_files = $list_ideas['idea_files'];
-        return view('admin/list_idea_done', compact('lists', 'idea_files'));
+        $data = infoShop();
+        return view('admin/list_idea_done', compact('lists', 'idea_files','data'));
     }
 
     private static function filterListIdea($tmp)
@@ -659,7 +626,8 @@ class Working extends Model
             ['working_files.status', '=', env('STATUS_WORKING_CHECK')]
         ];
         $images = $this->getWorkingFile($where_working_file);
-        return view('admin/checking')->with(compact('lists', 'images'));
+        $data = infoShop();
+        return view('admin/checking')->with(compact('lists', 'images','data'));
     }
 
     private function getWorkingFile($where)
@@ -757,7 +725,8 @@ class Working extends Model
             ['working_files.status', '=', env('STATUS_WORKING_CUSTOMER')]
         ];
         $images = $this->getWorkingFile($where_working_file);
-        return view('/admin/review_customer',compact('lists','images'));
+        $data = infoShop();
+        return view('/admin/review_customer',compact('lists','images','data'));
     }
 
     public function supplier()
