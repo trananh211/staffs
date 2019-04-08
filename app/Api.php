@@ -33,11 +33,11 @@ class Api extends Model
     public function creatOrder($data, $woo_id)
     {
         $db = array();
-        $this->log('=====================CREATE NEW ORDER=======================');
+        logfile('=====================CREATE NEW ORDER=======================');
 //        echo "<pre>";
 //        print_r($data);
         if (sizeof($data['line_items']) > 0) {
-            $this->log('Store ' . $woo_id . ' has new ' . sizeof($data['line_items']) . ' order item.');
+            logfile('Store ' . $woo_id . ' has new ' . sizeof($data['line_items']) . ' order item.');
             $lst_product = array();
             foreach ($data['line_items'] as $key => $value) {
                 $str = "";
@@ -61,8 +61,8 @@ class Api extends Model
                     'price' => $value['price'],
                     'variation_id' => $value['variation_id'],
                     'email' => $data['billing']['email'],
-                    'fullname' => $data['shipping']['first_name'].' '.$data['shipping']['last_name'],
-                    'address' => (strlen($data['shipping']['address_2']) > 0) ? $data['shipping']['address_1'].', '.$data['shipping']['address_2'] : $data['shipping']['address_1'],
+                    'fullname' => $data['shipping']['first_name'] . ' ' . $data['shipping']['last_name'],
+                    'address' => (strlen($data['shipping']['address_2']) > 0) ? $data['shipping']['address_1'] . ', ' . $data['shipping']['address_2'] : $data['shipping']['address_1'],
                     'city' => $data['shipping']['city'],
                     'postcode' => $data['shipping']['postcode'],
                     'country' => $data['shipping']['country'],
@@ -87,16 +87,81 @@ class Api extends Model
                 $save = "[Error] Save to database error.";
                 \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
             }
-            $this->log($save . "\n");
+            logfile($save . "\n");
         }
 
         /*Create new product*/
         $this->syncProduct(array_unique($lst_product), $woo_id);
     }
 
+
+    public function updateProduct($data, $store_id)
+    {
+        if (sizeof($data) > 0) {
+            logfile("==== Update product ====");
+            $product_id = $data['id'];
+            $product_name = $data['name'];
+            $img = '';
+            /*kiem tra ton tai product*/
+            $woo_product = \DB::table('woo_products')->select('id')->where('product_id', $product_id)->first();
+            if ($woo_product != NULL) {
+                if (isset($data['images']) && sizeof($data['images']) > 0) {
+                    foreach ($data['images'] as $image) {
+                        $img .= $image['src'] . ",";
+                    }
+                }
+                if (strlen($img) > 0) {
+                    $update = [
+                        'name' => $product_name,
+                        'permalink' => $data['permalink'],
+                        'image' => substr(trim($img), 0, -1),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ];
+                } else {
+                    $update = [
+                        'name' => $product_name,
+                        'permalink' => $data['permalink'],
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ];
+                }
+                \DB::table('woo_products')->where('id', $woo_product->id)->update($update);
+
+                /*Cap nhat Google Driver*/
+                $gg_folder = \DB::table('gg_folders')->select('id', 'name', 'path', 'parent_path')
+                    ->where([
+                        ['product_id', '=', $product_id],
+                        ['level', '=', 1]
+                    ])
+                    ->first();
+                if ($gg_folder != NULL) {
+                    $parent_path = $gg_folder->parent_path;
+                    $check = checkDirExist($gg_folder->name, $gg_folder->path, $parent_path);
+                    if ($check) {
+                        $path = renameDir($product_name, $gg_folder->name, $parent_path);
+                        echo $path;
+                    } else {
+                        $path = createDir($product_name, $parent_path);
+                    }
+                    \DB::table('gg_folders')
+                        ->where('product_id', $product_id)
+                        ->where('level', 1)
+                        ->update([
+                            'name' => $product_name,
+                            'path' => $path,
+                            'parent_path' => $parent_path,
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ]);
+                }
+                logfile("Cập nhật thành công product ".$product_name);
+            } else {
+                logfile("==== Product  " . $product_name . " chưa được mua hàng lần nào. Bỏ qua ====");
+            }
+        }
+    }
+
     private function syncProduct($lst, $woo_id)
     {
-        $this->log("==== Create product ====");
+        logfile("==== Create product ====");
         /*Kiem tra xem danh sach product da ton tai hay chua*/
         $products = DB::table('woo_products')
             ->whereIn('product_id', $lst)
@@ -143,40 +208,37 @@ class Api extends Model
                             $save = "[Error] Save " . sizeof($db) . " product to database error.";
                             \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
                         }
-                        $this->log($save . "\n");
+                        logfile($save . "\n");
                     }
                 }
             }
         } else {
-            $this->log('All ' . sizeof($lst) . ' products had add to database before.');
+            logfile('All ' . sizeof($lst) . ' products had add to database before.');
         }
     }
 
     public function checkPaymentAgain()
     {
         $lists = \DB::table('woo_orders')
-            ->join('woo_infos','woo_orders.woo_info_id', '=', 'woo_infos.id')
+            ->join('woo_infos', 'woo_orders.woo_info_id', '=', 'woo_infos.id')
             ->select(
-                'woo_orders.id','woo_orders.woo_info_id','woo_orders.order_id','woo_orders.order_status',
-                'woo_infos.url','woo_infos.consumer_key','woo_infos.consumer_secret'
-                )
-            ->where('woo_orders.status',env('STATUS_NOTFULFILL'))
+                'woo_orders.id', 'woo_orders.woo_info_id', 'woo_orders.order_id', 'woo_orders.order_status',
+                'woo_infos.url', 'woo_infos.consumer_key', 'woo_infos.consumer_secret'
+            )
+            ->where('woo_orders.status', env('STATUS_NOTFULFILL'))
             ->get();
-        if (sizeof($lists) > 0)
-        {
+        if (sizeof($lists) > 0) {
             \DB::beginTransaction();
             try {
-                foreach( $lists as $list)
-                {
+                foreach ($lists as $list) {
                     $woocommerce = $this->getConnectStore($list->url, $list->consumer_key, $list->consumer_secret);
-                    $info = $woocommerce->get('orders/'.$list->order_id);
-                    if ($info && $list->order_status !== $info->status)
-                    {
-                        \DB::table('woo_orders')->where('id',$list->id)
+                    $info = $woocommerce->get('orders/' . $list->order_id);
+                    if ($info && $list->order_status !== $info->status) {
+                        \DB::table('woo_orders')->where('id', $list->id)
                             ->update([
                                 'order_status' => $info->status,
                                 'status' => env('STATUS_WORKING_DONE')
-                                ]);
+                            ]);
                     }
                 }
                 $return = true;

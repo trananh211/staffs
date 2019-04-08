@@ -21,4 +21,8 @@ Route::post('/new-order/','ApiController@newOrder');
 
 Route::get('/test-new-order/{filename}','ApiController@testNewOrder');
 
+Route::post('/update-product/','ApiController@updateProduct');
+
+Route::get('/test-update-product/{filename}','ApiController@testUpdateProduct');
+
 

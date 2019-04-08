@@ -18,6 +18,10 @@
                             <td>{{ url('/api/new-order/') }}</td>
                             <td>Get new order from Woocommerce Store</td>
                         </tr>
+                        <tr>
+                            <td>{{ url('/api/update-product/') }}</td>
+                            <td>Get Update product from Woocommerce Store</td>
+                        </tr>
 
                         </tbody>
                     </table>
