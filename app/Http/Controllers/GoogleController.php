@@ -18,7 +18,11 @@ class GoogleController extends Controller
     {
 //        echo "<pre>";
 //        $this->getFolderID($path);
-//        $this->createDir('Public 45*45cm');
+//        $parent_path = env("GOOGLE_DRIVER_FOLDER_PUBLIC");
+//        $path = renameDir('Personalised Tottenham Hotspurs FC - Pillow Case', 'PC021 Personalised Tottenham Hotspurs FC - Pillow Case',$parent_path);
+//        $path = renameDir('PC021 Personalised Tottenham Hotspurs FC - Pillow Case', 'Personalised Tottenham Hotspurs FC - Pillow Case' ,$parent_path);
+//        echo $path."\n<br>";
+//        echo $parent_path;
 //        $this->deleteDir('Public');
 //        $this->renameDir('hihi','Hehe');
 //        echo $this->upFile(public_path(env('DIR_DONE').'S247-USA-3156-PID-19.jpg'),'1is5OXHePxYfjym8b0ackAqO0db4ItYpm');
