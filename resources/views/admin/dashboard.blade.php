@@ -85,12 +85,12 @@
                                     <td>{{ $order->name }}</td>
                                     <td>{{ $order->number }}-{{ $order->id }}</td>
                                     <td>{{ $order->product_name }}</td>
-                                    <td>{{ $order->status }}</td>
+                                    <td>{!! statusJob($order->status, 0, '') !!}</td>
                                     <td>{{ $order->quantity }}</td>
                                     <td>{{ $order->price }}$</td>
                                     <td>{{ $order->payment_method }}</td>
-                                    <td>{{ $order->created_at }}</td>
-                                    <td>LCN12395068</td>
+                                    <td>{!! compareTime($order->created_at, date("Y-m-d H:i:s")) !!}</td>
+                                    <td></td>
                                 </tr>
                             @endforeach
                         @else
