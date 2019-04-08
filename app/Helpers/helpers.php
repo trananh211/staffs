@@ -10,6 +10,8 @@ function logfile($str)
 
 function statusJob($status, $redo, $reason)
 {
+    $class = ''.$status;
+    $st = ''.$reason;
     if ($status == env('STATUS_WORKING_NEW')) {
         $class = 'blue lighten-3';
         $st = 'New';
@@ -19,7 +21,7 @@ function statusJob($status, $redo, $reason)
     } else if ($status == env('STATUS_WORKING_CUSTOMER')) {
         $class = 'purple lighten-3';
         $st = 'ReCheck';
-    } else if ($status == env('STATUS_WORKING_DONE')) {
+    } else if ($status >= env('STATUS_WORKING_DONE')) {
         $class = 'green lighten-3';
         $st = 'Done';
     }
@@ -209,7 +211,7 @@ function getNewOrder()
 
 function getworkingOrder()
 {
-    return \DB::table('workings')->where('status', env('STATUS_WORKING_CHECK'))->count();
+    return \DB::table('workings')->where('status', env('STATUS_WORKING_NEW'))->count();
 }
 
 function getCheckingOrder()
@@ -219,7 +221,7 @@ function getCheckingOrder()
 
 function getIdeaNew()
 {
-    return \DB::table('ideas')->where('status',env('STATUS_WORKING_CHECK'))->count();
+    return \DB::table('ideas')->where('status',env('STATUS_WORKING_NEW'))->count();
 }
 
 function getIdeaNewWorker($wid)
