@@ -209,7 +209,7 @@ function getNewOrder()
 
 function getworkingOrder()
 {
-    return \DB::table('workings')->where('status', env('STATUS_WORKING_CHECK'))->count();
+    return \DB::table('workings')->where('status', env('STATUS_WORKING_NEW'))->count();
 }
 
 function getCheckingOrder()

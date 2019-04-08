@@ -180,7 +180,7 @@ class Working extends Model
                     ->select('id', 'woo_info_id', 'order_id', 'product_id', 'number')
                     ->where('status', env('STATUS_WORKING_NEW'))
                     ->orderBy('id', 'ASC')
-                    ->limit(5)
+                    ->limit(1)
                     ->get()->toArray();
                 if (sizeof($jobs) > 0) {
                     $db = array();
