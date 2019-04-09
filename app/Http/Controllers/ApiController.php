@@ -74,7 +74,15 @@ class ApiController extends Controller
 
     public function updateProduct(Request $request)
     {
-        $woo_id = $this->getInfoShop($request);
+        logfile('Nhận được thông báo update product');
+        /*Get Header Request*/
+        $header = getallheaders();
+        $webhook_head = [
+            'x-wc-webhook-event' => trim($header['X-Wc-Webhook-Event']),
+            'x-wc-webhook-resource' => trim($header['X-Wc-Webhook-Resource']),
+            'x-wc-webhook-source' => trim($header['X-Wc-Webhook-Source'])
+        ];
+        $woo_id = $this->getStoreInfo($webhook_head);
         /*Get data Request*/
         $data = @file_get_contents('php://input');
         $data = json_decode( $data, true);
@@ -83,6 +91,8 @@ class ApiController extends Controller
         {
             $api = new Api();
             $api->updateProduct($data,$woo_id);
+        } else {
+            logfile('Không có thông tin gì về update');
         }
     }
 
@@ -97,29 +107,6 @@ class ApiController extends Controller
             ->pluck('id')
             ->toArray();
         $api->updateProduct($data,$store[0]);
-    }
-
-    private function getInfoShop($request)
-    {
-        /*Get Header Request*/
-        $header = getallheaders();
-        $webhook_head = [
-            'x-wc-webhook-event' => trim($header['X-Wc-Webhook-Event']),
-            'x-wc-webhook-resource' => trim($header['X-Wc-Webhook-Resource']),
-            'x-wc-webhook-source' => trim($header['X-Wc-Webhook-Source'])
-        ];
-        $url = substr($webhook_head['x-wc-webhook-source'],0,-1);
-        $store = DB::table('woo_infos')
-            ->where('url',$url)
-            ->pluck('id')
-            ->toArray();
-        $woo_id = false;
-        if (sizeof($store) > 0)
-        {
-            $woo_id = $store[0];
-        }
-        \Log::info($woo_id);
-        return $woo_id;
     }
     /*END WOOCOMMERCE API*/
 }
