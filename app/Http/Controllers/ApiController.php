@@ -74,7 +74,18 @@ class ApiController extends Controller
 
     public function updateProduct(Request $request)
     {
-        $woo_id = $this->getInfoShop($request);
+        logfile('Nhận được thông báo update product');
+        /*Get Header Request*/
+        $header = getallheaders();
+        $webhook_head = [
+            'x-wc-webhook-event' => trim($header['X-Wc-Webhook-Event']),
+            'x-wc-webhook-resource' => trim($header['X-Wc-Webhook-Resource']),
+            'x-wc-webhook-source' => trim($header['X-Wc-Webhook-Source'])
+        ];
+        $woo_id = $this->getStoreInfo($webhook_head);
+//        \Log::info($woo_id);
+
+//        \Log::info($data);
         /*Get data Request*/
         $data = @file_get_contents('php://input');
         $data = json_decode( $data, true);
@@ -83,6 +94,8 @@ class ApiController extends Controller
         {
             $api = new Api();
             $api->updateProduct($data,$woo_id);
+        } else {
+            logfile('Không có thông tin gì về update');
         }
     }
 
