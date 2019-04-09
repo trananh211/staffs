@@ -266,6 +266,7 @@ class GoogleController extends Controller
                 'wpd.name as product_name_origin', 'file.name as filename', 'file.path','file.id as working_file_id'
             )
             ->where('workings.status', env('STATUS_WORKING_MOVE'))
+            ->where('file.is_mockup',0)
             ->get();
         if (sizeof($lists) > 0) {
             /*Phân loại file theo product*/
