@@ -2,20 +2,7 @@
 @section('content')
     <div class="row">
         <div class="col s12">
-            <div class="page-title">Job Tables</div>
-        </div>
-        <div class="col s12 m12 l12">
-            <div class="card">
-                <div class="card-content">
-                    <a href="{{ url('staff-get-job') }}" class="waves-effect waves-light btn indigo m-b-xs">
-                        <i class="material-icons left">play_for_work</i>Nhận việc mới
-                    </a>
-                    <a onclick="newWindow('{{ url('staff-done-job/'.env('UP_ORDER')) }}', 1200, 800)"
-                       class="waves-effect waves-light btn green m-b-xs">
-                        <i class="material-icons left">present_to_all</i>Trả hàng
-                    </a>
-                </div>
-            </div>
+            <div class="page-title">Danh Sách công việc đang làm</div>
         </div>
         <div class="col s12 m12 l12">
             <div class="card">
@@ -23,8 +10,10 @@
                     <table id="idea-job" class="display responsive-table datatable-example">
                         <thead>
                         <tr>
+                            <th class="center">#</th>
                             <th class="center" data-field="id">Order</th>
                             <th class="center" data-field="name">Item Name</th>
+                            <th class="center" data-field="price">Designer</th>
                             <th class="center" data-field="price">Date</th>
                             <th class="center" data-field="price">Status</th>
                             <th class="center" data-field="price">Link</th>
@@ -32,11 +21,12 @@
                         </tr>
                         </thead>
                         <tbody>
-                        @if(sizeof($lists) > 0)
                             @foreach($lists as $key => $list)
                                 <tr>
+                                    <td class="center">{{ $key+1 }}</td>
                                     <td class="center"> {{ $list->number.'-PID-'.$list->id }}</td>
                                     <td class="center">{{ $list->name }}</td>
+                                    <td class="center">{{ $list->worker_name }}</td>
                                     <td class="center">
                                         {!! compareTime($list->updated_at, date("Y-m-d H:i:s")) !!}
                                     </td>
@@ -57,18 +47,11 @@
                                            data-woo-order-id="{{ $list->woo_order_id }}"
                                            data-workingid="{{$list->id}}" data-url="{{ url('ajax-take-job') }}"
                                         >
-                                            Trả Job
+                                            Đòi Job
                                         </a>
                                     </td>
                                 </tr>
                             @endforeach
-                        @else
-                            <tr>
-                                <td colspan="6" class="center">
-                                    Bạn chưa có bất kỳ công việc nào. Vui lòng nhận công việc ở trên.
-                                </td>
-                            </tr>
-                        @endif
                         </tbody>
                     </table>
                 </div>
@@ -76,6 +59,3 @@
         </div>
     </div>
 @endsection
-
-
-

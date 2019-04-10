@@ -126,7 +126,7 @@ class Working extends Model
             ->join('woo_products', 'workings.product_id', '=', 'woo_products.product_id')
             ->join('users as worker', 'workings.worker_id', '=', 'worker.id')
             ->select(
-                'workings.id', 'workings.status', 'workings.updated_at',
+                'workings.id', 'workings.status', 'workings.updated_at', 'workings.woo_order_id',
                 'workings.qc_id', 'workings.worker_id', 'workings.reason', 'workings.redo',
                 'worker.id as worker_id', 'worker.name as worker_name',
                 'woo_orders.number', 'woo_orders.detail',
@@ -180,7 +180,7 @@ class Working extends Model
                     ->select('id', 'woo_info_id', 'order_id', 'product_id', 'number')
                     ->where('status', env('STATUS_WORKING_NEW'))
                     ->orderBy('id', 'ASC')
-                    ->limit(1)
+                    ->limit(3)
                     ->get()->toArray();
                 if (sizeof($jobs) > 0) {
                     $db = array();
@@ -630,6 +630,16 @@ class Working extends Model
         return view('admin/checking')->with(compact('lists', 'images','data'));
     }
 
+    public function working()
+    {
+        $where = [
+            ['workings.status', '=', env('STATUS_WORKING_NEW')]
+        ];
+        $lists = $this->orderStaff($where);
+        $data = infoShop();
+        return view('admin/working')->with(compact('data','lists'));
+    }
+
     private function getWorkingFile($where)
     {
         $return = array();
@@ -896,6 +906,36 @@ class Working extends Model
                     ]);
                 $status = 'success';
                 $message = 'Thành công. Tiếp tục công việc của bạn.';
+                \DB::commit(); // if there was no errors, your query will be executed
+            } catch (\Exception $e) {
+                $status = 'error';
+                $message = 'Xảy ra lỗi. Hãy thử lại.';
+                \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+            }
+            return response()->json([
+                'status' => $status,
+                'message' => $message
+            ]);
+        }
+    }
+
+    public function axTakeJob($request)
+    {
+        $uid = $this->checkAuth();
+        if ($uid) {
+            $rq = $request->all();
+            $working_id = $rq['working_id'];
+            $woo_order_id = $rq['woo_order_id'];
+            \DB::beginTransaction();
+            try {
+                \DB::table('workings')->where('id',$working_id)->delete();
+                \DB::table('woo_orders')->where('id', $woo_order_id)
+                    ->update([
+                        'status' => env('STATUS_WORKING_NEW'),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                $status = 'success';
+                $message = 'Trả Job thành công. Tiếp tục công việc của bạn.';
                 \DB::commit(); // if there was no errors, your query will be executed
             } catch (\Exception $e) {
                 $status = 'error';

@@ -276,3 +276,5 @@ function getIdeaDone()
 {
     return \DB::table('ideas')->where('status',env('STATUS_WORKING_CUSTOMER'))->count();
 }
+
+/*End Ham hien thi thong tin shop*/
