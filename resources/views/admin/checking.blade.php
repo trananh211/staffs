@@ -99,7 +99,7 @@
                                                                         @foreach(explode(",",$list->image) as $image)
                                                                             <img
                                                                                 class="materialboxed responsive-img initialized"
-                                                                                src="{{ $image }}">
+                                                                                src="{{ $image }}" style="width: 320px;">
                                                                         @endforeach
                                                                     </div>
                                                                 </div>
@@ -110,10 +110,7 @@
                                                                     <div class="card-content center">
                                                                         @if(array_key_exists($list->id, $images))
                                                                             @foreach($images[$list->id] as $img)
-                                                                                <img
-                                                                                    class="materialboxed responsive-img initialized"
-                                                                                    src="{{ asset($img) }}"
-                                                                                    alt="">
+                                                                            {!! thumb_w(asset($img),320,pathinfo($img)['basename']) !!}
                                                                                 <div>{{ pathinfo($img)['basename'] }}</div>
                                                                             @endforeach
                                                                         @endif

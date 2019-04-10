@@ -36,12 +36,12 @@ function statusJob($status, $redo, $reason)
 
 function thumb($path, $height, $name)
 {
-    return '<img src="' . $path . '" class="materialboxed img-thumbnail" height="' . $height . '" title="' . $name . '"/>';
+    return '<img src="' . $path . '?nocache='.rand(1,99).'?hash=' . time().$name . '" class="materialboxed img-thumbnail" height="' . $height . '" title="' . $name . '"/>';
 }
 
 function thumb_w($path, $width, $name)
 {
-    return '<img src="' . $path . '" class="materialboxed img-thumbnail" width="' . $width . '" title="' . $name . '"/>';
+    return '<img src="' . $path . '?nocache='.rand(1,99).'?hash=' . time().$name . '" class="materialboxed img-thumbnail" width="' . $width . '" title="' . $name . '"/>';
 }
 
 function compareTime($from, $to)
