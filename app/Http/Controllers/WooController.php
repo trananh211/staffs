@@ -109,6 +109,12 @@ class WooController extends Controller
         return $work->checking();
     }
 
+    public function working()
+    {
+        $work = new Working();
+        return $work->working();
+    }
+
     public function sendCustomer($order_id)
     {
         $work = new Working();
@@ -183,6 +189,12 @@ class WooController extends Controller
     {
         $work = new Working();
         return $work->axUploadIdea($request);
+    }
+
+    public function axTakeJob(Request $request)
+    {
+        $work = new Working();
+        return $work->axTakeJob($request);
     }
     /*End Admin + QC*/
 }

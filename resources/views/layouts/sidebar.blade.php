@@ -418,6 +418,10 @@
                     <div class="collapsible-body">
                         <ul>
                             <li>
+                                <a href="{{ url('working') }}">Đang làm
+                                </a>
+                            </li>
+                            <li>
                                 <a href="{{ url('checking') }}">Kiểm tra Design
                                     {!!  notiSideBar($data['pub']['order_checking']) !!}
                                 </a>

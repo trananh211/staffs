@@ -126,4 +126,39 @@ $(document).ready(function () {
         var order_id = $(this).attr('order_id');
         $('.js-redo-form-' + order_id).slideToggle("fast");
     });
+
+    $('#idea-job tbody').on('click', '.js-take-job', function (e) {
+        e.preventDefault();
+        var url = $(this).attr('data-url');
+        var working_id = $(this).attr('data-workingid');
+        var woo_order_id = $(this).attr('data-woo-order-id');
+        $(this).parents('tr').addClass('js-remove-table');
+        $.ajax({
+            method: "POST",
+            url: url,
+            data: {working_id: working_id, woo_order_id: woo_order_id},
+            dataType: 'JSON',
+            // dataType: 'html',
+            success: function (data) {
+                if (data.status === 'success') {
+                    Materialize.toast(data.message, 5000);
+                    //xóa hàng đã chọn
+                    table_idea
+                        .row('.js-remove-table')
+                        .remove()
+                        .draw();
+                } else {
+                    $('.js-remove-table').removeClass('js-remove-table');
+                    Materialize.toast(data.message, 5000);
+                }
+                // console.log('success');
+                // console.log(data);
+            },
+            error: function (error) {
+                window.location.reload();
+                // console.log('error');
+                // console.log(error);
+            }
+        })
+    });
 });
