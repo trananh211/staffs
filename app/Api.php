@@ -41,9 +41,9 @@ class Api extends Model
             $lst_product = array();
             foreach ($data['line_items'] as $key => $value) {
                 $str = "";
-                if (in_array($data['status'], array('failed', 'cancelled'))) {
+                /*if (in_array($data['status'], array('failed', 'cancelled'))) {
                     continue;
-                }
+                }*/
                 foreach ($value['meta_data'] as $item) {
                     $str .= $item['key'] . " : " . $item['value'] . " -;-;-\n";
                 }
