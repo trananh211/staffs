@@ -17,6 +17,7 @@ class WooInfo extends Model
         $woo->name = $request->store_name;
         $woo->url = $request->store_url;
         $woo->email = $request->email;
+        $woo->sku = $request->sku;
         $woo->consumer_key = $request->consumer_key;
         $woo->consumer_secret = $request->consumer_secret;
         $woo->status = 0;

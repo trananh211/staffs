@@ -140,7 +140,7 @@ class GoogleController extends Controller
                 'workings.id as working_id',
                 'wd.id as woo_order_id', 'wd.order_status', 'wd.product_name', 'wd.number', 'wd.fullname', 'wd.address',
                 'wd.city', 'wd.phone', 'wd.postcode', 'wd.country', 'wd.state', 'wd.status as fulfill_status',
-                'wd.quantity', 'wd.customer_note', 'wd.email', 'wd.fullname',
+                'wd.quantity', 'wd.customer_note', 'wd.email', 'wd.fullname', 'wd.sku',
                 'wpd.name as product_origin_name', 'wpd.product_id'
             )
             ->where([
@@ -169,6 +169,7 @@ class GoogleController extends Controller
                     /*Lấy data để lưu vào file excel fulfillment*/
                     $ar_product[$list->product_origin_name][] = [
                         'Order Number' => $list->number,
+                        'SKU' => $list->sku,
                         'Quantity' => $list->quantity,
                         'Customer Note' => $list->customer_note,
                         'Full Name' => $list->fullname,

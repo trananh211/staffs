@@ -38,6 +38,7 @@ class Api extends Model
 //        print_r($data);
         if (sizeof($data['line_items']) > 0) {
             logfile('Store ' . $woo_id . ' has new ' . sizeof($data['line_items']) . ' order item.');
+            $woo_infos = $this->getWooSkuInfo();
             $lst_product = array();
             foreach ($data['line_items'] as $key => $value) {
                 $str = "";
@@ -54,6 +55,7 @@ class Api extends Model
                     'order_status' => $data['status'],
                     'product_id' => $value['product_id'],
                     'product_name' => $value['name'],
+                    'sku' => $this->getSku($woo_infos[$woo_id],$value['product_id'], $value['name']),
                     'quantity' => $value['quantity'],
                     'payment_method' => $data['payment_method_title'],
                     'customer_note' => trim(htmlentities($data['customer_note'])),
@@ -252,6 +254,68 @@ class Api extends Model
             logfile('Check Payment không tìm thấy pending');
             return false;
         }
+    }
+
+
+    public function updateSku()
+    {
+        $woo_infos = $this->getWooSkuInfo();
+        $status = 'error';
+        $message = 'Không có thông tin nào về store';
+        if (sizeof($woo_infos) > 0)
+        {
+            $lists = \DB::table('woo_orders')
+                ->select('id','woo_info_id','product_id','product_name')
+                ->where('sku','')
+                ->get();
+            if (sizeof($lists) > 0)
+            {
+                \DB::beginTransaction();
+                try {
+                    foreach ($lists as $list)
+                    {
+                        $sku = $this->getSku($woo_infos[$list->woo_info_id],$list->product_id, $list->product_name);
+                        \DB::table('woo_orders')
+                            ->where('id', $list->id)
+                            ->update([
+                                'sku' => $sku,
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ]);
+                    }
+                    $status = 'success';
+                    $message = 'Đã update sku cho '.sizeof($lists).' đơn hàng';
+                    \DB::commit(); // if there was no errors, your query will be executed
+                } catch (\Exception $e) {
+                    $status = 'error';
+                    $message = 'Xảy ra lỗi. Hãy thử lại.';
+                    \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+                }
+            } else {
+                $status = 'success';
+                $message = 'Tất cả các đơn hàng đều đủ thông tin sku';
+            }
+        }
+        return redirect('/woo-webhooks')->with($status,$message);
+    }
+
+    private function getWooSkuInfo()
+    {
+        return \DB::table('woo_infos')->pluck('sku','id')->toArray();
+    }
+
+    private static function getSku($woo_sku, $product_id, $product_name)
+    {
+        /*Tach product name*/
+        $product_name = preg_replace('/\s+/', '', $product_name);
+        $tmp = explode('-',$product_name);
+        if (sizeof($tmp) > 1)
+        {
+            $tmp[0] = $woo_sku.'-'.$product_id;
+            $sku = implode('-',$tmp);
+        } else {
+            $sku = $woo_sku.'-'.$product_id;
+        }
+        return $sku;
     }
     /*End WooCommerce API*/
 }
