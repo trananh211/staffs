@@ -196,5 +196,6 @@ class WooController extends Controller
         $work = new Working();
         return $work->axTakeJob($request);
     }
+
     /*End Admin + QC*/
 }

@@ -55,7 +55,6 @@ Route::middleware('auth')->group(function () {
     Route::post('ajax-idea-send-qc','WooController@axIdeaSendQc');
     Route::post('ajax-redo-idea','WooController@axRedoIdea')->name('ajaxredoidea.action');
     Route::post('ajax-upload-idea','WooController@axUploadIdea');
-
     /*End QC + Admin*/
 
     /*Staff*/
@@ -72,7 +71,8 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::get('test','GoogleController@test');
-Route::get('test2','ApiController@checkPaymentAgain');
+Route::get('test2','GoogleController@fulfillment');
+Route::get('test3','GoogleController@uploadFileDriver');
 
 Auth::routes();
 

@@ -22,6 +22,10 @@
                             <td>{{ url('/api/update-product/') }}</td>
                             <td>Get Update product from Woocommerce Store</td>
                         </tr>
+                        <tr>
+                            <td><a href="{{ url('/api/update-sku/') }}">{{ url('/api/update-sku/') }}</a></td>
+                            <td>Update SKU Woocommerce Store</td>
+                        </tr>
 
                         </tbody>
                     </table>

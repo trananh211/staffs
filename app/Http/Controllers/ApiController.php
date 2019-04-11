@@ -108,6 +108,12 @@ class ApiController extends Controller
             ->toArray();
         $api->updateProduct($data,$store[0]);
     }
+
+    public function updateSku()
+    {
+        $api = new Api();
+        return $api->updateSku();
+    }
     /*END WOOCOMMERCE API*/
 }
 

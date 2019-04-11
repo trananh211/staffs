@@ -22,9 +22,13 @@
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="input-field col s12">
+                                <div class="input-field col s10">
                                     <input id="email" type="email" name="email" class="validate">
                                     <label for="email" class="">Email</label>
+                                </div>
+                                <div class="input-field col s2">
+                                    <input id="sku" type="text" name="sku" class="validate">
+                                    <label for="sku" class="">Sku</label>
                                 </div>
                             </div>
                             <div class="row">

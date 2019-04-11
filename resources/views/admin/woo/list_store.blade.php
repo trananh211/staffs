@@ -14,7 +14,7 @@
                             <th data-field="id">Name</th>
                             <th data-field="name">Url</th>
                             <th data-field="email">Email</th>
-                            <th data-field="status">Status</th>
+                            <th data-field="status">SKU</th>
                             <th data-field="Action">Action</th>
                         </tr>
                         </thead>
@@ -28,13 +28,7 @@
                                     <td>{{ $store->url }}</td>
                                     <td>{{ $store->email }}</td>
                                     <td>
-                                        @if($store->status == 1)
-                                            <span class="label label-success">Active</span>
-                                        @elseif( $store->status == 0)
-                                            <span class="label label-warning">Waiting</span>
-                                        @else
-                                            <span class="label">Not Active</span>
-                                        @endif
+                                        {{ $store->sku }}
                                     </td>
                                     <td>
                                         <button class="btn btn-primary btn-mini">Edit</button>
