@@ -23,99 +23,9 @@ class GoogleController extends Controller
 //        $path = renameDir('PC021 Personalised Tottenham Hotspurs FC - Pillow Case', 'Personalised Tottenham Hotspurs FC - Pillow Case' ,$parent_path);
 //        echo $path."\n<br>";
 //        echo $parent_path;
-//        $this->deleteDir('Public');
-//        $this->renameDir('hihi','Hehe');
-//        echo $this->upFile(public_path(env('DIR_DONE').'S247-USA-3156-PID-19.jpg'),'1is5OXHePxYfjym8b0ackAqO0db4ItYpm');
-    }
-
-    public function createDir($name, $path = null)
-    {
-        $name = trim($name);
-        $return = false;
-        $recursive = false; // Get subdirectories also?
-        if (Storage::cloud()->makeDirectory($path . '/' . $name)) {
-            $dir = collect(Storage::cloud()->listContents($path, $recursive))
-                ->where('type', '=', 'dir')
-                ->where('filename', '=', $name)
-                ->sortBy('timestamp')
-                ->last();
-            $return = $dir['path'];
-        }
-        return $return;
-    }
-
-    public function deleteDir($name, $path = null)
-    {
-        $return = false;
-        $name = trim($name);
-        $recursive = false; // Get subdirectories also?
-        $check_before = collect(Storage::cloud()->listContents($path, $recursive))
-            ->where('type', '=', 'dir')
-            ->where('filename', '=', $name)
-            ->first();
-        if ($check_before) {
-            if (Storage::cloud()->deleteDirectory($check_before['path'])) {
-                $return = true;
-            }
-        }
-        return $return;
-    }
-
-    public function renameDir($new_name, $old_name, $path = null)
-    {
-        $return = false;
-        $new_name = trim($new_name);
-        $old_name = trim($old_name);
-        $recursive = false; // Get subdirectories also?
-        $check_before = collect(Storage::cloud()->listContents($path, $recursive))
-            ->where('type', '=', 'dir')
-            ->where('filename', '=', $old_name)
-            ->first();
-        if ($check_before) {
-            if (Storage::cloud()->move($check_before['path'], $new_name)) {
-                $return = true;
-            }
-        }
-        return $return;
-    }
-
-    public function upFile($path_info, $path = null, $new_name = null)
-    {
-        $return = false;
-        if (\File::exists($path_info)) {
-            $filename = pathinfo($path_info)['basename'];
-            $contents = File::get($path_info);
-            $new_name = (strlen($new_name) > 0)? $new_name : $filename;
-            if (Storage::cloud()->put($path . '/' . $new_name, $contents)) {
-                $recursive = false; // Get subdirectories also?
-                $file = collect(Storage::cloud()->listContents($path, $recursive))
-                    ->where('type', '=', 'file')
-                    ->where('filename', '=', pathinfo($new_name, PATHINFO_FILENAME))
-                    ->where('extension', '=', pathinfo($new_name, PATHINFO_EXTENSION))
-                    ->sortBy('timestamp')
-                    ->last();
-                $return = $file['path'];
-            }
-        }
-        return $return;
-    }
-
-    public function deleteFile($filename, $path, $parent_path = null)
-    {
-        $return = false;
-        $name = trim($filename);
-        $recursive = false; // Get subdirectories also?
-        $check_before = collect(Storage::cloud()->listContents($parent_path, $recursive))
-            ->where('type', '=', 'file')
-            ->where('name', '=', $filename)
-            ->where('path', '=', $path)
-            ->first();
-        if ($check_before) {
-            if (Storage::cloud()->delete($check_before['path'])) {
-                $return = true;
-            }
-        }
-        return $return;
+//        deleteDir('Public');
+//        renameDir('hihi','Hehe');
+//        echo upFile(public_path(env('DIR_DONE').'S247-USA-3156-PID-19.jpg'),'1is5OXHePxYfjym8b0ackAqO0db4ItYpm');
     }
 
     /*END GOOGLE API*/
@@ -154,18 +64,19 @@ class GoogleController extends Controller
             $data = array();
             $ar_product = array();
             /*kiểm tra lại thư mục google driver đã tạo trước đó chưa*/
-            $ar_google_driver = array();
+//            $ar_google_driver = array();
             $ar_file_fulfill = array();
             foreach ($lists as $list) {
                 /*Nếu khách chưa trả tiền. Kiểm tra lại với shop*/
-                if ($list->order_status == 'pending') {
+                if (in_array($list->order_status, array('failed','canceled','pending'))) {
                     if ($list->fulfill_status == env('STATUS_NOTFULFILL')) continue;
                     if (in_array($list->woo_order_id, $check_again)) continue;
                     $check_again[] = $list->woo_order_id;
+                    logfie('Đơn hàng '.$list->woo_order_id.' chưa thanh toán tiền');
                     continue;
                 } else {
                     /*check xem đã tạo folder name trên google driver hay chưa*/
-                    $ar_google_driver[$list->product_origin_name] = $list->product_id;
+//                    $ar_google_driver[$list->product_origin_name] = $list->product_id;
                     /*Lấy data để lưu vào file excel fulfillment*/
                     $ar_product[$list->product_origin_name][] = [
                         'Order Number' => $list->number,
@@ -183,10 +94,11 @@ class GoogleController extends Controller
                     ];
                     /*Lấy data để cập nhật trạng thái file hàng fulfilment thành công và bảng workings*/
                     $ar_file_fulfill[$list->product_origin_name][] = $list->working_id;
+                    logfile('Đang fulfill đơn '.$list->number.' vào excel');
                 }
             }
             /*Tạo thư mục trên google driver*/
-            $check_google_driver = \DB::table('gg_folders')->select('name', 'dir')
+            /*$check_google_driver = \DB::table('gg_folders')->select('name', 'dir')
                 ->where('level', '1')
                 ->whereIn('product_id', $ar_google_driver)
                 ->get();
@@ -200,7 +112,7 @@ class GoogleController extends Controller
             if (sizeof($ar_google_driver) > 0) {
                 $db_google_folder = array();
                 foreach ($ar_google_driver as $product_name => $product_id) {
-                    $path = $this->createDir(trim($product_name), env('GOOGLE_DRIVER_FOLDER_PUBLIC'));
+                    $path = createDir(trim($product_name), env('GOOGLE_DRIVER_FOLDER_PUBLIC'));
                     if ($path) {
                         $db_google_folder[] = [
                             'name' => $product_name,
@@ -217,24 +129,23 @@ class GoogleController extends Controller
                 if (sizeof($db_google_folder)) {
                     \DB::table('gg_folders')->insert($db_google_folder);
                 }
-            }
+            }*/
             /*End tạo thư mục trên google driver*/
             $ud_working_move = array();
             foreach ($ar_product as $product_name => $dt) {
-                $name = date("Ymd-His") . '-' . $product_name;
+                $name = date("Y-m-d") . '-' . $product_name;
                 $check = Excel::create($name, function ($excel) use ($dt) {
                     $excel->sheet('Sheet 1', function ($sheet) use ($dt) {
                         $sheet->fromArray($dt);
                     });
                 })->store('csv', public_path(env('DIR_EXCEL_EXPORT')), true);
                 if ($check) {
-                    $check_up = $this->upFile($check['full'], env('GOOGLE_DRIVER_FOLDER_PUBLIC'));
+                    $check_up = upFile($check['full'], env('GOOGLE_DRIVER_FOLDER_PUBLIC'));
                     if ($check_up) {
                         $ud_working_move = array_merge($ud_working_move, $ar_file_fulfill[$product_name]);
                         logfile('Fulfillment file excel thành công đơn hàng :' . $product_name . ' số lượng: ' . sizeof($dt));
                     }
-                    \File::delete($check['full']);
-
+//                    \File::delete($check['full']);
                 }
             }
             /*Nếu export file excel thành công. Tiến hành cập nhật file workings và move lên google driver*/
@@ -291,7 +202,7 @@ class GoogleController extends Controller
             $db_google_folder = array();
             foreach ($ar_product as $product_id => $product_name) {
                 if (!array_key_exists($product_id, $lst_google_folder)) {
-                    $path = $this->createDir(trim($product_name), env('GOOGLE_DRIVER_FOLDER_PUBLIC'));
+                    $path = createDir(trim($product_name), env('GOOGLE_DRIVER_FOLDER_PUBLIC'));
                     if ($path) {
                         $db_google_folder[] = [
                             'name' => $product_name,
@@ -324,7 +235,7 @@ class GoogleController extends Controller
             {
                 if (!array_key_exists($product_name,$lst_google_level2))
                 {
-                    $path = $this->createDir(trim($product_name), $lst_google_folder[$product_id]);
+                    $path = createDir(trim($product_name), $lst_google_folder[$product_id]);
                     if ($path) {
                         $db_google_level2[] = [
                             'name' => $product_name,
@@ -368,9 +279,10 @@ class GoogleController extends Controller
 //
 //                    ];
                     $new_name = $alias.'-'.$file->filename;
-                    $path = $this->upFile($dir_info, $parent_path , $new_name);
+                    $path = upFile($dir_info, $parent_path , $new_name);
                     if ( $path)
                     {
+                        logfile('Up thành công file '.$file->filename.' lên google Driver');
                         $db_google_files[] = [
                             'name' => $new_name,
                             'path' => $path,
@@ -381,6 +293,8 @@ class GoogleController extends Controller
                             'updated_at' => date("Y-m-d H:i:s")
                         ];
                         $ud_status_workings[$file->working_id] = $file->working_id;
+                    } else {
+                        logfile('Up thất bại file '.$file->filename.' lên google Driver');
                     }
                 }
             }
