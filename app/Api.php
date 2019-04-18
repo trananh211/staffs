@@ -252,7 +252,6 @@ class Api extends Model
             logfile('Đã kiểm tra check payment');
         } else {
             logfile('Check Payment không tìm thấy pending');
-            return false;
         }
     }
 
