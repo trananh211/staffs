@@ -31,7 +31,7 @@ class Kernel extends ConsoleKernel
         /*Upload file image lên thư mục fulfill*/
         $schedule->call('App\Http\Controllers\GoogleController@uploadFileDriver')->everyTenMinutes()
             ->between('1:00', '23:00');
-        $schedule->call('App\Http\Controllers\ApiController@checkPaymentAgain')->twiceDaily(1, 13);
+        $schedule->call('App\Http\Controllers\ApiController@checkPaymentAgain')->hourlyAt(17);
 
         /*Test*/
 //        /*

@@ -74,12 +74,13 @@ class GoogleController extends Controller
 //            $ar_google_driver = array();
             $ar_file_fulfill = array();
             foreach ($lists as $list) {
+                $list->product_origin_name = sanitizer($list->product_origin_name);
                 /*Nếu khách chưa trả tiền. Kiểm tra lại với shop*/
                 if (in_array($list->order_status, array('failed','canceled','pending'))) {
                     if ($list->fulfill_status == env('STATUS_NOTFULFILL')) continue;
                     if (in_array($list->woo_order_id, $check_again)) continue;
                     $check_again[] = $list->woo_order_id;
-                    logfile('Đơn hàng '.$list->woo_order_id.' chưa thanh toán tiền');
+                    logfile('Đơn hàng '.$list->number.' chưa thanh toán tiền');
                     continue;
                 } else {
                     /*check xem đã tạo folder name trên google driver hay chưa*/
@@ -106,7 +107,6 @@ class GoogleController extends Controller
             }
             $ud_working_move = array();
             foreach ($ar_product as $product_name => $dt) {
-                $product_name = sanitizer($product_name);
                 $name = date("Y-m-d") . '-' . $product_name;
                 $check = Excel::create($name, function ($excel) use ($dt) {
                     $excel->sheet('Sheet 1', function ($sheet) use ($dt) {
