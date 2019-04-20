@@ -42,6 +42,9 @@ Route::middleware('auth')->group(function () {
     /*QC + Admin*/
     Route::get('checking','WooController@checking');
     Route::get('working','WooController@working');
+    Route::get('fulfillment','GoogleController@fulFillByHand');
+    Route::get('see-log','ApiController@seeLog');
+    Route::get('detail-log/{logfile}','ApiController@detailLog');
     Route::post('ajax-take-job','WooController@axTakeJob');
     Route::get('send-customer/{order_id}','WooController@sendCustomer');
     Route::post('redo-designer','WooController@redoDesigner');
@@ -55,6 +58,7 @@ Route::middleware('auth')->group(function () {
     Route::post('ajax-idea-send-qc','WooController@axIdeaSendQc');
     Route::post('ajax-redo-idea','WooController@axRedoIdea')->name('ajaxredoidea.action');
     Route::post('ajax-upload-idea','WooController@axUploadIdea');
+    Route::post('ajax-delete-log','WooController@axDeleteLog');
     /*End QC + Admin*/
 
     /*Staff*/

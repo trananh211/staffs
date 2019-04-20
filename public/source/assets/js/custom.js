@@ -161,4 +161,38 @@ $(document).ready(function () {
             }
         })
     });
+
+    $('#idea-job tbody').on('click', '.js-delete-log', function (e) {
+        e.preventDefault();
+        var url = $(this).attr('data-url');
+        var name = $(this).attr('data-name');
+        $(this).parents('tr').addClass('js-remove-table');
+        $.ajax({
+            method: "POST",
+            url: url,
+            data: {name: name},
+            dataType: 'JSON',
+            // dataType: 'html',
+            success: function (data) {
+                if (data.status === 'success') {
+                    Materialize.toast(data.message, 5000);
+                    //xóa hàng đã chọn
+                    table_idea
+                        .row('.js-remove-table')
+                        .remove()
+                        .draw();
+                } else {
+                    $('.js-remove-table').removeClass('js-remove-table');
+                    Materialize.toast(data.message, 5000);
+                }
+                // console.log('success');
+                // console.log(data);
+            },
+            error: function (error) {
+                window.location.reload();
+                // console.log('error');
+                // console.log(error);
+            }
+        })
+    });
 });
