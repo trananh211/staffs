@@ -106,6 +106,7 @@ class GoogleController extends Controller
             }
             $ud_working_move = array();
             foreach ($ar_product as $product_name => $dt) {
+                $product_name = sanitizer($product_name);
                 $name = date("Y-m-d") . '-' . $product_name;
                 $check = Excel::create($name, function ($excel) use ($dt) {
                     $excel->sheet('Sheet 1', function ($sheet) use ($dt) {
