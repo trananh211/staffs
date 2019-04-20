@@ -948,5 +948,27 @@ class Working extends Model
             ]);
         }
     }
+
+    public function axDeleteLog($request)
+    {
+        $uid = $this->checkAuth();
+        if ($uid) {
+            $rq = $request->all();
+            $name = storage_path().'/logs/'.$rq['name'];
+            $files = File::exists($name);
+            if ($files) {
+                File::delete($name);
+                $status = 'success';
+                $message = 'Xóa file '. $rq['name'].' thành công';
+            } else {
+                $status = 'error';
+                $message = 'Không xóa file '. $rq['name'].' được do không tồn tại file. Mời bạn thử lại';
+            }
+            return response()->json([
+                'status' => $status,
+                'message' => $message
+            ]);
+        }
+    }
     /*End Admin + QC*/
 }

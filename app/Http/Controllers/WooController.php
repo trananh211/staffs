@@ -197,5 +197,11 @@ class WooController extends Controller
         return $work->axTakeJob($request);
     }
 
+    public function axDeleteLog(Request $request)
+    {
+        $work = new Working();
+        return $work->axDeleteLog($request);
+    }
+
     /*End Admin + QC*/
 }
