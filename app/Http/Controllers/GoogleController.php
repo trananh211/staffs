@@ -70,8 +70,6 @@ class GoogleController extends Controller
             $check_again = array();
             $data = array();
             $ar_product = array();
-            /*kiểm tra lại thư mục google driver đã tạo trước đó chưa*/
-//            $ar_google_driver = array();
             $ar_file_fulfill = array();
             foreach ($lists as $list) {
                 $list->product_origin_name = sanitizer($list->product_origin_name);
@@ -83,8 +81,6 @@ class GoogleController extends Controller
                     logfile('Đơn hàng '.$list->number.' chưa thanh toán tiền');
                     continue;
                 } else {
-                    /*check xem đã tạo folder name trên google driver hay chưa*/
-//                    $ar_google_driver[$list->product_origin_name] = $list->product_id;
                     /*Lấy data để lưu vào file excel fulfillment*/
                     $ar_product[$list->product_origin_name][] = [
                         'Order Number' => $list->number,
@@ -162,7 +158,7 @@ class GoogleController extends Controller
             $ar_google_level2 = array();
             foreach ($lists as $list) {
                 $ar_product_id[$list->product_id] = $list->product_id;
-                $ar_product[$list->product_id] = $list->product_name_origin;
+                $ar_product[$list->product_id] = sanitizer($list->product_name_origin);
                 $ar_google_level2[$list->product_name] = $list->product_id;
                 $ar_file_info[$list->product_name][] = $list;
             }
@@ -243,15 +239,8 @@ class GoogleController extends Controller
                 $i++;
                 foreach($files as $file)
                 {
-
                     $parent_path = $lst_google_level2[$product_name];
                     $dir_info = public_path($file->path.$file->filename);
-//                    $tmp = [
-//                        'parent_path' => $parent_path,
-//                        'dir' => $dir_info,
-//                        'product_id' => $file->product_id,
-//
-//                    ];
                     $new_name = $alias.'-'.$file->filename;
                     $path = upFile($dir_info, $parent_path , $new_name);
                     if ( $path)
