@@ -32,6 +32,13 @@ class GoogleController extends Controller
 
 
     /*Fulfillment*/
+    public function fulFillByHand()
+    {
+        $data = infoShop();
+        $this->fulfillment();
+        return view('admin/woo/webhooks',compact('data'));
+    }
+
     public function fulfillment()
     {
         logfile('================= Fulfillment ==================');
@@ -97,40 +104,6 @@ class GoogleController extends Controller
                     logfile('Đang fulfill đơn '.$list->number.' vào excel');
                 }
             }
-            /*Tạo thư mục trên google driver*/
-            /*$check_google_driver = \DB::table('gg_folders')->select('name', 'dir')
-                ->where('level', '1')
-                ->whereIn('product_id', $ar_google_driver)
-                ->get();
-            if (sizeof($check_google_driver) > 0) {
-                foreach ($check_google_driver as $item) {
-                    if (array_key_exists($item->name, $ar_google_driver)) {
-                        unset($ar_google_driver[$item->name]);
-                    }
-                }
-            }
-            if (sizeof($ar_google_driver) > 0) {
-                $db_google_folder = array();
-                foreach ($ar_google_driver as $product_name => $product_id) {
-                    $path = createDir(trim($product_name), env('GOOGLE_DRIVER_FOLDER_PUBLIC'));
-                    if ($path) {
-                        $db_google_folder[] = [
-                            'name' => $product_name,
-                            'path' => $path,
-                            'parent_path' => env('GOOGLE_DRIVER_FOLDER_PUBLIC'),
-                            'dir' => trim($product_name) . "/",
-                            'product_id' => $product_id,
-                            'level' => 1,
-                            'created_at' => date("Y-m-d H:i:s"),
-                            'updated_at' => date("Y-m-d H:i:s")
-                        ];
-                    }
-                }
-                if (sizeof($db_google_folder)) {
-                    \DB::table('gg_folders')->insert($db_google_folder);
-                }
-            }*/
-            /*End tạo thư mục trên google driver*/
             $ud_working_move = array();
             foreach ($ar_product as $product_name => $dt) {
                 $name = date("Y-m-d") . '-' . $product_name;
@@ -311,6 +284,8 @@ class GoogleController extends Controller
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
             }
+        } else {
+            logfile('Da het file de upload len driver');
         }
     }
     /*End Fulfillment*/

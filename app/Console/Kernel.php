@@ -24,15 +24,22 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        /*$schedule->call('App\Http\Controllers\GoogleController@fulfillment')->everyMinute();
-        $schedule->call('App\Http\Controllers\GoogleController@uploadFileDriver')->everyMinute();
-        $schedule->call('App\Http\Controllers\ApiController@checkPaymentAgain')->everyMinute();*/
-
+        $schedule->exec('chmod -R 777 '.public_path())->dailyAt('00:10');
+        $schedule->exec('chmod -R 777 '.storage_path())->dailyAt('00:20');
         /*Export file excel lên thư mục fulfill*/
         $schedule->call('App\Http\Controllers\GoogleController@fulfillment')->dailyAt('00:30');
         /*Upload file image lên thư mục fulfill*/
-        $schedule->call('App\Http\Controllers\GoogleController@uploadFileDriver')->everyTenMinutes()->between('1:00', '5:00');
-        $schedule->call('App\Http\Controllers\ApiController@checkPaymentAgain')->everyMinute();
+        $schedule->call('App\Http\Controllers\GoogleController@uploadFileDriver')->everyTenMinutes()
+            ->between('1:00', '23:00');
+        $schedule->call('App\Http\Controllers\ApiController@checkPaymentAgain')->twiceDaily(1, 13);
+
+        /*Test*/
+//        /*
+//        $schedule->call('App\Http\Controllers\GoogleController@fulfillment')->everyMinute();
+//        $schedule->call('App\Http\Controllers\GoogleController@uploadFileDriver')->everyMinute();
+//        $schedule->call('App\Http\Controllers\ApiController@checkPaymentAgain')->everyMinute();
+//        */
+
     }
 
     /**

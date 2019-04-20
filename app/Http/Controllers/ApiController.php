@@ -115,5 +115,28 @@ class ApiController extends Controller
         return $api->updateSku();
     }
     /*END WOOCOMMERCE API*/
+
+    public function seeLog()
+    {
+        $files = File::files(storage_path().'/'.'logs/');
+        $data = infoShop();
+        $files = array_reverse($files);
+        return view('admin/seelog',compact('data','files'));
+    }
+
+    public function detailLog($logfile)
+    {
+        $path = storage_path().'/'.'logs/'.$logfile;
+        $files = File::exists($path);
+        if ($files)
+        {
+            echo "<pre>";
+            $contents = File::get($path);
+            echo $contents;
+            echo "</pre>";
+        } else {
+            echo "Không tồn tại file này";
+        }
+    }
 }
 
