@@ -59,6 +59,11 @@ Route::middleware('auth')->group(function () {
     Route::post('ajax-redo-idea','WooController@axRedoIdea')->name('ajaxredoidea.action');
     Route::post('ajax-upload-idea','WooController@axUploadIdea');
     Route::post('ajax-delete-log','WooController@axDeleteLog');
+    Route::get('list-order','WooController@listAllOrder');
+    Route::get('list-product','WooController@listAllProduct');
+    Route::post('update-order','WooController@updateOrder');
+    Route::post('up-design-normal','WooController@upDesignNormal');
+    Route::post('ajax-skip-product','WooController@axSkipProduct');
     /*End QC + Admin*/
 
     /*Staff*/

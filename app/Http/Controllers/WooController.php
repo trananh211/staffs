@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Api;
 use Illuminate\Http\Request;
 use Auth;
 use DB;
@@ -201,6 +202,36 @@ class WooController extends Controller
     {
         $work = new Working();
         return $work->axDeleteLog($request);
+    }
+
+    public function listAllOrder()
+    {
+        $work = new Working();
+        return $work->listAllOrder();
+    }
+
+    public function listAllProduct()
+    {
+        $work = new Working();
+        return $work->listAllProduct();
+    }
+
+    public function updateOrder(Request $request)
+    {
+        $api = new Api();
+        return $api->updateOrder($request);
+    }
+
+    public function upDesignNormal(Request $request)
+    {
+//        $work = new Working();
+//        return $work->upDesignNormal($request);
+    }
+
+    public function axSkipProduct(Request $request)
+    {
+        $work = new Working();
+        return $work->axSkipProduct($request);
     }
 
     /*End Admin + QC*/

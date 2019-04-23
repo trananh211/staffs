@@ -8,6 +8,56 @@ function logfile($str)
     \Log::info($str);
 }
 
+function getMessage($message)
+{
+    return '<ul class="collection">' . $message . '</ul>';
+}
+
+function getErrorMessage($message)
+{
+    return '<li class="red lighten-3 collection-item">' . $message . '</li>';
+}
+
+function getSuccessMessage($message)
+{
+    return '<li class="green lighten-1 collection-item">' . $message . '</li>';
+}
+
+function getTypeProduct($type){
+    switch ($type) {
+        case 'App':
+            $t = 1;
+            break;
+        case '1Design':
+            $t = 2;
+            break;
+        default:
+            $t = 0;
+            break;
+    }
+    return $t;
+}
+
+function statusType($type)
+{
+    switch ($type) {
+        case 0 :
+            $class = 'blue lighten-3';
+            $st = 'Customize';
+            break;
+        case 1 :
+            $class = 'indigo lighten-3';
+            $st = 'App';
+            break;
+        case 2 :
+            $class = 'amber lighten-3';
+            $st = 'Normal';
+            break;
+    }
+    $str = '<div class="center ' . $class . '">' . $st . '</div>';
+    return $str;
+}
+
 function statusJob($status, $redo, $reason)
 {
     $class = ''.$status;
@@ -21,9 +71,21 @@ function statusJob($status, $redo, $reason)
     } else if ($status == env('STATUS_WORKING_CUSTOMER')) {
         $class = 'purple lighten-3';
         $st = 'ReCheck';
-    } else if ($status >= env('STATUS_WORKING_DONE')) {
-        $class = 'green lighten-3';
+    } else if ($status == env('STATUS_WORKING_DONE')) {
+        $class = 'light-green lighten-3';
         $st = 'Done';
+    } else if ($status == env('STATUS_WORKING_MOVE')) {
+        $class = 'teal lighten-3';
+        $st = 'Moving';
+    } else if ($status == env('STATUS_NOTFULFILL')) {
+        $class = 'deep-orange lighten-3';
+        $st = 'Pending';
+    } else if ($status == env('STATUS_UPLOADED')) {
+        $class = 'green lighten-3';
+        $st = 'Uploaded';
+    } else if ($status == env('STATUS_SKIP')) {
+        $class = 'indigo lighten-3';
+        $st = 'App';
     }
 
     if ($redo == 1) {

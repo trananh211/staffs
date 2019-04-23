@@ -418,6 +418,14 @@
                     <div class="collapsible-body">
                         <ul>
                             <li>
+                                <a href="{{ url('list-product') }}">Danh sách sản phẩm
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ url('list-order') }}">Danh sách đơn
+                                </a>
+                            </li>
+                            <li>
                                 <a href="{{ url('working') }}">Đang làm
                                 </a>
                             </li>
