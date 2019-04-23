@@ -55,7 +55,7 @@ class Api extends Model
                     'order_status' => $data['status'],
                     'product_id' => $value['product_id'],
                     'product_name' => $value['name'],
-                    'sku' => $this->getSku($woo_infos[$woo_id],$value['product_id'], $value['name']),
+                    'sku' => $this->getSku($woo_infos[$woo_id], $value['product_id'], $value['name']),
                     'quantity' => $value['quantity'],
                     'payment_method' => $data['payment_method_title'],
                     'customer_note' => trim(htmlentities($data['customer_note'])),
@@ -95,7 +95,6 @@ class Api extends Model
         /*Create new product*/
         $this->syncProduct(array_unique($lst_product), $woo_id);
     }
-
 
     public function updateProduct($data, $store_id)
     {
@@ -154,7 +153,7 @@ class Api extends Model
                             'updated_at' => date("Y-m-d H:i:s")
                         ]);
                 }
-                logfile("Cập nhật thành công product ".$product_name);
+                logfile("Cập nhật thành công product " . $product_name);
             } else {
                 logfile("==== Product  " . $product_name . " chưa được mua hàng lần nào. Bỏ qua ====");
             }
@@ -261,19 +260,16 @@ class Api extends Model
         $woo_infos = $this->getWooSkuInfo();
         $status = 'error';
         $message = 'Không có thông tin nào về store';
-        if (sizeof($woo_infos) > 0)
-        {
+        if (sizeof($woo_infos) > 0) {
             $lists = \DB::table('woo_orders')
-                ->select('id','woo_info_id','product_id','product_name')
-                ->where('sku','')
+                ->select('id', 'woo_info_id', 'product_id', 'product_name')
+                ->where('sku', '')
                 ->get();
-            if (sizeof($lists) > 0)
-            {
+            if (sizeof($lists) > 0) {
                 \DB::beginTransaction();
                 try {
-                    foreach ($lists as $list)
-                    {
-                        $sku = $this->getSku($woo_infos[$list->woo_info_id],$list->product_id, $list->product_name);
+                    foreach ($lists as $list) {
+                        $sku = $this->getSku($woo_infos[$list->woo_info_id], $list->product_id, $list->product_name);
                         \DB::table('woo_orders')
                             ->where('id', $list->id)
                             ->update([
@@ -282,7 +278,7 @@ class Api extends Model
                             ]);
                     }
                     $status = 'success';
-                    $message = 'Đã update sku cho '.sizeof($lists).' đơn hàng';
+                    $message = 'Đã update sku cho ' . sizeof($lists) . ' đơn hàng';
                     \DB::commit(); // if there was no errors, your query will be executed
                 } catch (\Exception $e) {
                     $status = 'error';
@@ -294,25 +290,66 @@ class Api extends Model
                 $message = 'Tất cả các đơn hàng đều đủ thông tin sku';
             }
         }
-        return redirect('/woo-webhooks')->with($status,$message);
+        return redirect('/woo-webhooks')->with($status, $message);
+    }
+
+    public function updateOrder($request)
+    {
+        $status = '';
+        $message = '';
+        $data = array();
+        $rq = $request->all();
+        $woo_id = $rq['id_store'];
+        $info = $this->getInfoStore($woo_id);
+        if ($info) {
+            $woocommerce = $this->getConnectStore($info->url, $info->consumer_key, $info->consumer_secret);
+            $list_orders = explode(',', $rq['order_id']);
+            foreach ($list_orders as $list_order) {
+                $tmp = explode('-', $list_order);
+                $woo_order_id = array_pop($tmp);
+                if (!is_numeric($woo_order_id)) {
+                    $message .= getErrorMessage('Không tồn tại order :' . $list_order);
+                    continue;
+                } else {
+                    $data[] = $woocommerce->get('orders/' . $woo_order_id);
+                }
+            }
+            if (sizeof($data) > 0) {
+                foreach ($data as $dt) {
+                    $dt = json_encode($dt,true);
+                    $dt = (json_decode( $dt, true));
+                    $this->creatOrder($dt, $woo_id);
+                }
+                $status = 'success';
+                $message .= 'Cập nhật thành công';
+            }
+        } else {
+            $status = 'error';
+            $message = getErrorMessage('Không tồn tại store này. Mời bạn thử lại');
+        }
+        return redirect('/list-order')->with($status,$message);
+    }
+
+    private function getInfoStore($id)
+    {
+        return \DB::table('woo_infos')->select('url', 'consumer_key', 'consumer_secret')->where('id', $id)->first();
     }
 
     private function getWooSkuInfo()
     {
-        return \DB::table('woo_infos')->pluck('sku','id')->toArray();
+        return \DB::table('woo_infos')->pluck('sku', 'id')->toArray();
     }
 
     private static function getSku($woo_sku, $product_id, $product_name)
     {
         /*Tach product name*/
         $product_name = preg_replace('/\s+/', '', $product_name);
-        $tmp = explode('-',$product_name);
-        if (sizeof($tmp) > 1)
-        {
-            $tmp[0] = $woo_sku.'-'.$product_id;
-            $sku = implode('-',$tmp);
+        $tmp = explode('-', $product_name);
+        if (sizeof($tmp) > 1) {
+            $tmp[0] = $woo_sku . '-' . $product_id;
+            $sku = implode('-', $tmp);
         } else {
-            $sku = $woo_sku.'-'.$product_id;
+            $sku = $woo_sku . '-' . $product_id;
         }
         return $sku;
     }

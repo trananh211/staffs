@@ -34,19 +34,21 @@ class Working extends Model
         }
     }
 
-    private static function getMessage($message)
+    private static function getListStore()
     {
-        return '<ul class="collection">' . $message . '</ul>';
+        return \DB::table('woo_infos')->select('id', 'name')->get();
     }
 
-    private static function getErrorMessage($message)
+    private static function getListProduct()
     {
-        return '<li class="red lighten-3 collection-item">' . $message . '</li>';
-    }
-
-    private static function getSuccessMessage($message)
-    {
-        return '<li class="green lighten-1 collection-item">' . $message . '</li>';
+        return \DB::table('woo_products as wpd')
+            ->join('woo_infos', 'wpd.woo_info_id', '=', 'woo_infos.id')
+            ->select(
+                'wpd.id', 'wpd.woo_info_id', 'wpd.product_id', 'wpd.name', 'wpd.permalink', 'wpd.image',
+                'woo_infos.name as store_name','wpd.type'
+            )
+            ->orderBy('id', 'DESC')
+            ->get();
     }
 
     /*DASHBOARD*/
@@ -54,7 +56,7 @@ class Working extends Model
     {
         $list_order = $this->getListOrderOfMonth(30);
         return view('/admin/dashboard')
-            ->with(compact('list_order','data'));
+            ->with(compact('list_order', 'data'));
     }
 
     public function staffDashboard($data)
@@ -283,7 +285,7 @@ class Working extends Model
                             }
                             $file_upload[$file_id][] = $file;
                         } else {
-                            $message .= $this->getErrorMessage('File ' . $file . ': Bạn không làm job này.');
+                            $message .= getErrorMessage('File ' . $file . ': Bạn không làm job này.');
                         }
                     }
                     $deleted = array();
@@ -304,10 +306,10 @@ class Working extends Model
                                         'created_at' => date("Y-m-d H:i:s"),
                                         'updated_at' => date("Y-m-d H:i:s")
                                     ];
-                                    $message .= $this->getSuccessMessage('File ' . $f . ' tải lên thành công');
+                                    $message .= getSuccessMessage('File ' . $f . ' tải lên thành công');
                                     $img .= thumb(env('DIR_CHECK') . $f, 50, $f);
                                 } else {
-                                    $message .= $this->getErrorMessage('File ' . $f . ' không thể tải lên lúc này. Mời thử lại');
+                                    $message .= getErrorMessage('File ' . $f . ' không thể tải lên lúc này. Mời thử lại');
                                 }
                             }
                         } else {
@@ -326,11 +328,11 @@ class Working extends Model
                         \File::delete($deleted);
                     }
                 } else {
-                    $message .= $this->getErrorMessage('Hiện tại bạn không có job. Bạn làm sai quy trình.');
+                    $message .= getErrorMessage('Hiện tại bạn không có job. Bạn làm sai quy trình.');
                 }
             }
             return response()->json([
-                'message' => $this->getMessage($message),
+                'message' => getMessage($message),
                 'uploaded_image' => $img
             ]);
         }
@@ -347,7 +349,7 @@ class Working extends Model
         $lists = $this->getListIdea($where);
         $now = date("Y-m-d H:i:s");
         $data = infoShop();
-        return view('staff/new_idea', compact('lists', 'users', 'now','data'));
+        return view('staff/new_idea', compact('lists', 'users', 'now', 'data'));
     }
 
     public function uploadIdea($request)
@@ -384,14 +386,14 @@ class Working extends Model
                                 'updated_at' => date("Y-m-d H:i:s")
                             ];
                             $db_update_ideas[] = $idea_id;
-                            $message .= $this->getSuccessMessage('Trả ' . $file . ' hàng thành công.');
+                            $message .= getSuccessMessage('Trả ' . $file . ' hàng thành công.');
                             $img .= thumb(env('DIR_NEW') . $file, 50, $file);
                         } else {
-                            $message .= $this->getErrorMessage('File ' . $file . ' không thể trả vào lúc này. Vui lòng thử lại');
+                            $message .= getErrorMessage('File ' . $file . ' không thể trả vào lúc này. Vui lòng thử lại');
                         }
                     } else {
                         File::delete(env('DIR_TMP') . $file);
-                        $message .= $this->getErrorMessage('File ' . $file . ' không phải công việc bạn đang làm.');
+                        $message .= getErrorMessage('File ' . $file . ' không phải công việc bạn đang làm.');
                     }
                 }
                 if (sizeof($db_files) > 0) {
@@ -408,7 +410,7 @@ class Working extends Model
                 }
             }
             return response()->json([
-                'message' => $this->getMessage($message),
+                'message' => getMessage($message),
                 'img' => $img
             ]);
         }
@@ -440,7 +442,7 @@ class Working extends Model
                 $delete_file = array();
                 foreach ($files as $file) {
                     if (in_array($file, $files_existed)) {
-                        $message .= $this->getErrorMessage('Đã tồn tại :' . $file . ' trước đó. 
+                        $message .= getErrorMessage('Đã tồn tại :' . $file . ' trước đó. 
                         Kiểm tra lại hoặc đổi tên file nhé.');
                         $delete_file[] = env('DIR_TMP') . $file;
                         continue;
@@ -458,7 +460,7 @@ class Working extends Model
                         'updated_at' => date("Y-m-d H:i:s")
                     ];
 
-                    $message .= $this->getSuccessMessage('Tạo job thành công : ' . $file);
+                    $message .= getSuccessMessage('Tạo job thành công : ' . $file);
                     $img .= thumb(env('DIR_NEW') . $file, 50, $file);
                 }
                 if (sizeof($delete_file) > 0) {
@@ -473,15 +475,15 @@ class Working extends Model
                         \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
                     }
                 } else {
-                    $message .= $this->getErrorMessage('Xảy ra lỗi!. Tải lại trang và gửi hàng lại');
+                    $message .= getErrorMessage('Xảy ra lỗi!. Tải lại trang và gửi hàng lại');
                 }
             } else {
-                $message = $this->getErrorMessage('Bạn tải lên không có file nào là file ảnh. Bạn làm sai quy trình');
+                $message = getErrorMessage('Bạn tải lên không có file nào là file ảnh. Bạn làm sai quy trình');
             }
         }
 
         return response()->json([
-            'message' => (strlen(trim($message)) > 0) ? $this->getMessage($message) : $message,
+            'message' => (strlen(trim($message)) > 0) ? getMessage($message) : $message,
             'img' => $img
         ]);
     }
@@ -499,7 +501,7 @@ class Working extends Model
         $lists = $list_ideas['lists'];
         $idea_files = $list_ideas['idea_files'];
         $data = infoShop();
-        return view('admin/list_idea', compact('lists', 'idea_files','data'));
+        return view('admin/list_idea', compact('lists', 'idea_files', 'data'));
     }
 
     public function listIdeaDone()
@@ -514,7 +516,7 @@ class Working extends Model
         $lists = $list_ideas['lists'];
         $idea_files = $list_ideas['idea_files'];
         $data = infoShop();
-        return view('admin/list_idea_done', compact('lists', 'idea_files','data'));
+        return view('admin/list_idea_done', compact('lists', 'idea_files', 'data'));
     }
 
     private static function filterListIdea($tmp)
@@ -597,19 +599,19 @@ class Working extends Model
             if ($file->getSize() <= 10000000) {
                 if (in_array(strtolower($extension), $ext)) {
                     if (strlen($str_compare) > 0 && strpos($filename, $str_compare) === false) {
-                        $message .= $this->getErrorMessage('File ' . $filename . ' sai định dạng tên. Mời đổi lại tên.');
+                        $message .= getErrorMessage('File ' . $filename . ' sai định dạng tên. Mời đổi lại tên.');
                         continue;
                     }
                     if ($file->move(public_path(env('DIR_TMP')), $filename)) {
                         $filter_files[] = $filename;
                     } else {
-                        $message .= $this->getErrorMessage('Upload lỗi file :' . $filename . '. Làm ơn thử lại nhé.');
+                        $message .= getErrorMessage('Upload lỗi file :' . $filename . '. Làm ơn thử lại nhé.');
                     }
                 } else {
-                    $message .= $this->getErrorMessage('File ' . $filename . ' không phải là file ảnh');
+                    $message .= getErrorMessage('File ' . $filename . ' không phải là file ảnh');
                 }
             } else {
-                $message .= $this->getErrorMessage('File ' . $filename . ' lớn hơn 10MB');
+                $message .= getErrorMessage('File ' . $filename . ' lớn hơn 10MB');
             }
         }
         return array('message' => $message, 'files' => $filter_files);
@@ -627,7 +629,7 @@ class Working extends Model
         ];
         $images = $this->getWorkingFile($where_working_file);
         $data = infoShop();
-        return view('admin/checking')->with(compact('lists', 'images','data'));
+        return view('admin/checking')->with(compact('lists', 'images', 'data'));
     }
 
     public function working()
@@ -637,7 +639,7 @@ class Working extends Model
         ];
         $lists = $this->orderStaff($where);
         $data = infoShop();
-        return view('admin/working')->with(compact('data','lists'));
+        return view('admin/working')->with(compact('data', 'lists'));
     }
 
     private function getWorkingFile($where)
@@ -736,7 +738,7 @@ class Working extends Model
         ];
         $images = $this->getWorkingFile($where_working_file);
         $data = infoShop();
-        return view('/admin/review_customer',compact('lists','images','data'));
+        return view('/admin/review_customer', compact('lists', 'images', 'data'));
     }
 
     public function supplier()
@@ -789,6 +791,38 @@ class Working extends Model
         return $list;
     }
 
+    public function axSkipProduct($request)
+    {
+        $uid = $this->checkAuth();
+        if ($uid) {
+            $rq = $request->all();
+            $lst_products = $rq['list'];
+            \DB::beginTransaction();
+            try {
+                \DB::table('workings')->whereIn('product_id', $lst_products)->delete();
+                \DB::table('woo_orders')->whereIn('product_id', $lst_products)->update([
+                    'status' => env('STATUS_SKIP'),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+                \DB::table('woo_products')->whereIn('product_id', $lst_products)->update([
+                    'type' => getTypeProduct('App'),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+                $status = 'success';
+                $message = 'Chuyển đổi thành công.';
+                \DB::commit(); // if there was no errors, your query will be executed
+            } catch (\Exception $e) {
+                $status = 'error';
+                $message = 'Xảy ra lỗi. Mời bạn thử lại';
+                \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+            }
+            return response()->json([
+                'status' => $status,
+                'message' => $message
+            ]);
+        }
+    }
+
     public function axIdeaSendQc($request)
     {
         $uid = $this->checkAuth();
@@ -800,13 +834,12 @@ class Working extends Model
             try {
                 /*Lấy toàn bộ file Idea up lên google driver*/
                 $lists = \DB::table('idea_files')
-                    ->select('id','name','path','idea_id')
-                    ->where('idea_id',$idea_id)->get();
+                    ->select('id', 'name', 'path', 'idea_id')
+                    ->where('idea_id', $idea_id)->get();
                 $db_google_files = array();
-                foreach( $lists as $list)
-                {
-                    $path = upFile(public_path($list->path),env('GOOGLE_DRIVER_FOLDER_IDEA'));
-                    if ($path){
+                foreach ($lists as $list) {
+                    $path = upFile(public_path($list->path), env('GOOGLE_DRIVER_FOLDER_IDEA'));
+                    if ($path) {
                         $db_google_files[] = [
                             'name' => $list->name,
                             'path' => $path,
@@ -928,7 +961,7 @@ class Working extends Model
             $woo_order_id = $rq['woo_order_id'];
             \DB::beginTransaction();
             try {
-                \DB::table('workings')->where('id',$working_id)->delete();
+                \DB::table('workings')->where('id', $working_id)->delete();
                 \DB::table('woo_orders')->where('id', $woo_order_id)
                     ->update([
                         'status' => env('STATUS_WORKING_NEW'),
@@ -954,21 +987,52 @@ class Working extends Model
         $uid = $this->checkAuth();
         if ($uid) {
             $rq = $request->all();
-            $name = storage_path().'/logs/'.$rq['name'];
+            $name = storage_path() . '/logs/' . $rq['name'];
             $files = File::exists($name);
             if ($files) {
                 File::delete($name);
                 $status = 'success';
-                $message = 'Xóa file '. $rq['name'].' thành công';
+                $message = 'Xóa file ' . $rq['name'] . ' thành công';
             } else {
                 $status = 'error';
-                $message = 'Không xóa file '. $rq['name'].' được do không tồn tại file. Mời bạn thử lại';
+                $message = 'Không xóa file ' . $rq['name'] . ' được do không tồn tại file. Mời bạn thử lại';
             }
             return response()->json([
                 'status' => $status,
                 'message' => $message
             ]);
         }
+    }
+
+    public function listAllOrder()
+    {
+        $data = infoShop();
+        $list_order = $this->getListOrderOfMonth(30);
+        $list_stores = $this->getListStore();
+        return view('/admin/listorder')
+            ->with(compact('list_order', 'data', 'list_stores'));
+    }
+
+    public function listAllProduct()
+    {
+        $data = infoShop();
+        $list_products = $this->getListProduct();
+        return view('/admin/list_product')
+            ->with(compact('list_products', 'data'));
+    }
+
+    public function upDesignNormal($request)
+    {
+        $rq = $request->all();
+        //ham lọc file ảnh trước khi upload - sẽ move vào DIR_TMP trước tiên
+        $tmp = $this->filterFileUpload($rq['files'], '');
+        $message = $tmp['message'];
+        $files = $tmp['files'];
+        $img = '';
+        if (sizeof($files) > 0) {
+            print_r($files);
+        }
+        return redirect('list-product')->with('success', getMessage($message));
     }
     /*End Admin + QC*/
 }

@@ -195,4 +195,47 @@ $(document).ready(function () {
             }
         })
     });
+
+    $('.js-skip-product').on('click', function (e) {
+        e.preventDefault();
+        var list = checkbox();
+        if (list.length == 0) {
+            Materialize.toast('Bạn phải chọn sản phẩm trước đã!', 4000);
+        } else {
+            if(confirm("Bạn có chắc chắn thực hiện việc này?"))
+            {
+                var url = $(this).attr('data-url');
+                $.ajax({
+                    method: "POST",
+                    url: url,
+                    data: {list: list},
+                    dataType: 'JSON',
+                    // dataType: 'html',
+                    success: function (data) {
+                        Materialize.toast(data.message, 5000);
+                        window.location.reload();
+                        // console.log('success');
+                        // console.log(data);
+                    },
+                    error: function (error) {
+                        window.location.reload();
+                        // console.log('error');
+                        // console.log(error);
+                    }
+                })
+            }
+        }
+    });
+
+    function checkbox()
+    {
+        var list = new Array();
+        $('.js-checkbox-one').each(function (index, value) {
+            if ($(this).is(':checked')) {
+                var product_id = $(this).parent('.js-data').attr('data-product-id');
+                list.push(product_id);
+            }
+        });
+        return list;
+    }
 });
