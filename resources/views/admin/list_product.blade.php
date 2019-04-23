@@ -7,9 +7,6 @@
         <div class="col s12 m12 l12">
             <div class="card">
                 <div class="card-content">
-                    <a class="waves-effect waves-light btn indigo">button</a>
-                    <a class="waves-effect waves-light btn green">button</a>
-                    <a class="waves-effect waves-light btn orange">button</a>
                     <a class="waves-effect waves-light btn purple js-skip-product" data-url="{{ url('ajax-skip-product') }}">
                         Bỏ Qua
                     </a>
