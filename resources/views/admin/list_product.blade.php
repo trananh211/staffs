@@ -46,7 +46,7 @@
                             @foreach($list_products as $key => $product)
                                 <tr>
                                     <td>{{ $key+1 }}</td>
-                                    <td>{!! thumb( explode(',',$product->image)[0], 50, $product->name) !!}</td>
+                                    <td>{!! thumb_c( explode(',',$product->image)[0], 50, $product->name) !!}</td>
                                     <td><a href="{{ $product->permalink }}" target="_blank">{{ $product->name }}</a>
                                     </td>
                                     <td>{!! statusType($product->type) !!}</td>
