@@ -98,6 +98,10 @@ function statusJob($status, $redo, $reason)
     }
     return $str;
 }
+function thumb_c($path, $height, $name)
+{
+    return '<img src="' . $path . '" class="materialboxed img-thumbnail" height="' . $height . '" title="' . $name . '"/>';
+}
 
 function thumb($path, $height, $name)
 {
