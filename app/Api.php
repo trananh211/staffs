@@ -28,14 +28,33 @@ class Api extends Model
         );
         return $woocommerce;
     }
+    /*Check order with platform*/
+    private static function getProductSkip()
+    {
+        return \DB::table('woo_products')->where('type', '!=', 0)->pluck('type','product_id')->toArray();
+    }
 
+    private static function getStatusOrder($product_id, $array)
+    {
+
+        $status = env('STATUS_WORKING_NEW');
+        if (sizeof($array) > 0 && array_key_exists($product_id, $array)) {
+            if ($array[$product_id] == env('TYPE_APP')) {
+                $status = env('STATUS_SKIP');
+            } else if ($array[$product_id] == env('TYPE_NORMAL')) {
+                $status = env('STATUS_PRODUCT_NORMAL');
+            }
+        }
+        return $status;
+    }
     /*Create new order*/
-    public function creatOrder($data, $woo_id)
+    public function createOrder($data, $woo_id)
     {
         $db = array();
         logfile('=====================CREATE NEW ORDER=======================');
-//        echo "<pre>";
+        echo "<pre>";
 //        print_r($data);
+        $lst_product_skip = $this->getProductSkip();
         if (sizeof($data['line_items']) > 0) {
             logfile('Store ' . $woo_id . ' has new ' . sizeof($data['line_items']) . ' order item.');
             $woo_infos = $this->getWooSkuInfo();
@@ -53,6 +72,7 @@ class Api extends Model
                     'order_id' => $data['id'],
                     'number' => $data['number'],
                     'order_status' => $data['status'],
+                    'status' => $this->getStatusOrder($value['product_id'], $lst_product_skip),
                     'product_id' => $value['product_id'],
                     'product_name' => $value['name'],
                     'sku' => $this->getSku($woo_infos[$woo_id], $value['product_id'], $value['name']),
@@ -318,7 +338,7 @@ class Api extends Model
                 foreach ($data as $dt) {
                     $dt = json_encode($dt,true);
                     $dt = (json_decode( $dt, true));
-                    $this->creatOrder($dt, $woo_id);
+                    $this->createOrder($dt, $woo_id);
                 }
                 $status = 'success';
                 $message .= 'Cập nhật thành công';
