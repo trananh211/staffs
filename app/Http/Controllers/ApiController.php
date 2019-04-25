@@ -34,7 +34,7 @@ class ApiController extends Controller
         if (sizeof($data) > 0 && $woo_id !== false)
         {
             $api = new Api();
-            $api->creatOrder($data,$woo_id);
+            $api->createOrder($data,$woo_id);
         }
     }
 
@@ -69,7 +69,7 @@ class ApiController extends Controller
             ->where('url',$webhook_source)
             ->pluck('id')
             ->toArray();
-        $api->creatOrder($data,$store[0]);
+        $api->createOrder($data,$store[0]);
     }
 
     public function updateProduct(Request $request)

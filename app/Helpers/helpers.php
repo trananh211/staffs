@@ -86,6 +86,9 @@ function statusJob($status, $redo, $reason)
     } else if ($status == env('STATUS_SKIP')) {
         $class = 'indigo lighten-3';
         $st = 'App';
+    } else if ($status == env('STATUS_PRODUCT_NORMAL')) {
+        $class = 'brown lighten-3';
+        $st = 'Normal';
     }
 
     if ($redo == 1) {
