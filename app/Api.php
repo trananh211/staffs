@@ -186,6 +186,7 @@ class Api extends Model
         /*Kiem tra xem danh sach product da ton tai hay chua*/
         $products = DB::table('woo_products')
             ->whereIn('product_id', $lst)
+            ->where('woo_info_id',$woo_id)
             ->pluck('product_id')
             ->toArray();
         if (sizeof($products) != sizeof($lst)) {
