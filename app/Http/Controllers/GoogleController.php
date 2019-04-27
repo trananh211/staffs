@@ -36,7 +36,7 @@ class GoogleController extends Controller
     {
         $data = infoShop();
         $this->fulfillment();
-        return view('admin/woo/webhooks',compact('data'));
+        return view('admin/woo/webhooks', compact('data'));
     }
 
     public function fulfillment()
@@ -71,14 +71,15 @@ class GoogleController extends Controller
             $data = array();
             $ar_product = array();
             $ar_file_fulfill = array();
+            $ar_order_fulfill = array();
             foreach ($lists as $list) {
                 $list->product_origin_name = sanitizer($list->product_origin_name);
                 /*Nếu khách chưa trả tiền. Kiểm tra lại với shop*/
-                if (in_array($list->order_status, array('failed','canceled','pending'))) {
+                if (in_array($list->order_status, array('failed', 'canceled', 'pending'))) {
                     if ($list->fulfill_status == env('STATUS_NOTFULFILL')) continue;
                     if (in_array($list->woo_order_id, $check_again)) continue;
                     $check_again[] = $list->woo_order_id;
-                    logfile('Đơn hàng '.$list->number.' chưa thanh toán tiền');
+                    logfile('Đơn hàng ' . $list->number . ' chưa thanh toán tiền');
                     continue;
                 } else {
                     /*Lấy data để lưu vào file excel fulfillment*/
@@ -98,10 +99,12 @@ class GoogleController extends Controller
                     ];
                     /*Lấy data để cập nhật trạng thái file hàng fulfilment thành công và bảng workings*/
                     $ar_file_fulfill[$list->product_origin_name][] = $list->working_id;
-                    logfile('Đang fulfill đơn '.$list->number.' vào excel');
+                    $ar_order_fulfill[$list->product_origin_name][] = $list->woo_order_id;
+                    logfile('Đang fulfill đơn ' . $list->number . ' vào excel');
                 }
             }
             $ud_working_move = array();
+            $ud_order_move = array();
             foreach ($ar_product as $product_name => $dt) {
                 $name = date("Y-m-d") . '-' . $product_name;
                 $check = Excel::create($name, function ($excel) use ($dt) {
@@ -113,6 +116,7 @@ class GoogleController extends Controller
                     $check_up = upFile($check['full'], env('GOOGLE_DRIVER_FOLDER_PUBLIC'));
                     if ($check_up) {
                         $ud_working_move = array_merge($ud_working_move, $ar_file_fulfill[$product_name]);
+                        $ud_order_move = array_merge($ud_order_move, $ar_order_fulfill[$product_name]);
                         logfile('Fulfillment file excel thành công đơn hàng :' . $product_name . ' số lượng: ' . sizeof($dt));
                     }
 //                    \File::delete($check['full']);
@@ -121,6 +125,11 @@ class GoogleController extends Controller
             /*Nếu export file excel thành công. Tiến hành cập nhật file workings và move lên google driver*/
             if (sizeof($ud_working_move) > 0) {
                 \DB::table('workings')->whereIn('id', $ud_working_move)
+                    ->update([
+                        'status' => env('STATUS_WORKING_MOVE'),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                \DB::table('woo_orders')->whereIn('id', $ud_order_move)
                     ->update([
                         'status' => env('STATUS_WORKING_MOVE'),
                         'updated_at' => date("Y-m-d H:i:s")
@@ -145,10 +154,10 @@ class GoogleController extends Controller
             ->join('woo_products as wpd', 'workings.product_id', '=', 'wpd.product_id')
             ->select(
                 'workings.id as working_id', 'wod.product_id', 'wod.product_name',
-                'wpd.name as product_name_origin', 'file.name as filename', 'file.path','file.id as working_file_id'
+                'wpd.name as product_name_origin', 'file.name as filename', 'file.path', 'file.id as working_file_id'
             )
             ->where('workings.status', env('STATUS_WORKING_MOVE'))
-            ->where('file.is_mockup',0)
+            ->where('file.is_mockup', 0)
             ->get();
         if (sizeof($lists) > 0) {
             /*Phân loại file theo product*/
@@ -197,14 +206,12 @@ class GoogleController extends Controller
             }
             /*Lấy ra danh sách google folder level 2*/
             $lst_google_level2 = \DB::table('gg_folders')
-                ->where('level',2)->whereIn('product_id',$ar_product_id)
-                ->pluck('path','name')
+                ->where('level', 2)->whereIn('product_id', $ar_product_id)
+                ->pluck('path', 'name')
                 ->toArray();
             $db_google_level2 = array();
-            foreach($ar_google_level2 as $product_name => $product_id)
-            {
-                if (!array_key_exists($product_name,$lst_google_level2))
-                {
+            foreach ($ar_google_level2 as $product_name => $product_id) {
+                if (!array_key_exists($product_name, $lst_google_level2)) {
                     $path = createDir(trim($product_name), $lst_google_folder[$product_id]);
                     if ($path) {
                         $db_google_level2[] = [
@@ -223,29 +230,26 @@ class GoogleController extends Controller
             if (sizeof($db_google_level2) > 0) {
                 \DB::table('gg_folders')->insert($db_google_level2);
                 $lst_google_level2 = \DB::table('gg_folders')
-                    ->where('level',2)->whereIn('product_id',$ar_product_id)
-                    ->pluck('path','name')
+                    ->where('level', 2)->whereIn('product_id', $ar_product_id)
+                    ->pluck('path', 'name')
                     ->toArray();
             }
 
             $db_google_files = array();
             $ud_status_workings = array();
             /*Up file lên google Driver*/
-            $i= 0;
+            $i = 0;
             $alias = date('Ymd');
-            foreach ($ar_file_info as $product_name => $files)
-            {
+            foreach ($ar_file_info as $product_name => $files) {
                 if ($i > 2) break;
                 $i++;
-                foreach($files as $file)
-                {
+                foreach ($files as $file) {
                     $parent_path = $lst_google_level2[$product_name];
-                    $dir_info = public_path($file->path.$file->filename);
-                    $new_name = $alias.'-'.$file->filename;
-                    $path = upFile($dir_info, $parent_path , $new_name);
-                    if ( $path)
-                    {
-                        logfile('Up thành công file '.$file->filename.' lên google Driver');
+                    $dir_info = public_path($file->path . $file->filename);
+                    $new_name = $alias . '-' . $file->filename;
+                    $path = upFile($dir_info, $parent_path, $new_name);
+                    if ($path) {
+                        logfile('Up thành công file ' . $file->filename . ' lên google Driver');
                         $db_google_files[] = [
                             'name' => $new_name,
                             'path' => $path,
@@ -257,19 +261,18 @@ class GoogleController extends Controller
                         ];
                         $ud_status_workings[$file->working_id] = $file->working_id;
                     } else {
-                        logfile('Up thất bại file '.$file->filename.' lên google Driver');
+                        logfile('Up thất bại file ' . $file->filename . ' lên google Driver');
                     }
                 }
             }
 
-            if (sizeof($db_google_files) > 0)
-            {
+            if (sizeof($db_google_files) > 0) {
                 \DB::table('gg_files')->insert($db_google_files);
-                \DB::table('workings')->whereIn('id',$ud_status_workings)->update([
+                \DB::table('workings')->whereIn('id', $ud_status_workings)->update([
                     'status' => env('STATUS_UPLOADED'),
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
-                \DB::table('working_files')->whereIn('working_id',$ud_status_workings)->update([
+                \DB::table('working_files')->whereIn('working_id', $ud_status_workings)->update([
                     'status' => env('STATUS_UPLOADED'),
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
