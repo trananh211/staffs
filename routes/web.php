@@ -80,8 +80,8 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::get('test','GoogleController@test');
-Route::get('test2','GoogleController@fulfillment');
-Route::get('test3','GoogleController@uploadFileDriver');
+Route::get('fulfillment','GoogleController@fulfillment');
+Route::get('uploadFileDriver','GoogleController@uploadFileDriver');
 
 Auth::routes();
 
