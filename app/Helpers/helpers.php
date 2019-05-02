@@ -60,6 +60,7 @@ function statusType($type)
 
 function statusPayment($status, $payment)
 {
+    $class = '';
     switch ($status) {
         case 'processing' :
             $class = 'green lighten-3';
