@@ -58,6 +58,23 @@ function statusType($type)
     return $str;
 }
 
+function statusPayment($status, $payment)
+{
+    switch ($status) {
+        case 'processing' :
+            $class = 'green lighten-3';
+            break;
+        case 'on-hold' :
+            $class = 'deep-orange lighten-3';
+            break;
+        case 'cancelled' :
+            $class = '#e0e0e0 grey lighten-2';
+            break;
+    }
+    $str = '<div class="center ' . $class . '" title="'.$status.'">' . $payment . '</div>';
+    return $str;
+}
+
 function statusJob($status, $redo, $reason)
 {
     $class = ''.$status;
