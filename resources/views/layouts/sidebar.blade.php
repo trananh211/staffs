@@ -417,18 +417,8 @@
                     </a>
                     <div class="collapsible-body">
                         <ul>
-                            <li>
-                                <a href="{{ url('list-product') }}">Danh sách sản phẩm
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ url('list-order') }}">Danh sách đơn
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ url('working') }}">Đang làm
-                                </a>
-                            </li>
+                            <li><a href="{{ url('list-order') }}">Danh sách đơn</a></li>
+                            <li><a href="{{ url('working') }}">Đang làm</a></li>
                             <li>
                                 <a href="{{ url('checking') }}">Kiểm tra Design
                                     {!!  notiSideBar($data['pub']['order_checking']) !!}
@@ -440,6 +430,7 @@
                                 </a>
                             </li>
                             <li><a href="{{ url('supplier') }}">Supplier</a></li>
+                            <li><a href="{{ url('list-product') }}">Danh sách sản phẩm</a></li>
                         </ul>
                     </div>
                 </li>
