@@ -9,6 +9,7 @@ use DB;
 use File;
 use Illuminate\Http\UploadFile;
 use Carbon\Carbon;
+Use App\Jobs\SendPostEmail;
 
 class Working extends Model
 {
@@ -661,10 +662,17 @@ class Working extends Model
     {
         /*Move file về thư mục done*/
         $where = [
-            ['id', '=', $order_id],
+            ['workings.id', '=', $order_id],
+            ['workings.id', '=', $order_id],
+            ['wfl.is_mockup', '=', 1],
         ];
         $working = \DB::table('workings')
-            ->select('id', 'number', 'status', 'woo_order_id')
+            ->join('working_files as wfl','workings.id', '=', 'wfl.working_id')
+            ->join('woo_orders as wod','workings.woo_order_id', '=', 'wod.id')
+            ->select(
+                'workings.id', 'workings.number', 'workings.status', 'workings.woo_order_id','workings.woo_info_id',
+                'wfl.path', 'wfl.name','wod.email as customer_email', 'wod.fullname as customer_name'
+            )
             ->where($where)
             ->first();
         if ($working !== NULL) {
@@ -685,7 +693,24 @@ class Working extends Model
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
             /*Todo: Xây dựng hàm gửi email tới khách hàng ở đây */
-
+            $info = \DB::table('woo_infos')
+                ->select('name', 'email', 'password', 'host', 'port', 'security')
+                ->where('id',$working->woo_info_id)
+                ->first();
+            $title = '[ '.$info->name.' ] Update information about order '.$working->number;
+            $file = public_path($working->path.$working->name);
+            $body = "Dear ".$working->customer_name.",
+We send you this email with information about ".$working->number." order. 
+We send detailed information about the design in the attached file below. 
+If you want to resubmit your order redesign request, please reply to the message within 24 hours from the time you receive this email, after 24 hours we will move on to the next stage. 
+If you are satisfied with the product, please do not reply to this email.
+Thank you for your purchase at our store. Wish you a good day and lots of luck.
+            ";
+            $info->email_to = $working->customer_email;
+            $info->title = $title;
+            $info->body = $body;
+            $info->file = $file;
+            dispatch(new SendPostEmail($info));
             /*End todo: Xây dựng hàm gửi email */
             $status = 'success';
             $message = "Thành công. Tiếp tục kiểm tra các đơn hàng còn lại.";
