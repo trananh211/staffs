@@ -6,6 +6,12 @@ use Illuminate\Http\Request;
 use DB;
 use App\Api;
 use File;
+//use \Swift_SmtpTransport as SmtpTransport;
+use Swift_SmtpTransport;
+
+use Swift_Mailer;
+use Swift_MailTransport;
+use Swift_Message;
 
 use Illuminate\Support\Facades\Storage;
 

@@ -22,33 +22,60 @@ class WooController extends Controller
     public function connect()
     {
         $data = infoShop();
-        return view('admin/woo/connect',compact('data'));
+        return view('admin/woo/connect', compact('data'));
     }
 
-    public function doConnect()
+    public function doConnect(Request $request)
     {
-        $woo = new WooInfo();
-        \DB::beginTransaction();
-        try {
-            $woo->saveStore();
-            \DB::commit(); // if there was no errors, your query will be executed
-        } catch (\Exception $e) {
-            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        $data = $request->all();
+        $str = '';
+        if (array_key_exists('id_store', $data)) {
+            $woo_info = WooInfo::find($request->id_store);
+            $str = "Cập nhật thông tin thành công";
+        } else {
+            $woo_info = new WooInfo();
+            $str = "Tạo mới thông tin store thành công";
         }
-        return back();
+        $woo_info->name = $request->name;
+        $woo_info->url = $request->url;
+        $woo_info->email = $request->email;
+        $woo_info->password = $request->password;
+        $woo_info->host = $request->host;
+        $woo_info->port = $request->port;
+        $woo_info->security = $request->security;
+        $woo_info->consumer_key = $request->consumer_key;
+        $woo_info->consumer_secret = $request->consumer_secret;
+        $woo_info->sku = $request->sku;
+        $woo_info->status = 0;
+        $result = $woo_info->save();
+        if ($result) {
+            $status = 'success';
+            $message = $str;
+        } else {
+            $status = 'error';
+            $message = 'Lưu thông tin thất bại';
+        }
+        return back()->with($status, $message);
     }
 
     public function listStore()
     {
         $stores = WooInfo::get();
         $data = infoShop();
-        return view('admin/woo/list_store',compact('stores','data'));
+        return view('admin/woo/list_store', compact('stores', 'data'));
+    }
+
+    public function editStore($id_store)
+    {
+        $data = infoShop();
+        $store = \DB::table('woo_infos')->where('id', $id_store)->get();
+        return view('admin/edit_store', compact('data'));
     }
 
     public function webhooks()
     {
         $data = infoShop();
-        return view('admin/woo/webhooks',compact('data'));
+        return view('admin/woo/webhooks', compact('data'));
     }
     /*End S Admin*/
 
@@ -58,13 +85,13 @@ class WooController extends Controller
         $work = new Working();
         $lists = $work->listOrder();
         $data = infoShop();
-        return view('staff/staff',compact('data','lists'));
+        return view('staff/staff', compact('data', 'lists'));
     }
 
     public function detailOrder($order_id)
     {
         $work = new Working();
-        return view('staff/detail_order',['details' => $work->detailOrder($order_id)]);
+        return view('staff/detail_order', ['details' => $work->detailOrder($order_id)]);
     }
 
     public function staffGetJob()
@@ -75,7 +102,7 @@ class WooController extends Controller
 
     public function staffDoneJob($up_id)
     {
-        return view('staff/staff_done',['up_id'=>$up_id]);
+        return view('staff/staff_done', ['up_id' => $up_id]);
     }
 
     public function staffUpload()
@@ -145,7 +172,7 @@ class WooController extends Controller
         $work = new Working();
         $lists = $work->supplier();
         $data = infoShop();
-        return view('/admin/supplier',compact('lists','data'));
+        return view('/admin/supplier', compact('lists', 'data'));
     }
 
     public function createNewJob()
@@ -153,7 +180,7 @@ class WooController extends Controller
         $work = new Working();
         $users = $work->listWorker();
         $data = infoShop();
-        return view('/admin/newjob')->with(compact('users','data'));
+        return view('/admin/newjob')->with(compact('users', 'data'));
     }
 
     public function saveNewJob(Request $request)

@@ -52,7 +52,7 @@ class Api extends Model
     {
         $db = array();
         logfile('=====================CREATE NEW ORDER=======================');
-        echo "<pre>";
+//        echo "<pre>";
 //        print_r($data);
         $lst_product_skip = $this->getProductSkip();
         if (sizeof($data['line_items']) > 0) {

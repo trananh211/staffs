@@ -40,6 +40,7 @@ Route::middleware('auth')->group(function () {
     /*End S Admin*/
 
     /*QC + Admin*/
+    Route::get('edit-store/{id_store}','WooController@editStore');
     Route::get('checking','WooController@checking');
     Route::get('working','WooController@working');
     Route::get('fulfillment','GoogleController@fulFillByHand');
