@@ -57,7 +57,7 @@ class GoogleController extends Controller
                 'workings.id as working_id',
                 'wd.id as woo_order_id', 'wd.order_status', 'wd.product_name', 'wd.number', 'wd.fullname', 'wd.address',
                 'wd.city', 'wd.phone', 'wd.postcode', 'wd.country', 'wd.state', 'wd.status as fulfill_status',
-                'wd.quantity', 'wd.customer_note', 'wd.email', 'wd.fullname', 'wd.sku',
+                'wd.quantity', 'wd.customer_note', 'wd.email', 'wd.fullname', 'wd.sku', 'wd.sku_number',
                 'wpd.name as product_origin_name', 'wpd.product_id'
             )
             ->where([
@@ -85,7 +85,9 @@ class GoogleController extends Controller
                     /*Lấy data để lưu vào file excel fulfillment*/
                     $ar_product[$list->product_origin_name][] = [
                         'Order Number' => $list->number,
-                        'SKU' => $list->sku,
+                        'SKU' => $list->sku_number,
+                        'SKU_2' => $list->sku,
+                        'OrderId' => $list->number . '-' . $list->working_id,
                         'Quantity' => $list->quantity,
                         'Customer Note' => $list->customer_note,
                         'Full Name' => $list->fullname,
@@ -105,22 +107,87 @@ class GoogleController extends Controller
             }
             $ud_working_move = array();
             $ud_order_move = array();
+            $new_gg_files = array();
+            $files_fulfillment = \DB::table('gg_files')
+                ->where('type', 2)
+                ->whereDate('updated_at', date("Y-m-d"))
+                ->pluck('id', 'name')
+                ->toArray();
+            $ar_del_gg_files = array();
             foreach ($ar_product as $product_name => $dt) {
                 $name = date("Y-m-d") . '-' . $product_name;
-                $check = Excel::create($name, function ($excel) use ($dt) {
-                    $excel->sheet('Sheet 1', function ($sheet) use ($dt) {
-                        $sheet->fromArray($dt);
-                    });
-                })->store('csv', public_path(env('DIR_EXCEL_EXPORT')), true);
+                $name2 = date('Y-m-d');
+                $check = $this->makeExcel($name, $dt);
+                $check2 = $this->makeExcel($name2, $dt);
                 if ($check) {
                     $check_up = upFile($check['full'], env('GOOGLE_DRIVER_FOLDER_PUBLIC'));
                     if ($check_up) {
+//                      Kiểm tra files đã từng up lên google driver hay chưa
+                        if (array_key_exists($name, $files_fulfillment)) {
+                            $ar_del_gg_files[] = $files_fulfillment[$name];
+                        }
+                        $new_gg_files[] = [
+                            'name' => $name,
+                            'path' => $check_up,
+                            'parent_path' => env('GOOGLE_DRIVER_FOLDER_PUBLIC'),
+                            'type' => 2,
+                            'created_at' => date("Y-m-d H:i:s"),
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
                         $ud_working_move = array_merge($ud_working_move, $ar_file_fulfill[$product_name]);
                         $ud_order_move = array_merge($ud_order_move, $ar_order_fulfill[$product_name]);
                         logfile('Fulfillment file excel thành công đơn hàng :' . $product_name . ' số lượng: ' . sizeof($dt));
                     }
 //                    \File::delete($check['full']);
                 }
+            }
+//          Nếu tồn tại file đã up lên trước đó rồi. Xóa trên google driver và xóa ở dưới database trước
+            if (sizeof($ar_del_gg_files) > 0) {
+                $files_del_fulfillment = \DB::table('gg_files')
+                    ->select('name','path','parent_path')
+                    ->whereIn('id', $ar_del_gg_files)
+                    ->get();
+                foreach ( $files_del_fulfillment as $file) {
+                    deleteFile($file->name.'.csv',$file->path,$file->parent_path);
+                    logfile('-- Tồn tại file :'.$file->name.'.csv trước đó rồi. Đang xóa trên thư mục Drive Google');
+                }
+                $result = \DB::table('gg_files')->whereIn('id',$ar_del_gg_files)->delete();
+                if ($result) {
+                    if (sizeof($new_gg_files) > 0) {
+                        \DB::table('gg_files')->insert($new_gg_files);
+                    }
+                }
+            } else {
+                if (sizeof($new_gg_files) > 0) {
+                    \DB::table('gg_files')->insert($new_gg_files);
+                }
+            }
+            if ($check2) {
+                $check_up2 = upFile($check2['full'], env('GOOGLE_DRIVER_FOLDER_PUBLIC'));
+//              Nếu tồn tại file tổng đã upload trước đó. Xóa trên google driver và cập nhật lại ở database
+                if (array_key_exists($name2, $files_fulfillment)){
+                    $id = $files_fulfillment[$name2];
+                    $file = \DB::table('gg_files')
+                        ->select('name','path','parent_path')
+                        ->where('id', $id)
+                        ->first();
+                    deleteFile($file->name.'.csv',$file->path,$file->parent_path);
+                    \DB::table('gg_files')->where('id',$id)->update([
+                        'path' => $check_up2,
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                } else {
+                    \DB::table('gg_files')->insert([
+                        'name' => $name2,
+                        'path' => $check_up2,
+                        'parent_path' => env('GOOGLE_DRIVER_FOLDER_PUBLIC'),
+                        'type' => 2,
+                        'created_at' => date("Y-m-d H:i:s"),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                }
+
+//                \File::delete($check2['full']);
             }
             /*Nếu export file excel thành công. Tiến hành cập nhật file workings và move lên google driver*/
             if (sizeof($ud_working_move) > 0) {
@@ -143,7 +210,23 @@ class GoogleController extends Controller
         } else {
             logfile('Đã hết đơn hàng để fulfill');
         }
+    }
 
+    private static function makeExcel($name, $data)
+    {
+        $path = public_path(env('DIR_EXCEL_EXPORT')) . '/' . $name . '.csv';
+        if (File::exists($path)) {
+            $dt = Excel::load($path)->get()->toArray();
+            $rows = array_merge($dt, $data);
+        } else {
+            $rows = $data;
+        }
+        $check = Excel::create($name, function ($excel) use ($rows) {
+            $excel->sheet('Sheet 1', function ($sheet) use ($rows) {
+                $sheet->fromArray($rows);
+            });
+        })->store('csv', public_path(env('DIR_EXCEL_EXPORT')), true);
+        return $check;
     }
 
     public function uploadFileDriver()
@@ -280,6 +363,14 @@ class GoogleController extends Controller
         } else {
             logfile('Da het file de upload len driver');
         }
+    }
+
+    public function updateOrderSku()
+    {
+        echo "<pre>";
+        $woo_infos = \DB::table('woo_infos')->pluck('sku','id');
+        print_r($woo_infos);
+        die();
     }
     /*End Fulfillment*/
 }
