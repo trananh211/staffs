@@ -114,6 +114,7 @@ class GoogleController extends Controller
                 ->pluck('id', 'name')
                 ->toArray();
             $ar_del_gg_files = array();
+            $check2 = false;
             foreach ($ar_product as $product_name => $dt) {
                 $name = date("Y-m-d") . '-' . $product_name;
                 $name2 = date('Y-m-d');
