@@ -33,27 +33,25 @@ class ApiController extends Controller
 
         /*Get data Request*/
         $data = @file_get_contents('php://input');
-        $data = json_decode( $data, true);
+        $data = json_decode($data, true);
 //        \Log::info($data);
 
         /*Send data to processing*/
-        if (sizeof($data) > 0 && $woo_id !== false)
-        {
+        if (sizeof($data) > 0 && $woo_id !== false) {
             $api = new Api();
-            $api->createOrder($data,$woo_id);
+            $api->createOrder($data, $woo_id);
         }
     }
 
     public function getStoreInfo($webhook_head)
     {
-        $url = substr($webhook_head['x-wc-webhook-source'],0,-1);
+        $url = substr($webhook_head['x-wc-webhook-source'], 0, -1);
         $store = DB::table('woo_infos')
-            ->where('url',$url)
+            ->where('url', $url)
             ->pluck('id')
             ->toArray();
         $woo_id = false;
-        if (sizeof($store) > 0)
-        {
+        if (sizeof($store) > 0) {
             $woo_id = $store[0];
         }
         return $woo_id;
@@ -67,15 +65,15 @@ class ApiController extends Controller
 
     public function testNewOrder($filename)
     {
-        $files = File::get(storage_path('file/'.$filename.'.json'));
-        $data = json_decode($files,true);
+        $files = File::get(storage_path('file/' . $filename . '.json'));
+        $data = json_decode($files, true);
         $api = new Api();
         $webhook_source = 'https://sportgear247.com';
         $store = DB::table('woo_infos')
-            ->where('url',$webhook_source)
+            ->where('url', $webhook_source)
             ->pluck('id')
             ->toArray();
-        $api->createOrder($data,$store[0]);
+        $api->createOrder($data, $store[0]);
     }
 
     public function updateProduct(Request $request)
@@ -91,12 +89,11 @@ class ApiController extends Controller
         $woo_id = $this->getStoreInfo($webhook_head);
         /*Get data Request*/
         $data = @file_get_contents('php://input');
-        $data = json_decode( $data, true);
+        $data = json_decode($data, true);
         /*Send data to processing*/
-        if (sizeof($data) > 0 && $woo_id !== false)
-        {
+        if (sizeof($data) > 0 && $woo_id !== false) {
             $api = new Api();
-            $api->updateProduct($data,$woo_id);
+            $api->updateProduct($data, $woo_id);
         } else {
             logfile('Không có thông tin gì về update');
         }
@@ -104,15 +101,15 @@ class ApiController extends Controller
 
     public function testUpdateProduct($filename)
     {
-        $files = File::get(storage_path('file/'.$filename.'.json'));
-        $data = json_decode($files,true);
+        $files = File::get(storage_path('file/' . $filename . '.json'));
+        $data = json_decode($files, true);
         $api = new Api();
         $webhook_source = 'https://zaraon.com';
         $store = DB::table('woo_infos')
-            ->where('url',$webhook_source)
+            ->where('url', $webhook_source)
             ->pluck('id')
             ->toArray();
-        $api->updateProduct($data,$store[0]);
+        $api->updateProduct($data, $store[0]);
     }
 
     public function updateSku()
@@ -120,22 +117,22 @@ class ApiController extends Controller
         $api = new Api();
         return $api->updateSku();
     }
+
     /*END WOOCOMMERCE API*/
 
     public function seeLog()
     {
-        $files = File::files(storage_path().'/'.'logs/');
+        $files = File::files(storage_path() . '/' . 'logs/');
         $data = infoShop();
         $files = array_reverse($files);
-        return view('admin/seelog',compact('data','files'));
+        return view('admin/seelog', compact('data', 'files'));
     }
 
     public function detailLog($logfile)
     {
-        $path = storage_path().'/'.'logs/'.$logfile;
+        $path = storage_path() . '/' . 'logs/' . $logfile;
         $files = File::exists($path);
-        if ($files)
-        {
+        if ($files) {
             echo "<pre>";
             $contents = File::get($path);
             echo $contents;
@@ -144,5 +141,6 @@ class ApiController extends Controller
             echo "Không tồn tại file này";
         }
     }
+
 }
 

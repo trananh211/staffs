@@ -76,6 +76,7 @@ class Api extends Model
                     'product_id' => $value['product_id'],
                     'product_name' => $value['name'],
                     'sku' => $this->getSku($woo_infos[$woo_id], $value['product_id'], $value['name']),
+                    'sku_number' => $this->getSku('', $data['number'], $value['name']),
                     'quantity' => $value['quantity'],
                     'payment_method' => $data['payment_method_title'],
                     'customer_note' => trim(htmlentities($data['customer_note'])),
@@ -275,7 +276,6 @@ class Api extends Model
         }
     }
 
-
     public function updateSku()
     {
         $woo_infos = $this->getWooSkuInfo();
@@ -283,18 +283,18 @@ class Api extends Model
         $message = 'Không có thông tin nào về store';
         if (sizeof($woo_infos) > 0) {
             $lists = \DB::table('woo_orders')
-                ->select('id', 'woo_info_id', 'product_id', 'product_name')
-                ->where('sku', '')
+                ->select('id', 'woo_info_id', 'product_id', 'product_name', 'number')
+                ->where('sku_number', '')
                 ->get();
             if (sizeof($lists) > 0) {
                 \DB::beginTransaction();
                 try {
                     foreach ($lists as $list) {
-                        $sku = $this->getSku($woo_infos[$list->woo_info_id], $list->product_id, $list->product_name);
+                        $sku = $this->getSku('', $list->number, $list->product_name);
                         \DB::table('woo_orders')
                             ->where('id', $list->id)
                             ->update([
-                                'sku' => $sku,
+                                'sku_number' => $sku,
                                 'updated_at' => date("Y-m-d H:i:s")
                             ]);
                     }
@@ -367,10 +367,10 @@ class Api extends Model
         $product_name = preg_replace('/\s+/', '', $product_name);
         $tmp = explode('-', $product_name);
         if (sizeof($tmp) > 1) {
-            $tmp[0] = $woo_sku . '-' . $product_id;
+            $tmp[0] = (strlen($woo_sku) > 0)? $woo_sku . '-' . $product_id : $product_id;
             $sku = implode('-', $tmp);
         } else {
-            $sku = $woo_sku . '-' . $product_id;
+            $sku = (strlen($woo_sku) > 0)? $woo_sku . '-' . $product_id : $product_id;
         }
         return $sku;
     }

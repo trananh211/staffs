@@ -23,7 +23,8 @@ function getSuccessMessage($message)
     return '<li class="green lighten-1 collection-item">' . $message . '</li>';
 }
 
-function getTypeProduct($type){
+function getTypeProduct($type)
+{
     switch ($type) {
         case 'App':
             $t = 1;
@@ -72,7 +73,7 @@ function statusPayment($status, $payment)
             $class = '#e0e0e0 grey lighten-2';
             break;
     }
-    $str = '<div class="center ' . $class . '" title="'.$status.'">' . $payment . '</div>';
+    $str = '<div class="center ' . $class . '" title="' . $status . '">' . $payment . '</div>';
     return $str;
 }
 
@@ -81,8 +82,7 @@ function sendEmail($email_from, $pass, $host, $port, $security, $email_to, $titl
     // Create the Transport
     $transport = (new Swift_SmtpTransport($host, $port, $security))
         ->setUsername($email_from)
-        ->setPassword($pass)
-    ;
+        ->setPassword($pass);
 
     // Create the Mailer using your created Transport
     $mailer = new Swift_Mailer($transport);
@@ -92,26 +92,24 @@ function sendEmail($email_from, $pass, $host, $port, $security, $email_to, $titl
         $message = (new Swift_Message($title))
             ->setFrom([$email_from => 'Support Care'])
             ->setTo([$email_to])
-            ->setBody($body)
-        ;
+            ->setBody($body);
     } else {
         $message = (new Swift_Message($title))
             ->setFrom([$email_from => 'Support Care'])
             ->setTo([$email_to])
             ->attach(Swift_Attachment::fromPath($file))
-            ->setBody($body)
-        ;
+            ->setBody($body);
     }
 
     // Send the message
     $result = $mailer->send($message);
-    echo 'Done';
+    logfile("Sended: " . $email_from . " to " . $email_to . " with title: " . $title);
 }
 
 function statusJob($status, $redo, $reason)
 {
-    $class = ''.$status;
-    $st = ''.$reason;
+    $class = '' . $status;
+    $st = '' . $reason;
     if ($status == env('STATUS_WORKING_NEW')) {
         $class = 'blue lighten-3';
         $st = 'New';
@@ -148,6 +146,7 @@ function statusJob($status, $redo, $reason)
     }
     return $str;
 }
+
 function thumb_c($path, $height, $name)
 {
     return '<img src="' . $path . '" class="materialboxed img-thumbnail" height="' . $height . '" title="' . $name . '"/>';
@@ -155,12 +154,12 @@ function thumb_c($path, $height, $name)
 
 function thumb($path, $height, $name)
 {
-    return '<img src="' . $path . '?nocache='.rand(1,99).'?hash=' . time().$name . '" class="materialboxed img-thumbnail" height="' . $height . '" title="' . $name . '"/>';
+    return '<img src="' . $path . '?nocache=' . rand(1, 99) . '?hash=' . time() . $name . '" class="materialboxed img-thumbnail" height="' . $height . '" title="' . $name . '"/>';
 }
 
 function thumb_w($path, $width, $name)
 {
-    return '<img src="' . $path . '?nocache='.rand(1,99).'?hash=' . time().$name . '" class="materialboxed img-thumbnail" width="' . $width . '" title="' . $name . '"/>';
+    return '<img src="' . $path . '?nocache=' . rand(1, 99) . '?hash=' . time() . $name . '" class="materialboxed img-thumbnail" width="' . $width . '" title="' . $name . '"/>';
 }
 
 function compareTime($from, $to)
@@ -171,18 +170,19 @@ function compareTime($from, $to)
     if ($created->diffInDays($now) >= 1) {
         $class = 'style="color:red;"';
     } else {
-        if ($created->diffInHours($now) > 1){
+        if ($created->diffInHours($now) > 1) {
             $class = 'style="color:orange;"';
         }
     }
-    return '<p '.$class.'>'. $created->diffForHumans($now, ['options' => Carbon::NO_ZERO_DIFF]) .'</p>';
+    return '<p ' . $class . '>' . $created->diffForHumans($now, ['options' => Carbon::NO_ZERO_DIFF]) . '</p>';
 
 }
 
-function notiSideBar($count){
+function notiSideBar($count)
+{
     $badge = '';
     if ($count > 0) {
-        $badge = '<span class="new badge">'.$count.'</span>';
+        $badge = '<span class="new badge">' . $count . '</span>';
     }
     return $badge;
 }
@@ -260,7 +260,7 @@ function renameDir($new_name, $old_name, $path = null)
         ->where('filename', '=', $old_name)
         ->first();
     if ($check_before) {
-        if (Storage::cloud()->move($check_before['path'], $path.'/'.$new_name)) {
+        if (Storage::cloud()->move($check_before['path'], $path . '/' . $new_name)) {
             $dir = collect(Storage::cloud()->listContents($path, $recursive))
                 ->where('type', '=', 'dir')
                 ->where('filename', '=', $new_name)
@@ -277,7 +277,7 @@ function upFile($path_info, $path = null, $new_name = null)
     if (\File::exists($path_info)) {
         $filename = pathinfo($path_info)['basename'];
         $contents = File::get($path_info);
-        $new_name = (strlen($new_name) > 0)? $new_name : $filename;
+        $new_name = (strlen($new_name) > 0) ? $new_name : $filename;
         if (Storage::cloud()->put($path . '/' . $new_name, $contents)) {
             $recursive = false; // Get subdirectories also?
             $file = collect(Storage::cloud()->listContents($path, $recursive))
@@ -317,10 +317,10 @@ function infoShop()
 {
     $data = array();
     $user = DB::table('users')
-        ->select('name','level','id')
-        ->where('id',\Auth::user()->id)
+        ->select('name', 'level', 'id')
+        ->where('id', \Auth::user()->id)
         ->first();
-    $ar_qc = array(env('SADMIN'),env('ADMIN'),env('QC'));
+    $ar_qc = array(env('SADMIN'), env('ADMIN'), env('QC'));
     $order_new = getNewOrder();
     $order_working = getworkingOrder();
     $order_checking = getCheckingOrder();
@@ -335,7 +335,7 @@ function infoShop()
         'idea_check' => $idea_check
     ];
     /*Nếu là QC và Admin*/
-    if (in_array($user->level, $ar_qc)){
+    if (in_array($user->level, $ar_qc)) {
         $order_review = getOrderReview();
         $check_idea = getIdeaCheck();
         $idea_send_support = getIdeaDone();
@@ -344,7 +344,7 @@ function infoShop()
             'idea_send_support' => $idea_send_support,
             'check_idea' => $check_idea,
         ];
-    } else if($user->level == env('WORKER')) {
+    } else if ($user->level == env('WORKER')) {
         $idea_new = getIdeaNewWorker($user->id);
         $order_new = getOrderNewWorker($user->id);
         $data['private'] = [
@@ -372,15 +372,15 @@ function getCheckingOrder()
 
 function getIdeaNew()
 {
-    return \DB::table('ideas')->where('status',env('STATUS_WORKING_NEW'))->count();
+    return \DB::table('ideas')->where('status', env('STATUS_WORKING_NEW'))->count();
 }
 
 function getIdeaNewWorker($wid)
 {
     return \DB::table('ideas')
         ->where([
-            ['status','=',env('STATUS_WORKING_NEW')],
-            ['worker_id','=', $wid]
+            ['status', '=', env('STATUS_WORKING_NEW')],
+            ['worker_id', '=', $wid]
         ])->count();
 }
 
@@ -388,24 +388,24 @@ function getOrderNewWorker($wid)
 {
     return \DB::table('workings')
         ->where([
-            ['status','=',env('STATUS_WORKING_NEW')],
-            ['worker_id','=', $wid]
+            ['status', '=', env('STATUS_WORKING_NEW')],
+            ['worker_id', '=', $wid]
         ])->count();
 }
 
 function getIdeaCheck()
 {
-    return \DB::table('ideas')->where('status',env('STATUS_WORKING_CHECK'))->count();
+    return \DB::table('ideas')->where('status', env('STATUS_WORKING_CHECK'))->count();
 }
 
 function getOrderReview()
 {
-    return \DB::table('workings')->where('status',env('STATUS_WORKING_CUSTOMER'))->count();
+    return \DB::table('workings')->where('status', env('STATUS_WORKING_CUSTOMER'))->count();
 }
 
 function getIdeaDone()
 {
-    return \DB::table('ideas')->where('status',env('STATUS_WORKING_CUSTOMER'))->count();
+    return \DB::table('ideas')->where('status', env('STATUS_WORKING_CUSTOMER'))->count();
 }
 
 /*End Ham hien thi thong tin shop*/

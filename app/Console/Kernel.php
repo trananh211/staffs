@@ -34,7 +34,7 @@ class Kernel extends ConsoleKernel
         }*/
         $schedule->command('queue:work --stop-when-empty')->everyFiveMinutes();
         /*Export file excel lên thư mục fulfill*/
-        $schedule->call('App\Http\Controllers\GoogleController@fulfillment')->dailyAt('00:30');
+        $schedule->call('App\Http\Controllers\GoogleController@fulfillment')->twiceDaily(1,16);
         /*Upload file image lên thư mục fulfill*/
         $schedule->call('App\Http\Controllers\GoogleController@uploadFileDriver')->everyTenMinutes()
             ->between('1:00', '23:00');
