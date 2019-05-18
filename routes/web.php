@@ -83,6 +83,7 @@ Route::middleware('auth')->group(function () {
 Route::get('test','GoogleController@test');
 Route::get('fulfillment','GoogleController@fulfillment');
 Route::get('uploadFileDriver','GoogleController@uploadFileDriver');
+Route::get('getFileTracking','TrackingController@getFileTracking');
 
 Auth::routes();
 

@@ -232,6 +232,15 @@ function checkDirExist($name, $path, $parent_path)
     return $return;
 }
 
+function scanFolder($path)
+{
+    $return = false;
+    $recursive = false; // Get subdirectories also?
+    $check = collect(Storage::cloud()->listContents($path, $recursive))
+        ->where('type', '=', 'file');
+    return $check;
+}
+
 function deleteDir($name, $path = null)
 {
     $return = false;

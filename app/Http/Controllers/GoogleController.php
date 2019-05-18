@@ -86,8 +86,10 @@ class GoogleController extends Controller
                     $ar_product[$list->product_origin_name][] = [
                         'Order Number' => $list->number,
                         'SKU' => $list->sku_number,
+                        'Tracking' => '',
                         'SKU_2' => $list->sku,
                         'OrderId' => $list->number . '-' . $list->working_id,
+                        'Product Name' => $list->product_origin_name,
                         'Quantity' => $list->quantity,
                         'Customer Note' => $list->customer_note,
                         'Full Name' => $list->fullname,
