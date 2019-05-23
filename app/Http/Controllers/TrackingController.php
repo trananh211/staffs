@@ -12,4 +12,10 @@ class TrackingController extends Controller
         $track = new Tracking();
         return $track->getFileTracking();
     }
+
+    public function getInfoTracking()
+    {
+        $track = new Tracking();
+        return $track->getInfoTracking();
+    }
 }

@@ -16,13 +16,6 @@ class Tracking extends Model
 
     public function getFileTracking()
     {
-        $path = public_path('storage/excel/read/2019-05-17 (1) - Copy.csv');
-        $dt = Excel::load($path)->get()->toArray();
-        //Gửi data sang hàm lọc tracking
-        if (sizeof($dt) > 0) {
-            $this->filterTracking($dt);
-        }
-        die();
         $scan = scanFolder(env('GOOGLE_TRACKING_CHECK'));
         logfile("[Tracking Number Information]");
         if (sizeof($scan) > 0) {
@@ -42,7 +35,6 @@ class Tracking extends Model
             }
             // Kiểm tra xem có file CSV nào hay không
             if (sizeof($check) > 0) {
-                echo "<pre>";
                 $rawData = Storage::cloud()->get($check['path']);
                 $content = response($rawData);
                 /*Download file về local*/
@@ -55,11 +47,11 @@ class Tracking extends Model
                         $this->filterTracking($dt);
                     }
                     //Move file sau khi đã đọc xong
-                    /*if (deleteFile($check['name'], $check['path'], $check['dirname'])) {
+                    if (deleteFile($check['name'], $check['path'], $check['dirname'])) {
                         upFile($path, env('GOOGLE_TRACKING_DONE'));
                         \File::delete($path);
                         logfile('[Readed] Xóa file sau khi đã sử dụng xong');
-                    }*/
+                    }
                 } else {
                     logfile('Không tải được file ' . $check['name'] . ' về server');
                 }
@@ -155,6 +147,38 @@ class Tracking extends Model
                     logfile('---[Trùng lặp] Supplier gửi lên file tracking đã cũ.');
                 }
             }
+        }
+    }
+
+    /*Hàm lấy info tracking*/
+    public function getInfoTracking()
+    {
+        //Kiểm tra xem có file tracking nào đang không tồn tại hay không
+        $lists = \DB::table('trackings')
+            ->select('id','tracking_number','status')
+            ->where('is_check', 0)
+            ->orderBy('updated_at','DESC')
+            ->limit(30)
+            ->get();
+        if (sizeof($lists) > 0)
+        {
+            $str_url = '';
+            foreach ($lists as $list)
+            {
+                $str_url .= $list->tracking_number.',';
+            }
+            $str_url = rtrim($str_url,',');
+            $url = env('TRACK_URL').$str_url;
+            echo $url;
+        } else {
+            logfile('Đã hết file tracking. Cập nhật lại danh sách chưa xong');
+            \DB::table('trackings')
+                ->whereNotIn('status',array(env('TRACK_DELIVERED', env('TRACK_EXPIRED'))))
+                ->update([
+                    'is_check' => 0,
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+
         }
     }
 }
