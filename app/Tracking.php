@@ -3,6 +3,8 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Client;
 use DB;
 use \Cache;
 use File;
@@ -13,6 +15,22 @@ class Tracking extends Model
 {
     public $timestamps = true;
     protected $table = 'trackings';
+
+    public function tracking()
+    {
+        $lists = \DB::table('woo_orders as wod')
+            ->leftJoin('trackings', 'trackings.woo_order_id','=', 'wod.id')
+            ->leftJoin('workings', 'wod.id', '=', 'workings.woo_order_id')
+            ->select(
+                'wod.id as woo_order_id','wod.number','wod.product_name','wod.quantity','wod.updated_at','wod.status',
+                'trackings.tracking_number','trackings.status as tracking_status', 'trackings.time_upload',
+                'workings.id as working_id'
+            )
+            ->whereIn('wod.status', [env('STATUS_UPLOADED'), env('STATUS_WORKING_MOVE')] )
+            ->get();
+        $data = infoShop();
+        return view('/admin/tracking')->with(compact('lists', 'data'));
+    }
 
     public function getFileTracking()
     {
@@ -155,23 +173,79 @@ class Tracking extends Model
     {
         //Kiểm tra xem có file tracking nào đang không tồn tại hay không
         $lists = \DB::table('trackings')
-            ->select('id','tracking_number','status')
+            ->select('id','tracking_number','status','order_id')
             ->where('is_check', 0)
+            ->where('status','!=',env('TRACK_DELIVERED'))
             ->orderBy('updated_at','DESC')
             ->limit(30)
             ->get();
         if (sizeof($lists) > 0)
         {
+            logfile("[Tracking] Kiểm tra tracking của ".sizeof($lists)." đơn hàng");
             $str_url = '';
+            $ar_data = array();
+            $checked = [];
+            $ar_update = array();
             foreach ($lists as $list)
             {
+                $checked[] = $list->id;
+                //nhiều order chung 1 tracking number vẫn phải được cập nhật
+                $ar_data[$list->tracking_number] = $list;
                 $str_url .= $list->tracking_number.',';
             }
-            $str_url = rtrim($str_url,',');
-            $url = env('TRACK_URL').$str_url;
-            echo $url;
+
+            $url = env('TRACK_URL').rtrim($str_url,',');
+            //Gui request den API App
+            $client = new Client(); //GuzzleHttp\Client
+            $res  = $client->request('GET', $url);
+            $json_data = json_decode($res->getBody(), true);
+            foreach ($json_data as $info_track)
+            {
+                $tracking_number = trim($info_track['title']);
+                $result = $this->checkTrackingResult($info_track['value'], $ar_data[$tracking_number]->status);
+                if ($result) {
+                    $ar_update[$result][] = $tracking_number;
+                    logfile('--- Cập nhật đơn hàng : '.$ar_data[$tracking_number]->order_id.
+                        ' có mã tracking : '.$tracking_number.' thay đổi thành '.$info_track['value']);
+                } else {
+                    logfile('--- Đơn hàng : '.$ar_data[$tracking_number]->order_id.
+                        ' có mã tracking : '.$tracking_number.' chưa thay đổi trạng thái '.$info_track['value']);
+                }
+            }
+            if (sizeof($ar_update) > 0)
+            {
+                //Cap nhật trạng thái mới
+                foreach ($ar_update as $tracking_status => $list_tracking)
+                {
+                    \DB::table('trackings')->whereIn('tracking_number',$list_tracking)
+                        ->update([
+                            'status' => $tracking_status,
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ]);
+                    if ($tracking_status == env('TRACK_DELIVERED'))
+                    {
+                        \DB::table('woo_orders')->whereIn('id',function ($query) use ($list_tracking) {
+                            $query->select('woo_order_id')
+                                ->from('trackings')
+                                ->whereIn('tracking_number',$list_tracking);
+                        })->update([
+                            'status' => env('STATUS_FINISH'),
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ]);
+                    }
+                }
+            }
+            //Cập nhật trạng thái đã checking
+            if (sizeof($checked) > 0)
+            {
+                \DB::table('trackings')->whereIn('id',$checked)
+                    ->update([
+                        'is_check' => 1,
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+            }
         } else {
-            logfile('Đã hết file tracking. Cập nhật lại danh sách chưa xong');
+            logfile('[Tracking] Đã hết file tracking. Cập nhật lại danh sách order chưa DELIVERED');
             \DB::table('trackings')
                 ->whereNotIn('status',array(env('TRACK_DELIVERED', env('TRACK_EXPIRED'))))
                 ->update([
@@ -180,5 +254,31 @@ class Tracking extends Model
                 ]);
 
         }
+    }
+
+    private function checkTrackingResult($text, $value_old)
+    {
+        $text = strtolower($text);
+        $return = false;
+        $val_track = 0;
+        if (strpos( $text, 'not found') !== false) {
+            $val_track = env('TRACK_NOTFOUND');
+        } else if (strpos( $text, 'in transit') !== false) {
+            $val_track = env('TRACK_INTRANSIT');
+        } else if (strpos( $text, 'pick up') !== false) {
+            $val_track = env('TRACK_PICKUP');
+        } else if (strpos( $text, 'undelivered') !== false) {
+            $val_track = env('TRACK_UNDELIVERED');
+        } else if (strpos( $text, 'delivered') !== false) {
+            $val_track = env('TRACK_DELIVERED');
+        } else if (strpos( $text, 'alert') !== false) {
+            $val_track = env('TRACK_ALERT');
+        } else if (strpos( $text, 'expired') !== false) {
+            $val_track = env('TRACK_EXPIRED');
+        }
+        if ( $val_track > $value_old) {
+            $return = $val_track;
+        }
+        return $return;
     }
 }

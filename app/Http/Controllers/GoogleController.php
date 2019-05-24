@@ -362,6 +362,14 @@ class GoogleController extends Controller
                     'status' => env('STATUS_UPLOADED'),
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
+                \DB::table('woo_orders')->whereIn('id',function ($query) use ($ud_status_workings) {
+                    $query->select('woo_order_id')
+                        ->from('workings')
+                        ->whereIn('id',$ud_status_workings);
+                })->update([
+                    'status' => env('STATUS_UPLOADED'),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
             }
         } else {
             logfile('Da het file de upload len driver');

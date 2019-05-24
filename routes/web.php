@@ -52,6 +52,7 @@ Route::middleware('auth')->group(function () {
     Route::get('review-customer','WooController@reviewCustomer');
     Route::post('ajax_done_job/action', 'WooController@eventQcDone')->name('ajaxdonejob.action');
     Route::get('supplier','WooController@supplier');
+    Route::get('tracking','TrackingController@tracking');
     Route::get('new-job-idea','WooController@createNewJob');
     Route::post('new-job-idea','WooController@saveNewJob')->name('ajaxnewjob.action');
     Route::get('list-idea','WooController@listIdea');

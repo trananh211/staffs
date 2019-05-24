@@ -430,6 +430,7 @@
                                 </a>
                             </li>
                             <li><a href="{{ url('supplier') }}">Supplier</a></li>
+                            <li><a href="{{ url('tracking') }}">Tracking</a></li>
                             <li><a href="{{ url('list-product') }}">Danh sách sản phẩm</a></li>
                         </ul>
                     </div>
