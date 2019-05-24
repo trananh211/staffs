@@ -39,6 +39,9 @@ class Kernel extends ConsoleKernel
         $schedule->call('App\Http\Controllers\GoogleController@uploadFileDriver')->everyTenMinutes()
             ->between('1:00', '23:00');
         $schedule->call('App\Http\Controllers\ApiController@checkPaymentAgain')->hourlyAt(17);
+        /*Tracking API*/
+        $schedule->call('App\Http\Controllers\TrackingController@getFileTracking')->twiceDaily(2,17);
+        $schedule->call('App\Http\Controllers\TrackingController@getInfoTracking')->hourlyAt(33);
 
         /*Test*/
 //        /*
