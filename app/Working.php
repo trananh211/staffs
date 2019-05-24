@@ -91,10 +91,13 @@ class Working extends Model
         ];
         $lists = \DB::table('woo_orders')
             ->join('woo_infos', 'woo_orders.woo_info_id', '=', 'woo_infos.id')
+            ->leftJoin('trackings as t', 'woo_orders.id', '=', 't.woo_order_id')
+            ->leftJoin('workings', 'woo_orders.id', '=', 'workings.woo_order_id')
             ->select(
                 'woo_orders.id', 'woo_orders.number', 'woo_orders.status', 'woo_orders.product_name',
                 'woo_orders.quantity', 'woo_orders.price', 'woo_orders.created_at', 'woo_orders.payment_method',
-                'woo_infos.name','woo_orders.order_status'
+                'woo_infos.name','woo_orders.order_status',
+                't.tracking_number','t.status as tracking_status','workings.id as working_id'
             )
             ->where($where)
             ->orderBy('woo_orders.id', 'DESC')

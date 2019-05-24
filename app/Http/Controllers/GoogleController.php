@@ -86,8 +86,10 @@ class GoogleController extends Controller
                     $ar_product[$list->product_origin_name][] = [
                         'Order Number' => $list->number,
                         'SKU' => $list->sku_number,
+                        'Tracking' => '',
                         'SKU_2' => $list->sku,
                         'OrderId' => $list->number . '-' . $list->working_id,
+                        'Product Name' => $list->product_origin_name,
                         'Quantity' => $list->quantity,
                         'Customer Note' => $list->customer_note,
                         'Full Name' => $list->fullname,
@@ -357,6 +359,14 @@ class GoogleController extends Controller
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
                 \DB::table('working_files')->whereIn('working_id', $ud_status_workings)->update([
+                    'status' => env('STATUS_UPLOADED'),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+                \DB::table('woo_orders')->whereIn('id',function ($query) use ($ud_status_workings) {
+                    $query->select('woo_order_id')
+                        ->from('workings')
+                        ->whereIn('id',$ud_status_workings);
+                })->update([
                     'status' => env('STATUS_UPLOADED'),
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);

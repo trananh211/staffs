@@ -70,7 +70,10 @@ function statusPayment($status, $payment)
             $class = 'deep-orange lighten-3';
             break;
         case 'cancelled' :
-            $class = '#e0e0e0 grey lighten-2';
+            $class = 'grey lighten-2';
+            break;
+        case 'pending' :
+            $class = 'blue-grey lighten-3';
             break;
     }
     $str = '<div class="center ' . $class . '" title="' . $status . '">' . $payment . '</div>';
@@ -137,6 +140,9 @@ function statusJob($status, $redo, $reason)
     } else if ($status == env('STATUS_PRODUCT_NORMAL')) {
         $class = 'brown lighten-3';
         $st = 'Normal';
+    } else if ($status == env('STATUS_FINISH')) {
+        $class = 'green accent-4';
+        $st = 'Finish';
     }
 
     if ($redo == 1) {
@@ -144,6 +150,58 @@ function statusJob($status, $redo, $reason)
     } else {
         $str = '<div class="center ' . $class . '">' . $st . '</div>';
     }
+    return $str;
+}
+
+function showTracking($tracking_number, $status)
+{
+    $class = '';
+    $icon = '';
+    $title = '';
+    switch ($status) {
+        case env('TRACK_NEW'):
+            $class = 'blue-grey lighten-5';
+            $icon = '';
+            $title = 'NEW';
+            break;
+        case env('TRACK_NOTFOUND'):
+            $class = 'grey lighten-3';
+            $icon = '<i class="material-icons dp48">visibility_off</i>';
+            $title = 'NOTFOUND';
+            break;
+        case env('TRACK_INTRANSIT'):
+            $class = 'blue lighten-2';
+            $icon = '<i class="material-icons dp48">trending_up</i>';
+            $title = 'INTRANSIT';
+            break;
+        case env('TRACK_PICKUP'):
+            $class = 'blue darken-4';
+            $icon = '<i class="material-icons dp48">system_update_alt</i>';
+            $title = 'PICKUP';
+            break;
+        case env('TRACK_UNDELIVERED'):
+            $class = 'red lighten-1';
+            $icon = '<i class="material-icons dp48">new_releases</i>';
+            $title = 'UNDELIVERED';
+            break;
+        case env('TRACK_DELIVERED'):
+            $class = ' green lighten-1';
+            $icon = '<i class="material-icons dp48">done</i>';
+            $title = 'DELIVERED';
+            break;
+        case env('TRACK_ALERT'):
+            $class = 'orange lighten-1';
+            $icon = '<i class="material-icons dp48">warning</i>';
+            $title = 'ALERT';
+            break;
+        case env('TRACK_EXPIRED'):
+            $class = 'brown lighten-1';
+            $icon = '<i class="material-icons dp48">schedule</i>';
+            $title = 'EXPIRED';
+            break;
+    }
+    $str = '<a href="https://t.17track.net/en#nums='.$tracking_number.'" target="_blank" style="color: #555;" class="center ' . $class . '" 
+    title="'.$title.'">' . $icon .'<span>'.$tracking_number . '</span></a>';
     return $str;
 }
 
@@ -230,6 +288,15 @@ function checkDirExist($name, $path, $parent_path)
         $return = true;
     }
     return $return;
+}
+
+function scanFolder($path)
+{
+    $return = false;
+    $recursive = false; // Get subdirectories also?
+    $check = collect(Storage::cloud()->listContents($path, $recursive))
+        ->where('type', '=', 'file');
+    return $check;
 }
 
 function deleteDir($name, $path = null)

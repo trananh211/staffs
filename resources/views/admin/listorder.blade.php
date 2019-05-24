@@ -52,11 +52,10 @@
                         <thead>
                         <tr>
                             <th>#</th>
-                            <th>Store</th>
                             <th>Order</th>
                             <th>Name</th>
                             <th>Status</th>
-                            <th>quantity</th>
+                            <th>Quantity</th>
                             <th>Payment</th>
                             <th>Date</th>
                             <th>Tracking</th>
@@ -65,11 +64,10 @@
                         <tfoot>
                         <tr>
                             <th>#</th>
-                            <th>Store</th>
                             <th>Order</th>
                             <th>Name</th>
                             <th>Status</th>
-                            <th>quantity</th>
+                            <th>Quantity</th>
                             <th>Payment</th>
                             <th>Date</th>
                             <th>Tracking</th>
@@ -80,14 +78,13 @@
                             @foreach($list_order as $key => $order)
                                 <tr>
                                     <td>{{ $key+1 }}</td>
-                                    <td>{{ $order->name }}</td>
-                                    <td>{{ $order->number }}-{{ $order->id }}</td>
+                                    <td>{{ $order->number }}{{ ($order->working_id != '')? '-'.$order->working_id : '' }}</td>
                                     <td>{{ $order->product_name }}</td>
                                     <td>{!! statusJob($order->status, 0, '') !!}</td>
                                     <td>{{ $order->quantity }}</td>
                                     <td>{!! statusPayment($order->order_status, $order->payment_method) !!}</td>
                                     <td>{!! compareTime($order->created_at, date("Y-m-d H:i:s")) !!}</td>
-                                    <td></td>
+                                    <td>{!! showTracking($order->tracking_number, $order->tracking_status) !!}</td>
                                 </tr>
                             @endforeach
                         @else
