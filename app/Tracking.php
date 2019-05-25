@@ -58,7 +58,7 @@ class Tracking extends Model
                 /*Download file về local*/
 
                 if (Storage::disk('public')->put('excel/read/' . $check['name'], $rawData)) {
-                    $path = public_path('storage/excel/read/' . $check['name']);
+                    $path = storage_path('app/public/excel/read/'.$check['name']);
                     $dt = Excel::load($path)->get()->toArray();
                     //Gửi data sang hàm lọc tracking
                     if (sizeof($dt) > 0) {
@@ -191,9 +191,10 @@ class Tracking extends Model
                 $checked[] = $list->id;
                 //nhiều order chung 1 tracking number vẫn phải được cập nhật
                 $ar_data[$list->tracking_number] = $list;
-                $str_url .= $list->tracking_number.',';
+                if ($list->tracking_number != '') {
+                    $str_url .= $list->tracking_number.',';
+                }
             }
-
             $url = env('TRACK_URL').rtrim($str_url,',');
             //Gui request den API App
             $client = new Client(); //GuzzleHttp\Client
@@ -202,6 +203,9 @@ class Tracking extends Model
             foreach ($json_data as $info_track)
             {
                 $tracking_number = trim($info_track['title']);
+                if( !array_key_exists($tracking_number, $ar_data)) {
+                    continue;
+                }
                 $result = $this->checkTrackingResult($info_track['value'], $ar_data[$tracking_number]->status);
                 if ($result) {
                     $ar_update[$result][] = $tracking_number;

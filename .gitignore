@@ -12,3 +12,5 @@ yarn-error.log
 composer.lock
 .idea/*
 .idea/workspace.xml
+storage/excel/2019-05-07.csv
+storage/excel/2019-05-07 - Copy.csv
