@@ -35,15 +35,16 @@ class Tracking extends Model
     public function getFileTracking()
     {
         $scan = scanFolder(env('GOOGLE_TRACKING_CHECK'));
-        logfile("[Tracking Number Information]");
         if (sizeof($scan) > 0) {
+            logfile("[Tracking Number Information]");
             $check = array();
             /*Chỉ lấy file csv đầu tiên*/
             foreach ($scan as $file) {
                 if ($file['extension'] != 'csv') {
                     /*Xóa file đi*/
-                    if (deleteFile($file['name'], $file['path'], $file['dirname'])) {
-                        logfile('Hệ thống xóa file rác: ' . $file['name']);
+                  $move = Storage::cloud()->move($file['path'],env('GOOGLE_TRACKING_DELETE').'/'.$file['name']);
+                  if ($move) {
+                        logfile('--- Hệ thống xóa file rác: ' . $file['name']);
                     }
                     continue;
                 }
@@ -51,6 +52,7 @@ class Tracking extends Model
                 $check = $file;
                 break;
             }
+
             // Kiểm tra xem có file CSV nào hay không
             if (sizeof($check) > 0) {
                 $rawData = Storage::cloud()->get($check['path']);
@@ -65,19 +67,19 @@ class Tracking extends Model
                         $this->filterTracking($dt);
                     }
                     //Move file sau khi đã đọc xong
-                    if (deleteFile($check['name'], $check['path'], $check['dirname'])) {
-                        upFile($path, env('GOOGLE_TRACKING_DONE'));
+                    $move = Storage::cloud()->move($check['path'],env('GOOGLE_TRACKING_DONE').'/'.$check['name']);
+                    if ($move) {
                         \File::delete($path);
-                        logfile('[Readed] Xóa file sau khi đã sử dụng xong');
+                        logfile('--- [Readed] Xóa file sau khi đã sử dụng xong');
                     }
                 } else {
-                    logfile('Không tải được file ' . $check['name'] . ' về server');
+                    logfile('--- Không tải được file ' . $check['name'] . ' về server');
                 }
             } else {
-                logfile('Supplier chưa trả thêm file Tracking nào.');
+                logfile('--- Supplier chưa trả thêm file Tracking nào.');
             }
         } else {
-            logfile('Không có file nào để kiểm tra.');
+            logfile('[Tracking Number Information] Không có file nào để kiểm tra.');
         }
     }
 
@@ -162,7 +164,7 @@ class Tracking extends Model
                     \DB::table('trackings')->insert($db);
                     logfile('--- Tạo thành công '.sizeof($db).' tracking mới.');
                 } else {
-                    logfile('---[Trùng lặp] Supplier gửi lên file tracking đã cũ.');
+                    logfile('--- [Trùng lặp] Supplier gửi lên file tracking đã cũ.');
                 }
             }
         }
