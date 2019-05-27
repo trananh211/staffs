@@ -10,6 +10,7 @@ use File;
 use Illuminate\Http\UploadFile;
 use Carbon\Carbon;
 Use App\Jobs\SendPostEmail;
+use Image;
 
 class Working extends Model
 {
@@ -300,9 +301,15 @@ class Working extends Model
                         if (in_array($key_id, $mockup)) {
                             foreach ($f_up as $f) {
                                 if (\File::move(env('DIR_TMP') . $f, env('DIR_CHECK') . $f)) {
+                                    $result = genThumb($f,env('DIR_CHECK') . $f, env('THUMB'));
+                                    $thumb = '';
+                                    if ($result) {
+                                        $thumb = $result;
+                                    }
                                     $db_new_working_files[] = [
                                         'name' => $f,
                                         'path' => env('DIR_CHECK'),
+                                        'thumb' => $thumb,
                                         'worker_id' => $uid,
                                         'working_id' => $key_id,
                                         'is_mockup' => (strpos(strtolower($f), 'mockup') !== false) ? 1 : 0,
@@ -311,7 +318,7 @@ class Working extends Model
                                         'updated_at' => date("Y-m-d H:i:s")
                                     ];
                                     $message .= getSuccessMessage('File ' . $f . ' tải lên thành công');
-                                    $img .= thumb(env('DIR_CHECK') . $f, 50, $f);
+                                    $img .= thumb_c(env('APP_URL').env('DIR_THUMB') . 'thumb_' .$f, 50, $f);
                                 } else {
                                     $message .= getErrorMessage('File ' . $f . ' không thể tải lên lúc này. Mời thử lại');
                                 }
@@ -590,7 +597,8 @@ class Working extends Model
             env('DIR_TMP'),
             env('DIR_NEW'),
             env('DIR_WORKING'),
-            env('DIR_CHECK'));
+            env('DIR_CHECK'),
+            env('DIR_THUMB'));
         foreach ($paths as $path) {
             if (!File::exists(public_path($path))) {
                 File::makeDirectory(public_path($path), $mode = 0777, true, true);
@@ -621,6 +629,29 @@ class Working extends Model
         return array('message' => $message, 'files' => $filter_files);
     }
 
+    public function autoGenThumb()
+    {
+        $files = \DB::table('working_files')
+            ->select('id','path','name','thumb')
+            ->where('status', '<', env('STATUS_WORKING_MOVE'))
+            ->whereNull('thumb')
+            ->get();
+        if ( sizeof($files) > 0)
+        {
+            foreach($files as $file)
+            {
+                $path = $file->path.$file->name;
+                if(\File::exists($path))
+                {
+                    if(\File::copy($path, env("DIR_THUMB").'thumb_'.$file->name)){
+                        $thumb = genThumb($file->name, $path, env('THUMB'));
+                        \DB::table('working_files')->where('id',$file->id)->update(['thumb' => $thumb]);
+                    }
+                }
+            }
+        }
+    }
+
     public function checking()
     {
         $where = [
@@ -649,13 +680,14 @@ class Working extends Model
     private function getWorkingFile($where)
     {
         $return = array();
-        $files = \DB::table('working_files')->select('working_id', 'name', 'path')
+        $files = \DB::table('working_files')->select('working_id', 'name', 'thumb')
             ->where($where)
             ->get();
         if (sizeof($files) > 0) {
             $return = array();
-            foreach ($files as $file) {
-                $return[$file->working_id][] = $file->path . $file->name;
+            foreach ($files as $key => $file) {
+                $return[$file->working_id][$key]['name'] = $file->name;
+                $return[$file->working_id][$key]['thumb'] = $file->thumb;
             }
         }
         return $return;
@@ -727,27 +759,38 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
 
     public function redoDesigner($request)
     {
-        $rq = $request->all();
-        $reason = htmlentities(str_replace("\n", "<br />", trim($rq['reason'])));
-        $update = [
-            'status' => env('STATUS_WORKING_NEW'),
-            'redo' => 1,
-            'reason' => $reason,
-            'updated_at' => date("Y-m-d H:i:s"),
-        ];
-        $files = \DB::table('working_files')->select('name', 'path')->where('working_id', $rq['order_id'])->get();
-        $deleted = array();
-        foreach ($files as $file) {
-            $deleted[] = public_path($file->path . $file->name);
-        }
-        if (\File::delete($deleted)) {
-            $status = 'success';
-            $save = "Yêu cầu nhân viên làm lại thành công. Tiếp tục kiểm tra những đơn hàng còn lại.";
-            \DB::table('workings')->where('id', $rq['order_id'])->update($update);
-            \DB::table('working_files')->where('working_id', $rq['order_id'])->delete();
-        } else {
+        try {
+            $rq = $request->all();
+            $reason = htmlentities(str_replace("\n", "<br />", trim($rq['reason'])));
+            $update = [
+                'status' => env('STATUS_WORKING_NEW'),
+                'redo' => 1,
+                'reason' => $reason,
+                'updated_at' => date("Y-m-d H:i:s"),
+            ];
+            $files = \DB::table('working_files')
+                ->select('name', 'path','thumb')
+                ->where('working_id', $rq['order_id'])
+                ->get();
+            $deleted = array();
+            foreach ($files as $file) {
+                $deleted[] = public_path($file->path . $file->name);
+                $deleted[] = public_path($file->thumb);
+            }
+            if (\File::delete($deleted)) {
+                $status = 'success';
+                $save = "Yêu cầu nhân viên làm lại thành công. Tiếp tục kiểm tra những đơn hàng còn lại.";
+                \DB::table('workings')->where('id', $rq['order_id'])->update($update);
+                \DB::table('working_files')->where('working_id', $rq['order_id'])->delete();
+            } else {
+                $status = 'error';
+                $save = "[Redo] Yêu cầu nhân viên làm lại thất bại. Mời bạn thử lại";
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
             $status = 'error';
-            $save = "Yêu cầu nhân viên làm lại thất bại. Mời bạn thử lại";
+            $save = "[Redo Error] Xảy ra lỗi nội bộ. Mời bạn thử lại";
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
         }
         $this->log($save . "\n");
         \Session::flash($status, $save);
@@ -762,7 +805,8 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         ];
         $lists = $this->reviewWork($where);
         $where_working_file = [
-            ['working_files.status', '=', env('STATUS_WORKING_CUSTOMER')]
+            ['working_files.status', '=', env('STATUS_WORKING_CUSTOMER')],
+            ['working_files.thumb', '!=', 'NULL']
         ];
         $images = $this->getWorkingFile($where_working_file);
         $data = infoShop();

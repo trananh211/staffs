@@ -45,7 +45,7 @@
                                     <td class="center">{{ $list->qc_name }}</td>
                                     <td class="center">
                                         <a working_id="{{ $list->id }}" order_id="{{ $list->woo_order_id }}"
-                                            class="waves-effect waves-light btn green m-b-xs js-done-job">
+                                           class="waves-effect waves-light btn green m-b-xs js-done-job">
                                             Supplier
                                         </a>
                                         <a class="waves-effect waves-grey btn white modal-trigger m-b-xs"
@@ -58,22 +58,33 @@
                                                         <div class="col s12 m12 l12">
                                                             <div class="card">
                                                                 <div class="card-content">
-                                                                    <a class="waves-effect waves-light btn red m-b-xs js-btn-redo" order_id="{{ $list->id }}">
-                                                                        <i class="material-icons left">thumb_down</i>Làm lại</a>
-                                                                    <div class="row js-redo-form-{{ $list->id }}" style="display: none;">
-                                                                        <form action="{{ url('redo-designer') }}" method="post" class="col s12">
+                                                                    <a class="waves-effect waves-light btn red m-b-xs js-btn-redo"
+                                                                       order_id="{{ $list->id }}">
+                                                                        <i class="material-icons left">thumb_down</i>Làm
+                                                                        lại</a>
+                                                                    <div class="row js-redo-form-{{ $list->id }}"
+                                                                         style="display: none;">
+                                                                        <form action="{{ url('redo-designer') }}"
+                                                                              method="post" class="col s12">
                                                                             {{ csrf_field() }}
                                                                             <div class="row">
                                                                                 <div class="input-field col s10">
                                                                                     <i class="material-icons prefix">mode_edit</i>
-                                                                                    <input type="text" style="display: none;" name="order_id" value="{{ $list->id }}"/>
-                                                                                    <textarea id="icon_prefix2" name="reason"
+                                                                                    <input type="text"
+                                                                                           style="display: none;"
+                                                                                           name="order_id"
+                                                                                           value="{{ $list->id }}"/>
+                                                                                    <textarea id="icon_prefix2"
+                                                                                              name="reason"
                                                                                               class="materialize-textarea"></textarea>
-                                                                                    <label for="icon_prefix2">Lý do</label>
+                                                                                    <label for="icon_prefix2">Lý
+                                                                                        do</label>
                                                                                 </div>
                                                                                 <div class="col s2">
-                                                                                    <button type="submit" class="btn-floating btn-large waves-effect waves-light red"
-                                                                                    ><i class="material-icons">send</i></button>
+                                                                                    <button type="submit"
+                                                                                            class="btn-floating btn-large waves-effect waves-light red"
+                                                                                    ><i class="material-icons">send</i>
+                                                                                    </button>
                                                                                 </div>
                                                                             </div>
                                                                         </form>
@@ -87,9 +98,7 @@
                                                                     <span class="card-title">Ảnh Gốc</span>
                                                                     <div class="card-content center">
                                                                         @foreach(explode(",",$list->image) as $image)
-                                                                            <img
-                                                                                class="materialboxed responsive-img initialized"
-                                                                                src="{{ $image }}">
+                                                                            {!! thumb_c($image, env('THUMB'), basename($image)) !!}
                                                                         @endforeach
                                                                     </div>
                                                                 </div>
@@ -100,12 +109,10 @@
                                                                     <div class="card-content center">
                                                                         @if(array_key_exists($list->id, $images))
                                                                             @foreach($images[$list->id] as $img)
-                                                                                <img
-                                                                                    class="materialboxed responsive-img initialized"
-                                                                                    src="{{ asset($img) }}"
-                                                                                    alt="">
-                                                                                <div>{{ pathinfo($img)['basename'] }}</div>
+                                                                                {!! ($img['thumb'] != '') ? thumb_c($img['thumb'], env('THUMB'), '') : '' !!}
+                                                                                <div>{{ $img['name'] }}</div>
                                                                             @endforeach
+                                                                            <?php unset($images[$list->id]); ?>
                                                                         @endif
                                                                     </div>
                                                                 </div>
