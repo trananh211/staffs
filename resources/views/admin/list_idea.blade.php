@@ -74,13 +74,15 @@
                                                                         lại</a>
                                                                     <div class="row js-redo-form-{{ $list['id'] }}"
                                                                          style="display: none;">
-                                                                        <form action="#" id="js-redo-idea" enctype="multipart/form-data"
-                                                                              class="col s12" >
+                                                                        <form action="#" id="js-redo-idea"
+                                                                              enctype="multipart/form-data"
+                                                                              class="col s12">
                                                                             {{ csrf_field() }}
                                                                             <div class="row">
                                                                                 <div class="input-field col s10">
                                                                                     <i class="material-icons prefix">mode_edit</i>
-                                                                                    <input type="text" style="display: none;"
+                                                                                    <input type="text"
+                                                                                           style="display: none;"
                                                                                            data-url="{{ url('ajax-redo-idea') }}"
                                                                                            class="url"
                                                                                     />
@@ -97,7 +99,7 @@
                                                                                 </div>
                                                                                 <div class="col s2">
                                                                                     <a class="js-redo-button btn-floating btn-large waves-effect waves-light red"
-                                                                                        data-id="{{ $list['id'] }}"
+                                                                                       data-id="{{ $list['id'] }}"
                                                                                     ><i class="material-icons">send</i>
                                                                                     </a>
                                                                                 </div>
@@ -127,7 +129,7 @@
                                                             <div class="card-content">
                                                                 <p class="card-title">Image</p>
                                                                 <div class="material-placeholder" style="">
-                                                                    {!! thumb_w($list['path'],320, $list['name']) !!}
+                                                                    {!! thumb_w($list['path'],env('THUMB'), $list['name']) !!}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -141,7 +143,7 @@
                                                                 @if(array_key_exists($list['id'],$idea_files))
                                                                     @foreach($idea_files[$list['id']] as $img)
                                                                         <div>
-                                                                            {!! thumb_w($img['idea_files_path'], 320, $img['idea_files_name']) !!}
+                                                                            {!! thumb_w($img['idea_files_path'], env('THUMB'), $img['idea_files_name']) !!}
                                                                             <h6>{{ $img['idea_files_name'] }}</h6>
                                                                         </div>
                                                                     @endforeach

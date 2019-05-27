@@ -97,9 +97,7 @@
                                                                     <span class="card-title">Ảnh Gốc</span>
                                                                     <div class="card-content center">
                                                                         @foreach(explode(",",$list->image) as $image)
-                                                                            <img
-                                                                                class="materialboxed responsive-img initialized"
-                                                                                src="{{ $image }}" style="width: 320px;">
+                                                                            {!! thumb_c($image, env('THUMB'), basename($image)) !!}
                                                                         @endforeach
                                                                     </div>
                                                                 </div>
@@ -110,9 +108,10 @@
                                                                     <div class="card-content center">
                                                                         @if(array_key_exists($list->id, $images))
                                                                             @foreach($images[$list->id] as $img)
-                                                                            {!! thumb_w(asset($img),320,pathinfo($img)['basename']) !!}
-                                                                                <div>{{ pathinfo($img)['basename'] }}</div>
+                                                                            {!! ($img['thumb'] != '') ? thumb_c($img['thumb'], env('THUMB'), '') : '' !!}
+                                                                                <div>{{ $img['name'] }}</div>
                                                                             @endforeach
+                                                                            <?php unset($images[$list->id]); ?>
                                                                         @endif
                                                                     </div>
                                                                 </div>

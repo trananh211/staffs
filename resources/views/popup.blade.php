@@ -43,7 +43,7 @@
                     if ($.trim(data.uploaded_image).length > 0){
                         $('#uploaded_image').html(data.uploaded_image);
                     }
-                    console.log(data);
+                    // console.log(data);
                 }
             });
         });

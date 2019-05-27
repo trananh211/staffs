@@ -207,17 +207,40 @@ function showTracking($tracking_number, $status)
 
 function thumb_c($path, $height, $name)
 {
-    return '<img src="' . $path . '" class="materialboxed img-thumbnail" height="' . $height . '" title="' . $name . '"/>';
+    return '<img src="' . $path . '" class="img-thumbnail" height="' . $height . '" title="' . $name . '"/>';
 }
 
 function thumb($path, $height, $name)
 {
-    return '<img src="' . $path . '?nocache=' . rand(1, 99) . '?hash=' . time() . $name . '" class="materialboxed img-thumbnail" height="' . $height . '" title="' . $name . '"/>';
+    return '<img src="' . $path . '?nocache=' . rand(1, 99) . '?hash=' . time() . $name . '" class=" img-thumbnail" height="' . $height . '" title="' . $name . '"/>';
 }
 
 function thumb_w($path, $width, $name)
 {
-    return '<img src="' . $path . '?nocache=' . rand(1, 99) . '?hash=' . time() . $name . '" class="materialboxed img-thumbnail" width="' . $width . '" title="' . $name . '"/>';
+    return '<img src="' . $path . '?nocache=' . rand(1, 99) . '?hash=' . time() . $name . '" class=" img-thumbnail" width="' . $width . '" title="' . $name . '"/>';
+}
+
+function genThumb($file, $path, $width_new)
+{
+    $size = getimagesize($path);
+    $width = $size[0];
+    $height = $size[1];
+    $height_new = (int) $height/($width/$width_new);
+    $name = env('DIR_THUMB').'thumb_'.date("YmdHis").'_'.$file;
+    $smallthumbnailpath = public_path($name);
+    $return = false;
+    if(\File::copy($path, $smallthumbnailpath)) {
+        $img = Image::make($smallthumbnailpath)->resize($width_new, $height_new, function ($constraint) {
+            $constraint->aspectRatio();
+        });
+        if ($img->save($smallthumbnailpath))
+        {
+            $return = $name;
+        }
+    } else {
+        $return = false;
+    }
+    return $return;
 }
 
 function compareTime($from, $to)

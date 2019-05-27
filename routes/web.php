@@ -86,6 +86,7 @@ Route::get('fulfillment','GoogleController@fulfillment');
 Route::get('uploadFileDriver','GoogleController@uploadFileDriver');
 Route::get('getFileTracking','TrackingController@getFileTracking');
 Route::get('getInfoTracking','TrackingController@getInfoTracking');
+Route::get('autoGenThumb','WooController@autoGenThumb');
 
 Auth::routes();
 
