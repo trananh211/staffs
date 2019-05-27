@@ -77,7 +77,7 @@
                                                         <div class="card-content">
                                                             <p class="card-title">Image</p>
                                                             <div class="material-placeholder" style="">
-                                                                 {!!   thumb_w($list->ideas_path, '320' ,$list->ideas_name) !!}
+                                                                 {!!   thumb_w($list->ideas_path, env('THUMB') ,$list->ideas_name) !!}
                                                             </div>
                                                             <div>
                                                                 <a class="btn" href="{{ url($list->ideas_path) }}" download>Download</a>

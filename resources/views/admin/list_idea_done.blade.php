@@ -75,11 +75,10 @@
                                                             <div class="card-content">
                                                                 <p class="card-title">Image</p>
                                                                 <div class="material-placeholder" style="">
-                                                                    {!! thumb_w($list['path'],320, $list['name']) !!}
+                                                                    {!! thumb_w($list['path'],env('THUMB'), $list['name']) !!}
                                                                 </div>
                                                             </div>
                                                         </div>
-
                                                     </div>
 
                                                     <div class="col s16 m12 l6">
@@ -89,7 +88,7 @@
                                                                 @if(array_key_exists($list['id'],$idea_files))
                                                                     @foreach($idea_files[$list['id']] as $img)
                                                                         <div>
-                                                                            {!! thumb_w($img['idea_files_path'], 320, $img['idea_files_name']) !!}
+                                                                            {!! thumb_w($img['idea_files_path'], env('THUMB'), $img['idea_files_name']) !!}
                                                                             <h6>{{ $img['idea_files_name'] }}</h6>
                                                                         </div>
                                                                     @endforeach
@@ -106,7 +105,7 @@
                                             </div>
                                         </div>
                                         <a class="js-upload-idea waves-effect waves-light btn green m-b-xs"
-                                            data-id="{{ $list['id'] }}}" data-url="{{ url('ajax-upload-idea') }}"
+                                           data-id="{{ $list['id'] }}}" data-url="{{ url('ajax-upload-idea') }}"
                                         >Đã upload
                                         </a>
                                     </td>

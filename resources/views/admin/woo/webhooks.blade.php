@@ -52,6 +52,11 @@
                         </tr>
                         <tr>
                             <td>5</td>
+                            <td><a href="{{ url('/autoGenThumb/') }}">{{ url('/autoGenThumb/') }}</a></td>
+                            <td>Auto Gen Thumbnail</td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
                             <td><a href="{{ url('/see-log/') }}">{{ url('/see-log/') }}</a></td>
                             <td>See Log</td>
                         </tr>

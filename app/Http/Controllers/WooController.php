@@ -261,5 +261,10 @@ class WooController extends Controller
         return $work->axSkipProduct($request);
     }
 
+    public function autoGenThumb()
+    {
+        $work = new Working();
+        return $work->autoGenThumb();
+    }
     /*End Admin + QC*/
 }
