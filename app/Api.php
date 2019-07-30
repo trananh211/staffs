@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Automattic\WooCommerce\Client;
+//use File;
+use App\Services\PayUService\Exception;
+use Storage;
 
 class Api extends Model
 {
@@ -28,10 +31,11 @@ class Api extends Model
         );
         return $woocommerce;
     }
+
     /*Check order with platform*/
     private static function getProductSkip()
     {
-        return \DB::table('woo_products')->where('type', '!=', 0)->pluck('type','product_id')->toArray();
+        return \DB::table('woo_products')->where('type', '!=', 0)->pluck('type', 'product_id')->toArray();
     }
 
     private static function getStatusOrder($product_id, $array)
@@ -47,6 +51,7 @@ class Api extends Model
         }
         return $status;
     }
+
     /*Create new order*/
     public function createOrder($data, $woo_id)
     {
@@ -187,7 +192,7 @@ class Api extends Model
         /*Kiem tra xem danh sach product da ton tai hay chua*/
         $products = DB::table('woo_products')
             ->whereIn('product_id', $lst)
-            ->where('woo_info_id',$woo_id)
+            ->where('woo_info_id', $woo_id)
             ->pluck('product_id')
             ->toArray();
         if (sizeof($products) != sizeof($lst)) {
@@ -337,8 +342,8 @@ class Api extends Model
             }
             if (sizeof($data) > 0) {
                 foreach ($data as $dt) {
-                    $dt = json_encode($dt,true);
-                    $dt = (json_decode( $dt, true));
+                    $dt = json_encode($dt, true);
+                    $dt = (json_decode($dt, true));
                     $this->createOrder($dt, $woo_id);
                 }
                 $status = 'success';
@@ -348,7 +353,7 @@ class Api extends Model
             $status = 'error';
             $message = getErrorMessage('Không tồn tại store này. Mời bạn thử lại');
         }
-        return redirect('/list-order')->with($status,$message);
+        return redirect('/list-order')->with($status, $message);
     }
 
     private function getInfoStore($id)
@@ -367,12 +372,351 @@ class Api extends Model
         $product_name = preg_replace('/\s+/', '', $product_name);
         $tmp = explode('-', $product_name);
         if (sizeof($tmp) > 1) {
-            $tmp[0] = (strlen($woo_sku) > 0)? $woo_sku . '-' . $product_id : $product_id;
+            $tmp[0] = (strlen($woo_sku) > 0) ? $woo_sku . '-' . $product_id : $product_id;
             $sku = implode('-', $tmp);
         } else {
-            $sku = (strlen($woo_sku) > 0)? $woo_sku . '-' . $product_id : $product_id;
+            $sku = (strlen($woo_sku) > 0) ? $woo_sku . '-' . $product_id : $product_id;
         }
         return $sku;
+    }
+
+    /*
+     * Kiem tra template da ton tai hay chua. Neu chua thi luu vao database
+     * */
+    public function checkTemplate($request)
+    {
+        try {
+            $rq = $request->all();
+            $template_id = $rq['id_product'];
+            $id_store = $rq['id_store'];
+            $check_exist = \DB::table('woo_templates')
+                ->where('template_id', $template_id)
+                ->where('store_id', $id_store)
+                ->select('template_path')
+                ->first();
+            // neu khong ton tai template id trong he thong.
+            if (!is_null($check_exist)) {
+                $template_path = $check_exist->template_path;
+                $template_data = readFileJson($template_path);
+            } else {
+                $woocommerce = $this->getConnectStore($rq['url'], $rq['consumer_key'], $rq['consumer_secret']);
+                $i = $woocommerce->get('products/' . $rq['id_product']);
+                $template_data = json_decode(json_encode($i), True);
+                //xoa cac key khong can thiet
+                $deleted = array('id', 'slug', 'permalink', 'price_html', 'categories', 'images', '_links');
+                $variation_list = $template_data['variations'];
+                foreach ($deleted as $v) {
+                    unset($template_data[$v]);
+                }
+                //tao thu muc de luu template
+                $path = public_path() . '/template/' . $id_store . '/' . $template_id . '/';
+                makeFolder($path);
+                // Write File
+                $template_path = $path . 'temp_' . $template_id . '.json';
+                $result = writeFileJson($template_path, $template_data);
+                // Nếu tạo file json thành công. Luu thông tin template vao database
+                if ($result) {
+                    $woo_template_id = \DB::table('woo_templates')->insertGetId([
+                        'template_id' => $template_id,
+                        'store_id' => $id_store,
+                        'template_path' => $template_path,
+                        'created_at' => date("Y-m-d H:i:s"),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                    // Quét thông tin variations gửi vào database
+                    $insert_variation = array();
+                    for ($i = 0; $i < sizeof($variation_list); $i++) {
+                        $varid = $variation_list[$i];
+                        $variation_path = $path . 'variation_' . $varid . '.json';
+                        $variation_data = $woocommerce->get('products/' . $template_id . '/variations/' . $varid);
+                        $result = writeFileJson($variation_path, $variation_data);
+                        $insert_variation[] = [
+                            'variation_id' => $varid,
+                            'woo_template_id' => $woo_template_id,
+                            'template_id' => $template_id,
+                            'store_id' => $id_store,
+                            'variation_path' => $variation_path,
+                            'created_at' => date("Y-m-d H:i:s"),
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
+                    }
+                    if (sizeof($insert_variation) > 0) {
+                        \DB::table('woo_variations')->insert($insert_variation);
+                    }
+                }
+            }
+            $data = array();
+            return view("/admin/woo/save_path_template", compact('data', "template_data", 'rq'));
+        } catch (\Exception $e) {
+            return $e->getMessage();
+        }
+    }
+
+    public function autoUploadProduct()
+    {
+        $result_check_category = $this->checkCategory();
+        if ($result_check_category) {
+            $check_create_product = $this->checkCreateProduct();
+        }
+    }
+
+    /*Tao moi product*/
+    private function checkCreateProduct()
+    {
+//        echo "<pre>";
+//        try {
+        logfile('===========[Create Product] =============');
+        //kiểm tra xem có file nào đang up dở hay không
+        $check_processing = \DB::table('woo_product_drivers')->select('name', 'template_id')->where('status', 1)->first();
+        //nếu không có file nào đang up dở
+        if ($check_processing == NULL) {
+            $limit = 2;
+            $check = \DB::table('woo_product_drivers as wopd')
+                ->join('woo_categories as woo_cat', 'wopd.woo_category_id', '=', 'woo_cat.id')
+                ->join('woo_infos as woo_info', 'wopd.store_id', '=', 'woo_info.id')
+                ->join('woo_templates as woo_temp', function ($join) {
+                    $join->on('wopd.template_id', '=', 'woo_temp.template_id');
+                    $join->on('wopd.store_id', '=', 'woo_temp.store_id');
+                })
+                ->select(
+                    'wopd.id as woo_product_driver_id', 'wopd.name', 'wopd.path', 'wopd.template_id', 'wopd.store_id',
+                    'woo_cat.woo_category_id', 'woo_temp.template_path',
+                    'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret'
+                )
+                ->where([
+                    ['wopd.status', '=', 0]
+                ])
+                ->orderBy('wopd.created_at', 'ASC')
+                ->limit($limit)
+                ->get()->toArray();
+            print_r($check);
+            if (sizeof($check) > 0) {
+                $prod_data = array();
+                foreach ($check as $val) {
+                    // Tìm template
+                    $template_json = readFileJson($val->template_path);
+                    $prod_data = $template_json;
+                    $prod_data['name'] = ucwords($val->name) . ' ' . $template_json['name'];
+                    $prod_data['status'] = 'publish';
+                    $prod_data['categories'] = [
+                        ['id' => $val->woo_category_id]
+                    ];
+                    unset($prod_data['variations']);
+                    // End tìm template
+
+                    // Tìm image
+                    $scan_images = scanGoogleDir($val->path, 'file');
+                    $tmp_images = array();
+                    $image_local = array();
+                    foreach ($scan_images as $file) {
+                        $imageFileType = strtolower($file['extension']);
+                        if (!in_array($imageFileType, array('jpg', 'jpeg', 'png', 'gif'))) {
+                            continue;
+                        }
+                        if (strpos($file['name'], 'mc') !== false || strpos($file['name'], 'mk') !== false) {
+                            //down file về để up lên wordpress
+                            $rawData = Storage::cloud()->get($file['path']);
+                            $tmp_path = 'img_google/' . $val->name . '/' . $file['name'];
+                            if (Storage::disk('public')->put($tmp_path, $rawData)) {
+                                $local_path_image = storage_path('app/public/'.$tmp_path);
+                                $image_local[] = $local_path_image;
+                                $tmp_images[] = [
+                                    'src' => $local_path_image
+                                ];
+                            }
+                        }
+                    }
+//                    print_r($image_local);
+                    $prod_data['images'] = $tmp_images;
+                    // End tìm image
+                    //Kết nối với woocommerce
+                    $woocommerce = $this->getConnectStore($val->url, $val->consumer_key, $val->consumer_secret);
+                    $save_product = ($woocommerce->post('products', $prod_data));
+                    $product_id = $save_product->id;
+//                    $variation_data = array();
+//                    for ($i = 0; $i < sizeof($info['variations']); $i++) {
+//                        $vari = $info['variations'][$i];
+//                        $tmp = ($woocommerce->get('products/22/variations/' . $vari));
+//                        $variation_data[] = [
+//                            'sale_price' => '25.99',
+//                            'regular_price' => '30.99',
+//                            'attributes' => json_decode(json_encode($tmp->attributes), True)
+//                        ];
+//                    }
+//                    foreach ($variation_data as $value) {
+//                        print_r($woocommerce->post('products/' . $product_id . '/variations', $value));
+//                    }
+                }
+
+            } else {
+                logfile('-- Đã hết product để tạo mới.');
+            }
+        } else {
+            echo('[Bỏ qua] Hiện đang tạo product : "' . $check_processing->name . '" có template_id :' . $check_processing->template_id);
+        }
+//        } catch (\Exception $e) {
+//            return $e->getMessage();
+//        }
+
+    }
+
+    /*Tao category cap nhat vao file de tao product*/
+    private function checkCategory()
+    {
+        logfile('===============[Check Category]==============');
+        $lst_product_category = \DB::table('woo_product_drivers as wpd')
+            ->join('woo_infos as woo_info', 'wpd.store_id', '=', 'woo_info.id')
+            ->select(
+                'wpd.id as woo_product_driver_id', 'wpd.name', 'wpd.store_id',
+                'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret'
+            )
+            ->where([
+                ['woo_category_id', '=', NULL]
+            ])
+            ->get()->toArray();
+        if (sizeof($lst_product_category) > 0) {
+            $category_store_lst = array();
+            $tmp = array();
+            $woo_product_driver_update = array();
+            // cập nhật category_id vào woo_product_drivers
+            $categories = \DB::table('woo_categories')
+                ->select('id', 'store_id', 'slug')
+                ->get()->toArray();
+            // tạo mảng mới có key là store_id và name folder để so sánh
+            $compare_categories = array();
+            foreach ($categories as $category) {
+                $key = $category->store_id . '_' . $category->slug;
+                $compare_categories[$key] = $category->id;
+            }
+            foreach ($lst_product_category as $val) {
+                $key_compare = $val->store_id . '_' . $val->name;
+                //nếu đã tồn tại
+                if (array_key_exists($key_compare, $compare_categories)) {
+                    $woo_product_driver_update[$compare_categories[$key_compare]][] = $val->woo_product_driver_id;
+                } else { // nếu chưa tồn tại. lưu vào 1 mảng khác để truy vấn.
+                    $tmp[] = $val->name;
+                    $category_store_lst[$val->store_id] = [
+                        'url' => $val->url,
+                        'consumer_key' => $val->consumer_key,
+                        'consumer_secret' => $val->consumer_secret,
+                        'categories' => $tmp
+                    ];
+                }
+            }
+            //nếu tồn tại sản phẩm chưa có category
+            if (sizeof($category_store_lst) > 0) {
+                $woo_categories_data = array();
+                foreach ($category_store_lst as $store_id => $info) {
+                    $woocommerce = $this->getConnectStore($info['url'], $info['consumer_key'], $info['consumer_secret']);
+                    foreach ($info['categories'] as $category_name) {
+                        $data = [
+                            'slug' => $category_name,
+                        ];
+                        // kết nối tới woocommerce store để lấy thông tin
+                        $result = ($woocommerce->get('products/categories', $data));
+                        //nếu không thấy thông tin thì tạo mới
+                        if (sizeof($result) == 0) {
+                            $data = [
+                                'name' => $category_name
+                            ];
+                            $i = ($woocommerce->post('products/categories', $data));
+                            $woo_categories_data[] = [
+                                'woo_category_id' => $i->id,
+                                'name' => $i->name,
+                                'slug' => $i->slug,
+                                'store_id' => $store_id,
+                                'created_at' => date("Y-m-d H:i:s"),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                        } else {
+                            $woo_categories_data[] = [
+                                'woo_category_id' => $result[0]->id,
+                                'name' => $result[0]->name,
+                                'slug' => $result[0]->slug,
+                                'store_id' => $store_id,
+                                'created_at' => date("Y-m-d H:i:s"),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                        }
+                    }
+                }
+                //them toan bo thong tin woo_categories mới get được về database
+                if (sizeof($woo_categories_data) > 0) {
+                    logfile('-- Tạo mới thông tin woo_categories : ' . sizeof($woo_categories_data) . ' news');
+                    \DB::table('woo_categories')->insert($woo_categories_data);
+                }
+            }
+
+            // Nếu tồn tại thông tin để update vào sản phẩm lưu driver
+            if (sizeof($woo_product_driver_update) > 0) {
+                logfile('-- Cập nhật thông tin category vào woo_product_driver : ' . sizeof($woo_product_driver_update) . ' update.');
+                foreach ($woo_product_driver_update as $woo_category_id => $list_id) {
+                    $data = [
+                        'woo_category_id' => $woo_category_id
+                    ];
+                    \DB::table('woo_product_drivers')->whereIn('id', $list_id)->update($data);
+                }
+            }
+            $result = false;
+        } else {
+            $result = true;
+            logfile('-- Đã cập nhật đủ category. Chuyển sang tạo product');
+        }
+        return $result;
+    }
+
+    private function temp($rq)
+    {
+//        echo "<pre>";
+        $woocommerce = $this->getConnectStore($rq['url'], $rq['consumer_key'], $rq['consumer_secret']);
+        $i = $woocommerce->get('products/' . $rq['id_product']);
+        $info = json_decode(json_encode($i), True);
+
+        $folder = 'Test';
+        $prod_data = [
+            'name' => $folder . ' ' . $info['name'],
+            'type' => 'variable',
+            'categories' => [
+                ['id' => 108]
+            ],
+            'description' => $info['description'],
+            'attributes' => $info['attributes'],
+            'tags' => $info['tags'],
+            'images' => [
+                [
+                    'src' => 'https://image.shutterstock.com/image-photo/white-transparent-leaf-on-mirror-260nw-577160911.jpg'
+                ],
+                [
+                    'src' => 'https://cdn.arstechnica.net/wp-content/uploads/2016/02/5718897981_10faa45ac3_b-640x624.jpg'
+                ],
+                [
+                    'src' => 'https://www.ctvnews.ca/polopoly_fs/1.4037876!/httpImage/image.jpg_gen/derivatives/landscape_1020/image.jpg'
+                ],
+                [
+                    'src' => 'https://static.addtoany.com/images/dracaena-cinnabari.jpg'
+                ]
+            ]
+        ];
+        print_r($prod_data);
+        $save_product = ($woocommerce->post('products', $prod_data));
+        $product_id = $save_product->id;
+        $variation_data = array();
+        for ($i = 0; $i < sizeof($info['variations']); $i++) {
+            $vari = $info['variations'][$i];
+            $tmp = ($woocommerce->get('products/22/variations/' . $vari));
+            $variation_data[] = [
+                'sale_price' => '25.99',
+                'regular_price' => '30.99',
+                'attributes' => json_decode(json_encode($tmp->attributes), True)
+            ];
+        }
+        foreach ($variation_data as $value) {
+            print_r($woocommerce->post('products/' . $product_id . '/variations', $value));
+        }
+        /*$data = [
+            'slug' => 'dresses',
+        ];
+        print_r($woocommerce->get('products/categories',$data));*/
     }
     /*End WooCommerce API*/
 }

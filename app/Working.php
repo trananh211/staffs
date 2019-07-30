@@ -47,7 +47,7 @@ class Working extends Model
             ->join('woo_infos', 'wpd.woo_info_id', '=', 'woo_infos.id')
             ->select(
                 'wpd.id', 'wpd.woo_info_id', 'wpd.product_id', 'wpd.name', 'wpd.permalink', 'wpd.image',
-                'woo_infos.name as store_name','wpd.type'
+                'woo_infos.name as store_name', 'wpd.type'
             )
             ->orderBy('id', 'DESC')
             ->get();
@@ -97,8 +97,8 @@ class Working extends Model
             ->select(
                 'woo_orders.id', 'woo_orders.number', 'woo_orders.status', 'woo_orders.product_name',
                 'woo_orders.quantity', 'woo_orders.price', 'woo_orders.created_at', 'woo_orders.payment_method',
-                'woo_infos.name','woo_orders.order_status',
-                't.tracking_number','t.status as tracking_status','workings.id as working_id'
+                'woo_infos.name', 'woo_orders.order_status',
+                't.tracking_number', 't.status as tracking_status', 'workings.id as working_id'
             )
             ->where($where)
             ->orderBy('woo_orders.id', 'DESC')
@@ -301,7 +301,7 @@ class Working extends Model
                         if (in_array($key_id, $mockup)) {
                             foreach ($f_up as $f) {
                                 if (\File::move(env('DIR_TMP') . $f, env('DIR_CHECK') . $f)) {
-                                    $result = genThumb($f,env('DIR_CHECK') . $f, env('THUMB'));
+                                    $result = genThumb($f, env('DIR_CHECK') . $f, env('THUMB'));
                                     $thumb = '';
                                     if ($result) {
                                         $thumb = $result;
@@ -318,7 +318,7 @@ class Working extends Model
                                         'updated_at' => date("Y-m-d H:i:s")
                                     ];
                                     $message .= getSuccessMessage('File ' . $f . ' tải lên thành công');
-                                    $img .= thumb_c(env('APP_URL').env('DIR_THUMB') . 'thumb_' .$f, 50, $f);
+                                    $img .= thumb_c(env('APP_URL') . env('DIR_THUMB') . 'thumb_' . $f, 50, $f);
                                 } else {
                                     $message .= getErrorMessage('File ' . $f . ' không thể tải lên lúc này. Mời thử lại');
                                 }
@@ -632,20 +632,17 @@ class Working extends Model
     public function autoGenThumb()
     {
         $files = \DB::table('working_files')
-            ->select('id','path','name','thumb')
+            ->select('id', 'path', 'name', 'thumb')
             ->where('status', '<', env('STATUS_WORKING_MOVE'))
             ->whereNull('thumb')
             ->get();
-        if ( sizeof($files) > 0)
-        {
-            foreach($files as $file)
-            {
-                $path = $file->path.$file->name;
-                if(\File::exists($path))
-                {
-                    if(\File::copy($path, env("DIR_THUMB").'thumb_'.$file->name)){
+        if (sizeof($files) > 0) {
+            foreach ($files as $file) {
+                $path = $file->path . $file->name;
+                if (\File::exists($path)) {
+                    if (\File::copy($path, env("DIR_THUMB") . 'thumb_' . $file->name)) {
                         $thumb = genThumb($file->name, $path, env('THUMB'));
-                        \DB::table('working_files')->where('id',$file->id)->update(['thumb' => $thumb]);
+                        \DB::table('working_files')->where('id', $file->id)->update(['thumb' => $thumb]);
                     }
                 }
             }
@@ -702,11 +699,11 @@ class Working extends Model
             ['wfl.is_mockup', '=', 1],
         ];
         $working = \DB::table('workings')
-            ->join('working_files as wfl','workings.id', '=', 'wfl.working_id')
-            ->join('woo_orders as wod','workings.woo_order_id', '=', 'wod.id')
+            ->join('working_files as wfl', 'workings.id', '=', 'wfl.working_id')
+            ->join('woo_orders as wod', 'workings.woo_order_id', '=', 'wod.id')
             ->select(
-                'workings.id', 'workings.number', 'workings.status', 'workings.woo_order_id','workings.woo_info_id',
-                'wfl.path', 'wfl.name','wod.email as customer_email', 'wod.fullname as customer_name'
+                'workings.id', 'workings.number', 'workings.status', 'workings.woo_order_id', 'workings.woo_info_id',
+                'wfl.path', 'wfl.name', 'wod.email as customer_email', 'wod.fullname as customer_name'
             )
             ->where($where)
             ->first();
@@ -730,12 +727,12 @@ class Working extends Model
             /*Todo: Xây dựng hàm gửi email tới khách hàng ở đây */
             $info = \DB::table('woo_infos')
                 ->select('name', 'email', 'password', 'host', 'port', 'security')
-                ->where('id',$working->woo_info_id)
+                ->where('id', $working->woo_info_id)
                 ->first();
-            $title = '[ '.$info->name.' ] Update information about order '.$working->number;
-            $file = public_path($working->path.$working->name);
-            $body = "Dear ".$working->customer_name.",
-We send you this email with information about ".$working->number." order. 
+            $title = '[ ' . $info->name . ' ] Update information about order ' . $working->number;
+            $file = public_path($working->path . $working->name);
+            $body = "Dear " . $working->customer_name . ",
+We send you this email with information about " . $working->number . " order. 
 We send detailed information about the design in the attached file below. 
 If you want to resubmit your order redesign request, please reply to the message within 24 hours from the time you receive this email, after 24 hours we will move on to the next stage. 
 If you are satisfied with the product, please do not reply to this email.
@@ -769,7 +766,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 'updated_at' => date("Y-m-d H:i:s"),
             ];
             $files = \DB::table('working_files')
-                ->select('name', 'path','thumb')
+                ->select('name', 'path', 'thumb')
                 ->where('working_id', $rq['order_id'])
                 ->get();
             $deleted = array();
@@ -1105,6 +1102,111 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             print_r($files);
         }
         return redirect('list-product')->with('success', getMessage($message));
+    }
+
+    /* Automatic create product*/
+    public function viewCreateTemplate()
+    {
+        $data = infoShop();
+        $stores = \DB::table('woo_infos')
+            ->select('id', 'name', 'url', 'consumer_key', 'consumer_secret')
+            ->get()->toArray();
+        return view('/admin/woo/create_template')
+            ->with(compact('data', 'stores'));
+    }
+
+    public function checkDriverProduct($request)
+    {
+        $rq = $request->all();
+        $name = $rq['name'];
+        $name_driver = trim($rq['name_driver']);
+        $path_driver = env("GOOGLE_PRODUCTS") . '/' . trim($rq['path_driver']);
+        $check_exist = \DB::table('woo_folder_drivers')
+            ->where('path', $path_driver)
+            ->first();
+        if ($check_exist != NULL) {
+            $message = 'Đã tồn tại thư mục "' . $name_driver . '" này rồi. Mời bạn thực hiện thư mục tiếp theo';
+            return redirect('woo-create-template')->with('error', $message);
+        } else {
+            $check = checkDirExist($name_driver, $path_driver, env("GOOGLE_PRODUCTS"));
+            if ($check) {
+                $lists = scanGoogleDir($path_driver, 'dir');
+                if ($lists) {
+                    $data = array();
+                    return view('/admin/woo/list_driver_name')
+                        ->with(compact('lists', 'rq', 'data'));
+                } else {
+                    return redirect('woo-create-template')
+                        ->with('error', 'Xảy ra lỗi quét thư mục Driver Google. Mời bạn thử lại.');
+                }
+            } else {
+                return redirect('woo-create-template')
+                    ->with('error', 'Không tồn tại thư mục driver "' . $name_driver . '" này. Mời bạn làm lại từ đầu.');
+            }
+        }
+    }
+
+    public function saveCreateTemplate($request)
+    {
+        try {
+            $rq = $request->all();
+            $message_status = 'error';
+            $message = '';
+            $name_driver = trim($rq['name_driver']);
+            $template_id = trim($rq['template_id']);
+            $store_id = trim($rq['store_id']);
+            $path_driver = env("GOOGLE_PRODUCTS") . '/' . trim($rq['path_driver']);
+            $woo_folder_driver_id = \DB::table('woo_folder_drivers')->insertGetId([
+                'name' => $name_driver,
+                'path' => $path_driver,
+                'template_id' => $template_id,
+                'store_id' => $store_id,
+                'created_at' => date("Y-m-d H:i:s"),
+                'updated_at' => date("Y-m-d H:i:s")
+            ]);
+            if ($woo_folder_driver_id) {
+                $lists = scanGoogleDir($path_driver, 'dir');
+                $woo_product_driver_data = array();
+                if ($lists) {
+                    foreach ($lists as $product) {
+                        $woo_product_driver_data[] = [
+                            'name' => strtolower($product['filename']),
+                            'path' => $product['path'],
+                            'template_id' => $template_id,
+                            'store_id' => $store_id,
+                            'woo_folder_driver_id' => $woo_folder_driver_id,
+                            'created_at' => date("Y-m-d H:i:s"),
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
+                    }
+                    if (sizeof($woo_product_driver_data) > 0) {
+                        \DB::table('woo_product_drivers')->insert($woo_product_driver_data);
+                        $message_status = 'success';
+                        $message = 'Lưu toàn bộ quá trình tạo template tự động thành công.';
+                    }
+                } else {
+                    $message = 'Không quét được thư mục ' . $name_driver . ' trên google driver. Xin thử lại';
+                }
+            } else {
+                $message = 'Không lưu được Folder ' . $name_driver . ' vào database. Xin thử lại';
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+            echo $e->getMessage();
+        }
+        return redirect('woo-processing-product')->with($message_status, $message);
+    }
+
+    public function processingProduct()
+    {
+        $data = array();
+        $lists = \DB::table('woo_folder_drivers')
+            ->select('id','name','status','updated_at')
+            ->whereDate('created_at', '>', Carbon::now()->subDays(30))
+            ->orderBy('status','ASC')
+            ->get()->toArray();
+        return view('/admin/woo/processing_product')->with(compact('lists','data'));
     }
     /*End Admin + QC*/
 }

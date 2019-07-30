@@ -142,5 +142,18 @@ class ApiController extends Controller
         }
     }
 
+    /*Product automatic create*/
+    public function checkTemplate(Request $request)
+    {
+        $api = new Api();
+        return $api->checkTemplate($request);
+    }
+
+    public function autoUploadProduct()
+    {
+        $api = new Api();
+        return $api->autoUploadProduct();
+    }
+    /*End Product automatic create*/
 }
 
