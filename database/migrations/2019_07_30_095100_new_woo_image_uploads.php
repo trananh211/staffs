@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class NewWooVariations extends Migration
+class NewWooImageUploads extends Migration
 {
     /**
      * Run the migrations.
@@ -13,13 +13,10 @@ class NewWooVariations extends Migration
      */
     public function up()
     {
-        Schema::create('woo_variations', function (Blueprint $table) {
+        Schema::create('woo_image_uploads', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->integer('variation_id');
-            $table->integer('woo_template_id');
-            $table->integer('template_id');
-            $table->integer('store_id');
-            $table->string('variation_path',255);
+            $table->text('path');
+            $table->integer('woo_product_driver_id');
             $table->smallInteger('status')->default(0);
             $table->timestamps();
         });
@@ -32,6 +29,6 @@ class NewWooVariations extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('woo_variations');
+        Schema::dropIfExists('woo_image_uploads');
     }
 }
