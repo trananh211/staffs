@@ -46,9 +46,10 @@
                     <div class="row">
                         <ul class="collection with-header">
                             <li class="collection-header"><h4>List Folder : <b>{{ $rq['name_driver'] }}</b></h4></li>
+                            <?php $i=1 ?>
                             @foreach($lists as $key => $list)
                                 <li class="collection-item">
-                                    <div>{{ ++$key .'. '. $list['name'] }}<a href="#!" class="secondary-content"><i class="material-icons">description</i></a>
+                                    <div>{{ $i++ .'. '. $list['name'] }}<a href="#!" class="secondary-content"><i class="material-icons">description</i></a>
                                     </div>
                                 </li>
                             @endforeach

@@ -27,6 +27,8 @@ class Api extends Model
             [
                 'wp_api' => true,
                 'version' => 'wc/v3',
+                'query_string_auth' => true,
+                'verify_ssl' => false
             ]
         );
         return $woocommerce;
@@ -463,109 +465,101 @@ class Api extends Model
     /*Tao moi product*/
     private function checkCreateProduct()
     {
-//        echo "<pre>";
-//        try {
-        logfile('===========[Create Product] =============');
-        //kiểm tra xem có file nào đang up dở hay không
-        $check_processing = \DB::table('woo_product_drivers')->select('name', 'template_id')->where('status', 1)->first();
-        //nếu không có file nào đang up dở
-        if ($check_processing == NULL) {
-            $limit = 2;
-            $check = \DB::table('woo_product_drivers as wopd')
-                ->join('woo_categories as woo_cat', 'wopd.woo_category_id', '=', 'woo_cat.id')
-                ->join('woo_infos as woo_info', 'wopd.store_id', '=', 'woo_info.id')
-                ->join('woo_templates as woo_temp', function ($join) {
-                    $join->on('wopd.template_id', '=', 'woo_temp.template_id');
-                    $join->on('wopd.store_id', '=', 'woo_temp.store_id');
-                })
-                ->select(
-                    'wopd.id as woo_product_driver_id', 'wopd.name', 'wopd.path', 'wopd.template_id', 'wopd.store_id',
-                    'woo_cat.woo_category_id', 'woo_temp.template_path',
-                    'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret'
-                )
-                ->where([
-                    ['wopd.status', '=', 0]
-                ])
-                ->orderBy('wopd.created_at', 'ASC')
-                ->limit($limit)
-                ->get()->toArray();
-            if (sizeof($check) > 0) {
-
-                foreach ($check as $val) {
-                    $prod_data = array();
-                    // Tìm template
-                    $template_json = readFileJson($val->template_path);
-                    $prod_data = $template_json;
-                    $prod_data['name'] = ucwords($val->name) . ' ' . $template_json['name'];
+        try {
+            logfile('===========[Create Product] =============');
+            //kiểm tra xem có file nào đang up dở hay không
+            $check_processing = \DB::table('woo_product_drivers')->select('name', 'template_id')->where('status', 1)->first();
+            //nếu không có file nào đang up dở
+            if ($check_processing == NULL) {
+                $limit = 5;
+                $check = \DB::table('woo_product_drivers as wopd')
+                    ->join('woo_categories as woo_cat', 'wopd.woo_category_id', '=', 'woo_cat.id')
+                    ->join('woo_infos as woo_info', 'wopd.store_id', '=', 'woo_info.id')
+                    ->join('woo_templates as woo_temp', function ($join) {
+                        $join->on('wopd.template_id', '=', 'woo_temp.template_id');
+                        $join->on('wopd.store_id', '=', 'woo_temp.store_id');
+                    })
+                    ->select(
+                        'wopd.id as woo_product_driver_id', 'wopd.name', 'wopd.path', 'wopd.template_id', 'wopd.store_id',
+                        'woo_cat.woo_category_id', 'woo_temp.template_path',
+                        'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret'
+                    )
+                    ->where([
+                        ['wopd.status', '=', 0]
+                    ])
+                    ->orderBy('wopd.created_at', 'ASC')
+                    ->limit($limit)
+                    ->get()->toArray();
+                if (sizeof($check) > 0) {
+                    foreach ($check as $val) {
+                        $prod_data = array();
+                        // Tìm template
+                        $template_json = readFileJson($val->template_path);
+                        $prod_data = $template_json;
+                        $prod_data['name'] = ucwords($val->name) . ' ' . $template_json['name'];
 //                    $prod_data['status'] = $template_json['status'];
-                    $prod_data['categories'] = [
-                        ['id' => $val->woo_category_id]
-                    ];
-                    unset($prod_data['variations']);
-                    // End tìm template
+                        $prod_data['categories'] = [
+                            ['id' => $val->woo_category_id]
+                        ];
+                        unset($prod_data['variations']);
+                        // End tìm template
 
-                    // Tìm image
-                    $scan_images = scanGoogleDir($val->path, 'file');
-                    $tmp_images = array();
-                    $image_local = array();
-                    foreach ($scan_images as $file) {
-                        $imageFileType = strtolower($file['extension']);
-                        if (!in_array($imageFileType, array('jpg', 'jpeg', 'png', 'gif'))) {
-                            continue;
-                        }
-                        if (strpos($file['name'], 'mc') !== false || strpos($file['name'], 'mk') !== false) {
-                            //down file về để up lên wordpress
-                            $rawData = Storage::cloud()->get($file['path']);
-                            $tmp_path = 'img_google/' . $val->name . '/' . $file['name'];
-                            if (Storage::disk('public')->put($tmp_path, $rawData)) {
-                                $local_path_image = storage_path('app/public/' . $tmp_path);
-                                $local_path_image_public = public_path($tmp_path);
-                                makeFolder(dirname($local_path_image_public));
-                                File::move($local_path_image, $local_path_image_public);
-                                $image_local[] = [
-                                    'woo_product_driver_id' => $val->woo_product_driver_id,
-                                    'path' => $local_path_image_public,
-                                    'status' => 0
-                                ];
-                                $tmp_images[] = [
-                                    'src' => env('URL_LOCAL') . $tmp_path
-                                ];
+                        // Tìm image
+                        $scan_images = scanGoogleDir($val->path, 'file');
+                        $tmp_images = array();
+                        $image_local = array();
+                        foreach ($scan_images as $file) {
+                            $imageFileType = strtolower($file['extension']);
+                            if (!in_array($imageFileType, array('jpg', 'jpeg', 'png', 'gif'))) {
+                                continue;
+                            }
+                            if (strpos($file['name'], 'mc') !== false || strpos($file['name'], 'mk') !== false) {
+                                //down file về để up lên wordpress
+                                $rawData = Storage::cloud()->get($file['path']);
+                                $tmp_path = 'img_google/' . $val->name . '/' . $file['name'];
+                                if (Storage::disk('public')->put($tmp_path, $rawData)) {
+                                    $local_path_image = storage_path('app/public/' . $tmp_path);
+                                    $local_path_image_public = public_path($tmp_path);
+                                    makeFolder(dirname($local_path_image_public));
+                                    File::move($local_path_image, $local_path_image_public);
+                                    $image_local[] = [
+                                        'woo_product_driver_id' => $val->woo_product_driver_id,
+                                        'path' => $local_path_image_public,
+                                        'status' => 0
+                                    ];
+                                    $tmp_images[] = [
+                                        'src' => env('URL_LOCAL') . $tmp_path
+                                    ];
+                                }
                             }
                         }
+                        // $prod_data['images'] = $tmp_images;
+
+                        // End tìm image
+                        //Kết nối với woocommerce
+                        $woocommerce = $this->getConnectStore($val->url, $val->consumer_key, $val->consumer_secret);
+                        $save_product = ($woocommerce->post('products', $prod_data));
+                        $woo_product_id = $save_product->id;
+                        // Cap nhat product id vao woo_product_driver
+                        \DB::table('woo_product_drivers')->where('id', $val->woo_product_driver_id)
+                            ->update([
+                                'woo_product_id' => $woo_product_id,
+                                'status' => 1,
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ]);
                     }
-                    $prod_data['images'] = $tmp_images;
-                    // End tìm image
-                    //Kết nối với woocommerce
-                    $woocommerce = $this->getConnectStore($val->url, $val->consumer_key, $val->consumer_secret);
-                    $save_product = ($woocommerce->post('products', $prod_data));
-                    $product_id = $save_product->id;
-                    echo $product_id;
-//                    $variation_data = array();
-//                    for ($i = 0; $i < sizeof($info['variations']); $i++) {
-//                        $vari = $info['variations'][$i];
-//                        $tmp = ($woocommerce->get('products/22/variations/' . $vari));
-//                        $variation_data[] = [
-//                            'sale_price' => '25.99',
-//                            'regular_price' => '30.99',
-//                            'attributes' => json_decode(json_encode($tmp->attributes), True)
-//                        ];
-//                    }
-//                    foreach ($variation_data as $value) {
-//                        print_r($woocommerce->post('products/' . $product_id . '/variations', $value));
-//                    }
-                }
-                if (sizeof($image_local) > 0) {
-                    \DB::table('woo_image_uploads')->insert($image_local);
+                    if (sizeof($image_local) > 0) {
+                        \DB::table('woo_image_uploads')->insert($image_local);
+                    }
+                } else {
+                    logfile('-- Đã hết product để chuẩn bị dữ liệu.');
                 }
             } else {
-                logfile('-- Đã hết product để chuẩn bị dữ liệu.');
+                logfile('[Bỏ qua] Hiện đang tạo product : "' . $check_processing->name . '" có template_id :' . $check_processing->template_id);
             }
-        } else {
-            echo('[Bỏ qua] Hiện đang tạo product : "' . $check_processing->name . '" có template_id :' . $check_processing->template_id);
+        } catch (\HttpClientException $e) {
+            return $e->getMessage();
         }
-//        } catch (\HttpClientException $e) {
-//            return $e->getMessage();
-//        }
 
     }
 

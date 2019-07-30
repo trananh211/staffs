@@ -531,7 +531,7 @@ function getIdeaDone()
  * Tao folder moi*/
 function makeFolder($path)
 {
-    $result = File::makeDirectory($path, $mode = 0777, true, true);
+    $result = File::makeDirectory($path, $mode = 777, true, true);
     return $result;
 }
 

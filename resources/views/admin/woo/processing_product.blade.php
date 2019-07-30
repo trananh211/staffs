@@ -17,9 +17,10 @@
                         </tr>
                         </thead>
                         <tbody>
+                        <?php $i=1 ?>
                         @foreach($lists as $key => $list)
                             <tr>
-                                <td>{{ ++$key }}</td>
+                                <td>{{ $i++ }}</td>
                                 <td>{{ $list->name }}</td>
                                 <td>{!! compareTime($list->updated_at, date("Y-m-d H:i:s")) !!}</td>
                                 <td>{{ $list->status }}</td>
