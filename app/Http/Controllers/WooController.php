@@ -266,5 +266,32 @@ class WooController extends Controller
         $work = new Working();
         return $work->autoGenThumb();
     }
+
+    /*Tạo sản phẩm */
+    public function viewCreateTemplate()
+    {
+        $work = new Working();
+        return $work->viewCreateTemplate();
+    }
+
+    public function checkDriverProduct(Request $request)
+    {
+        $work = new Working();
+        return $work->checkDriverProduct($request);
+    }
+
+    public function saveCreateTemplate(Request $request)
+    {
+        $work = new Working();
+        return $work->saveCreateTemplate($request);
+    }
+
+    public function processingProduct()
+    {
+        $work = new Working();
+        return $work->processingProduct();
+    }
+    /*End Tạo sản phẩm */
+
     /*End Admin + QC*/
 }

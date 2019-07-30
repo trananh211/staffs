@@ -238,4 +238,18 @@ $(document).ready(function () {
         });
         return list;
     }
+
+    /*Woocommerce Product Create Automatic*/
+    $('#woo-tem-choose-store').on('change' , function (e) {
+        var optionSelected = $(this).find("option:selected");
+        var id_store  = optionSelected.val();
+        var consumer_key  = optionSelected.attr('con_key');
+        var consumer_secret  = optionSelected.attr('con_sec');
+        var url  = optionSelected.attr('url');
+        $('.js_url').val(url);
+        $('.js_con_key').val(consumer_key);
+        $('.js_con_sec').val(consumer_secret);
+        console.log(id_store+'--'+url+'--'+consumer_key+'--'+consumer_secret);
+    });
+    /*End Woocommerce Product Create Automatic*/
 });

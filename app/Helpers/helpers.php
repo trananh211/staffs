@@ -313,6 +313,16 @@ function checkDirExist($name, $path, $parent_path)
     return $return;
 }
 
+function scanGoogleDir($path, $type)
+{
+    $return = false;
+    $recursive = false; // Get subdirectories also?
+    $check = collect(Storage::cloud()->listContents($path, $recursive))
+        ->where('type', '=', $type)
+        ->sortBy('name');
+    return $check;
+}
+
 function scanFolder($path)
 {
     $return = false;
@@ -383,6 +393,24 @@ function upFile($path_info, $path = null, $new_name = null)
 }
 
 function deleteFile($filename, $path, $parent_path = null)
+{
+    $return = false;
+    $name = trim($filename);
+    $recursive = false; // Get subdirectories also?
+    $check_before = collect(Storage::cloud()->listContents($parent_path, $recursive))
+        ->where('type', '=', 'file')
+        ->where('name', '=', $filename)
+        ->where('path', '=', $path)
+        ->first();
+    if ($check_before) {
+        if (Storage::cloud()->delete($check_before['path'])) {
+            $return = true;
+        }
+    }
+    return $return;
+}
+
+function getFile($filename, $path, $parent_path = null)
 {
     $return = false;
     $name = trim($filename);
@@ -497,5 +525,29 @@ function getIdeaDone()
 {
     return \DB::table('ideas')->where('status', env('STATUS_WORKING_CUSTOMER'))->count();
 }
-
 /*End Ham hien thi thong tin shop*/
+
+/*
+ * Tao folder moi*/
+function makeFolder($path)
+{
+    $result = File::makeDirectory($path, $mode = 0777, true, true);
+    return $result;
+}
+
+/* Tao file json moi */
+function writeFileJson($path_file, $data)
+{
+    // Write File
+    $newJsonString = json_encode($data, JSON_PRETTY_PRINT |JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+    $result = File::put($path_file, stripslashes($newJsonString));
+    return $result;
+}
+
+/* Đọc file json*/
+function readFileJson($path_file)
+{
+    $jsonString = File::get($path_file);
+    $data = json_decode($jsonString, true);
+    return $data;
+}

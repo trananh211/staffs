@@ -66,6 +66,14 @@ Route::middleware('auth')->group(function () {
     Route::post('update-order','WooController@updateOrder');
     Route::post('up-design-normal','WooController@upDesignNormal');
     Route::post('ajax-skip-product','WooController@axSkipProduct');
+
+    //woo products create automatic
+    Route::get('woo-create-template','WooController@viewCreateTemplate');
+    Route::post('woo-check-template','ApiController@checkTemplate');
+    Route::post('woo-check-driver-product','WooController@checkDriverProduct');
+    Route::post('woo-save-create-template','WooController@saveCreateTemplate');
+    Route::get('woo-processing-product','WooController@processingProduct');
+    Route::get('test-upload','ApiController@autoUploadProduct');
     /*End QC + Admin*/
 
     /*Staff*/
