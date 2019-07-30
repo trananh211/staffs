@@ -22,6 +22,8 @@ class NewWooProductDrivers extends Migration
             $table->integer('woo_category_id')->nullable(true);
             $table->integer('store_id');
             $table->smallInteger('status')->default(0);
+            $table->integer('woo_product_id')->nullable(true);
+            $table->text('template_json_path')->nullable(true);
             $table->timestamps();
         });
     }

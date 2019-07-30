@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Automattic\WooCommerce\Client;
-//use File;
+use File;
 use App\Services\PayUService\Exception;
 use Storage;
 
@@ -489,15 +489,15 @@ class Api extends Model
                 ->orderBy('wopd.created_at', 'ASC')
                 ->limit($limit)
                 ->get()->toArray();
-            print_r($check);
             if (sizeof($check) > 0) {
-                $prod_data = array();
+
                 foreach ($check as $val) {
+                    $prod_data = array();
                     // Tìm template
                     $template_json = readFileJson($val->template_path);
                     $prod_data = $template_json;
                     $prod_data['name'] = ucwords($val->name) . ' ' . $template_json['name'];
-                    $prod_data['status'] = 'publish';
+//                    $prod_data['status'] = $template_json['status'];
                     $prod_data['categories'] = [
                         ['id' => $val->woo_category_id]
                     ];
@@ -518,21 +518,28 @@ class Api extends Model
                             $rawData = Storage::cloud()->get($file['path']);
                             $tmp_path = 'img_google/' . $val->name . '/' . $file['name'];
                             if (Storage::disk('public')->put($tmp_path, $rawData)) {
-                                $local_path_image = storage_path('app/public/'.$tmp_path);
-                                $image_local[] = $local_path_image;
+                                $local_path_image = storage_path('app/public/' . $tmp_path);
+                                $local_path_image_public = public_path($tmp_path);
+                                makeFolder(dirname($local_path_image_public));
+                                File::move($local_path_image, $local_path_image_public);
+                                $image_local[] = [
+                                    'woo_product_driver_id' => $val->woo_product_driver_id,
+                                    'path' => $local_path_image_public,
+                                    'status' => 0
+                                ];
                                 $tmp_images[] = [
-                                    'src' => $local_path_image
+                                    'src' => env('URL_LOCAL') . $tmp_path
                                 ];
                             }
                         }
                     }
-//                    print_r($image_local);
                     $prod_data['images'] = $tmp_images;
                     // End tìm image
                     //Kết nối với woocommerce
                     $woocommerce = $this->getConnectStore($val->url, $val->consumer_key, $val->consumer_secret);
                     $save_product = ($woocommerce->post('products', $prod_data));
                     $product_id = $save_product->id;
+                    echo $product_id;
 //                    $variation_data = array();
 //                    for ($i = 0; $i < sizeof($info['variations']); $i++) {
 //                        $vari = $info['variations'][$i];
@@ -547,14 +554,16 @@ class Api extends Model
 //                        print_r($woocommerce->post('products/' . $product_id . '/variations', $value));
 //                    }
                 }
-
+                if (sizeof($image_local) > 0) {
+                    \DB::table('woo_image_uploads')->insert($image_local);
+                }
             } else {
-                logfile('-- Đã hết product để tạo mới.');
+                logfile('-- Đã hết product để chuẩn bị dữ liệu.');
             }
         } else {
             echo('[Bỏ qua] Hiện đang tạo product : "' . $check_processing->name . '" có template_id :' . $check_processing->template_id);
         }
-//        } catch (\Exception $e) {
+//        } catch (\HttpClientException $e) {
 //            return $e->getMessage();
 //        }
 
