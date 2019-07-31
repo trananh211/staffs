@@ -154,6 +154,12 @@ class ApiController extends Controller
         $api = new Api();
         return $api->autoUploadProduct();
     }
+
+    public function autoUploadImage()
+    {
+        $api = new Api();
+        return $api->autoUploadImage();
+    }
     /*End Product automatic create*/
 }
 

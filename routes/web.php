@@ -74,6 +74,7 @@ Route::middleware('auth')->group(function () {
     Route::post('woo-save-create-template','WooController@saveCreateTemplate');
     Route::get('woo-processing-product','WooController@processingProduct');
     Route::get('test-upload','ApiController@autoUploadProduct');
+    Route::get('test-image','ApiController@autoUploadImage');
     /*End QC + Admin*/
 
     /*Staff*/

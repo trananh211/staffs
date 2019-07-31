@@ -38,6 +38,10 @@ class Kernel extends ConsoleKernel
         /*Tracking API*/
         $schedule->call('App\Http\Controllers\TrackingController@getFileTracking')->hourlyAt(13);
         $schedule->call('App\Http\Controllers\TrackingController@getInfoTracking')->hourlyAt(33);
+
+        /*Upload Product*/
+        $schedule->call('App\Http\Controllers\TrackingController@autoUploadProduct')->everyThreeMinutes();
+        $schedule->call('App\Http\Controllers\TrackingController@autoUploadImage')->everyFourMinutes();
     }
 
     /**
@@ -50,5 +54,20 @@ class Kernel extends ConsoleKernel
         $this->load(__DIR__.'/Commands');
 
         require base_path('routes/console.php');
+    }
+
+    public function everyTwoMinutes()
+    {
+        return $this->cron('*/2 * * * * *');
+    }
+
+    public function everyThreeMinutes()
+    {
+        return $this->cron('*/3 * * * * *');
+    }
+
+    public function everyFourMinutes()
+    {
+        return $this->cron('*/4 * * * * *');
     }
 }

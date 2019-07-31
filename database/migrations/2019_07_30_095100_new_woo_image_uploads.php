@@ -16,7 +16,9 @@ class NewWooImageUploads extends Migration
         Schema::create('woo_image_uploads', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->text('path');
+            $table->text('url');
             $table->integer('woo_product_driver_id');
+            $table->integer('store_id');
             $table->smallInteger('status')->default(0);
             $table->timestamps();
         });
