@@ -41,7 +41,7 @@ class Kernel extends ConsoleKernel
 
         /*Upload Product*/
         $schedule->call('App\Http\Controllers\ApiController@autoUploadProduct')->everyFiveMinutes();
-        $schedule->call('App\Http\Controllers\ApiController@autoUploadImage')->everyFiveMinutes();
+        $schedule->call('App\Http\Controllers\ApiController@autoUploadImage')->everyMinute();
     }
 
     /**
