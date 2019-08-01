@@ -404,7 +404,7 @@ class Api extends Model
                 $woocommerce = $this->getConnectStore($rq['url'], $rq['consumer_key'], $rq['consumer_secret']);
                 $i = $woocommerce->get('products/' . $rq['id_product']);
                 $template_data = json_decode(json_encode($i), True);
-                $description = (str_replace("\n", "<br />", $template_data['description']));
+                $description = htmlentities(str_replace("\n", "<br />", $template_data['description']));
                 $template_data['description'] = $description;
                 //xoa cac key khong can thiet
                 $deleted = array('id', 'slug', 'permalink', 'price_html', 'categories', 'images', '_links');
@@ -583,7 +583,7 @@ class Api extends Model
             $check_processing = \DB::table('woo_product_drivers')->select('name', 'template_id')->where('status', 2)->first();
             //nếu không có file nào đang up dở
             if ($check_processing == NULL) {
-                $limit = 1;
+                $limit = 5;
                 $check = \DB::table('woo_product_drivers as wopd')
                     ->join('woo_categories as woo_cat', 'wopd.woo_category_id', '=', 'woo_cat.id')
                     ->join('woo_infos as woo_info', 'wopd.store_id', '=', 'woo_info.id')
@@ -607,10 +607,8 @@ class Api extends Model
                     $image_local = array();
                     foreach ($check as $val) {
                         $prod_data = array();
-                        echo $val->template_path;
                         // Tìm template
                         $template_json = readFileJson($val->template_path);
-                        dd($template_json);
                         $woo_product_name = ucwords($val->name) . ' ' . $template_json['name'];
                         logfile("-- Đang tạo sản phẩm mới : " . $woo_product_name);
                         $prod_data = $template_json;
@@ -619,6 +617,7 @@ class Api extends Model
                         $prod_data['categories'] = [
                             ['id' => $val->woo_category_id]
                         ];
+                        $prod_data['description'] = html_entity_decode($template_json['description']);
                         unset($prod_data['variations']);
                         // End tìm template
 
