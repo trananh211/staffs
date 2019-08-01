@@ -521,7 +521,8 @@ class Api extends Model
                     $tmp = array(
                         'id' => $product_id,
                         'status' => 'publish',
-                        'images' => $images
+                        'images' => $images,
+                        'date_created' => date("Y-m-d H:i:s",strtotime(" -6 month"))
                     );
                     $product_update_data[] = $product_id;
                     $update_images_data['update'][] = $tmp;
@@ -568,9 +569,9 @@ class Api extends Model
                     }
                 }
             }
-            logfile('Đã hoàn tất tiến trình tại đây.');
+            logfile('-- [END] Hoàn tất tiến trình upload ảnh.');
         } else {
-            logfile('-- Đã hết ảnh để tải lên woocommerce. Kết thúc.');
+            logfile('-- [END] Đã hết ảnh để tải lên woocommerce. Kết thúc.');
         }
     }
 
@@ -578,12 +579,12 @@ class Api extends Model
     private function checkCreateProduct()
     {
         try {
-            logfile('===========[Create Product] =============');
+            logfile('===============[Create Product] =============');
             //kiểm tra xem có file nào đang up dở hay không
             $check_processing = \DB::table('woo_product_drivers')->select('name', 'template_id')->where('status', 2)->first();
             //nếu không có file nào đang up dở
             if ($check_processing == NULL) {
-                $limit = 5;
+                $limit = 4;
                 $check = \DB::table('woo_product_drivers as wopd')
                     ->join('woo_categories as woo_cat', 'wopd.woo_category_id', '=', 'woo_cat.id')
                     ->join('woo_infos as woo_info', 'wopd.store_id', '=', 'woo_info.id')
@@ -712,9 +713,9 @@ class Api extends Model
                     if (sizeof($image_local) > 0) {
                         \DB::table('woo_image_uploads')->insert($image_local);
                     }
-                    logfile('-- Hoàn tất quá trình.');
+                    logfile('-- [END] Hoàn tất quá trình tạo sản phẩm.');
                 } else {
-                    logfile('-- Đã hết product để chuẩn bị dữ liệu.');
+                    logfile('-- [END] Đã hết product để chuẩn bị dữ liệu.');
                 }
             } else {
                 logfile('[Bỏ qua] Hiện đang tạo product : "' . $check_processing->name . '" có template_id :' . $check_processing->template_id);
