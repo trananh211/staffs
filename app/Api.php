@@ -413,8 +413,9 @@ class Api extends Model
                     unset($template_data[$v]);
                 }
                 //tao thu muc de luu template
-                $path = public_path() . '/template/' . $id_store . '/' . $template_id . '/';
-                makeFolder($path);
+//                $path = public_path() . '/template/' . $id_store . '/' . $template_id . '/';
+                $path = storage_path('app/public') . '/template/' . $id_store . '/' . $template_id . '/';
+                makeFolder(($path));
                 // Write File
                 $template_path = $path . 'temp_' . $template_id . '.json';
                 $result = writeFileJson($template_path, $template_data);
