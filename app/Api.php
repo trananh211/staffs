@@ -404,6 +404,8 @@ class Api extends Model
                 $woocommerce = $this->getConnectStore($rq['url'], $rq['consumer_key'], $rq['consumer_secret']);
                 $i = $woocommerce->get('products/' . $rq['id_product']);
                 $template_data = json_decode(json_encode($i), True);
+                $description = (str_replace("\n", "<br />", $template_data['description']));
+                $template_data['description'] = $description;
                 //xoa cac key khong can thiet
                 $deleted = array('id', 'slug', 'permalink', 'price_html', 'categories', 'images', '_links');
                 $variation_list = $template_data['variations'];
@@ -416,6 +418,7 @@ class Api extends Model
                 // Write File
                 $template_path = $path . 'temp_' . $template_id . '.json';
                 $result = writeFileJson($template_path, $template_data);
+                chmod($template_path, 0777);
                 // Nếu tạo file json thành công. Luu thông tin template vao database
                 if ($result) {
                     $woo_template_id = \DB::table('woo_templates')->insertGetId([
@@ -432,6 +435,7 @@ class Api extends Model
                         $variation_path = $path . 'variation_' . $varid . '.json';
                         $variation_data = $woocommerce->get('products/' . $template_id . '/variations/' . $varid);
                         $result = writeFileJson($variation_path, $variation_data);
+                        chmod($variation_path, 0777);
                         $insert_variation[] = [
                             'variation_id' => $varid,
                             'woo_template_id' => $woo_template_id,
@@ -624,9 +628,11 @@ class Api extends Model
                                 //down file về để up lên wordpress
                                 $rawData = Storage::cloud()->get($file['path']);
                                 $tmp_path = 'img_google/' . $val->name . '/' . $file['name'];
+                                $local_path_image_public = public_path($tmp_path);
+                                makeFolder(dirname($local_path_image_public));
+                                chmod(dirname($local_path_image_public), 0777);
                                 if (Storage::disk('public')->put($tmp_path, $rawData)) {
                                     $local_path_image = storage_path('app/public/' . $tmp_path);
-                                    $local_path_image_public = public_path($tmp_path);
                                     makeFolder(dirname($local_path_image_public));
                                     chmod($local_path_image, 0777);
                                     File::move($local_path_image, $local_path_image_public);
