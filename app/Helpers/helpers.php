@@ -545,7 +545,7 @@ function writeFileJson($path_file, $data)
 {
     // Write File
     $newJsonString = json_encode($data, JSON_PRETTY_PRINT |JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
-    $result = File::put($path_file, stripslashes($newJsonString));
+    $result = File::put($path_file, stripslashes($newJsonString),'public');
     return $result;
 }
 
