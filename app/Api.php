@@ -415,11 +415,10 @@ class Api extends Model
                 //tao thu muc de luu template
                 $path = public_path() . '/template/' . $id_store . '/' . $template_id . '/';
                 makeFolder($path);
-                chmod($path, 0777);
                 // Write File
                 $template_path = $path . 'temp_' . $template_id . '.json';
                 $result = writeFileJson($template_path, $template_data);
-                chmod($template_path, 0777);
+                chmod($template_path, 777);
                 // Nếu tạo file json thành công. Luu thông tin template vao database
                 if ($result) {
                     logfile('-- Tạo json file template thành công. chuyển sang tạo variantions file json');
