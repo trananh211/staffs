@@ -415,12 +415,14 @@ class Api extends Model
                 //tao thu muc de luu template
                 $path = public_path() . '/template/' . $id_store . '/' . $template_id . '/';
                 makeFolder($path);
+                chmod($path, 0777);
                 // Write File
                 $template_path = $path . 'temp_' . $template_id . '.json';
                 $result = writeFileJson($template_path, $template_data);
                 chmod($template_path, 0777);
                 // Nếu tạo file json thành công. Luu thông tin template vao database
                 if ($result) {
+                    logfile('-- Tạo json file template thành công. chuyển sang tạo variantions file json');
                     $woo_template_id = \DB::table('woo_templates')->insertGetId([
                         'template_id' => $template_id,
                         'store_id' => $id_store,
@@ -435,6 +437,9 @@ class Api extends Model
                         $variation_path = $path . 'variation_' . $varid . '.json';
                         $variation_data = $woocommerce->get('products/' . $template_id . '/variations/' . $varid);
                         $result = writeFileJson($variation_path, $variation_data);
+                        if ($result) {
+                            logfile('-- Tạo json file variations thành công. ' . $variation_path);
+                        }
                         chmod($variation_path, 0777);
                         $insert_variation[] = [
                             'variation_id' => $varid,
@@ -502,7 +507,7 @@ class Api extends Model
                     'woo_up_id' => $tmp_woo_up_id
                 ];
             }
-            logfile("-- Đang tải ".sizeof($checks) ." images từ store :".$val->url);
+            logfile("-- Đang tải " . sizeof($checks) . " images từ store :" . $val->url);
             $product_update_data = array();
             $slug_data = array();
             $result = false;
@@ -523,7 +528,7 @@ class Api extends Model
                 }
                 $result = $woocommerce->post('products/batch', $update_images_data);
                 if ($result) {
-                    logfile('-- Đã tải lên ảnh thành công của '.sizeof($result).' sản phẩm');
+                    logfile('-- Đã tải lên ảnh thành công của ' . sizeof($result) . ' sản phẩm');
                     \DB::table('woo_image_uploads')->whereIn('id', $up_id_data)->update(['status' => 1]);
                 }
                 $slug_data[$store_id] = $result;
