@@ -1201,12 +1201,64 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     public function processingProduct()
     {
         $data = array();
-        $lists = \DB::table('woo_folder_drivers')
-            ->select('id','name','status','updated_at')
-            ->whereDate('created_at', '>', Carbon::now()->subDays(30))
-            ->orderBy('status','ASC')
+        $lists = \DB::table('woo_folder_drivers as wfd')
+            ->join('woo_infos as wif','wfd.store_id','=','wif.id')
+            ->select(
+                'wfd.id','wfd.name','wfd.status','wfd.updated_at',
+                'wif.name as store_name'
+            )
+            ->whereDate('wfd.created_at', '>', Carbon::now()->subDays(30))
+            ->orderBy('wfd.created_at','DESC')
             ->get()->toArray();
-        return view('/admin/woo/processing_product')->with(compact('lists','data'));
+        $pro_upload = array();
+        $pro_status = array();
+        if (sizeof($lists) > 0)
+        {
+            $lst_products = array();
+            foreach ($lists as $list)
+            {
+                $lst_products[] = $list->id;
+            }
+            if (sizeof($lst_products) > 0)
+            {
+                $lst_product_uploads = \DB::table('woo_product_drivers')
+                    ->select('id','name','woo_folder_driver_id','woo_product_name','woo_slug','status')
+                    ->whereIn('woo_folder_driver_id',$lst_products)
+                    ->get()->toArray();
+                $all = 0;
+                foreach ($lst_product_uploads as $lst)
+                {
+                    if (!array_key_exists($lst->woo_folder_driver_id, $pro_status))
+                    {
+                        $uploading = 0;
+                        $done = 0;
+                        $all = 1;
+                    } else {
+                        $all+=1;
+                    }
+                    if ($lst->status == 1)
+                    {
+                        $uploading+=1;
+                    } else if ($lst->status == 3) {
+                        $done += 1;
+                    }
+                    $pro_status[$lst->woo_folder_driver_id] = array(
+                        'uploading' => $uploading,
+                        'done' => $done,
+                        'all' => $all
+                    );
+                    $pro_upload[$lst->woo_folder_driver_id][] = array(
+                        'name' => $lst->name,
+                        'woo_product_name' => $lst->woo_product_name,
+                        'woo_slug' => $lst->woo_slug,
+                        'status' => $lst->status
+                    );
+                }
+            }
+        }
+//        dd($pro_status);
+        return view('/admin/woo/processing_product')
+            ->with(compact('lists','data','pro_upload','pro_status'));
     }
     /*End Admin + QC*/
 }

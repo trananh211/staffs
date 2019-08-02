@@ -584,7 +584,7 @@ class Api extends Model
             $check_processing = \DB::table('woo_product_drivers')->select('name', 'template_id')->where('status', 2)->first();
             //nếu không có file nào đang up dở
             if ($check_processing == NULL) {
-                $limit = 4;
+                $limit = 5;
                 $check = \DB::table('woo_product_drivers as wopd')
                     ->join('woo_categories as woo_cat', 'wopd.woo_category_id', '=', 'woo_cat.id')
                     ->join('woo_infos as woo_info', 'wopd.store_id', '=', 'woo_info.id')
