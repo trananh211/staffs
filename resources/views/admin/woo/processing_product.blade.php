@@ -54,7 +54,7 @@
         </div>
         <div class="col s7" id="js-product" style="display: none;">
             @foreach($pro_upload as $woo_product_folder_id => $products)
-                <div class="row js-show-folder js-show-folder-{{ $woo_product_folder_id }}">
+                <div class="row js-show-folder js-show-folder-{{ $woo_product_folder_id }}" style="display: none;">
                     <div class="card">
                         <div class="card-content">
                             <table class="striped">

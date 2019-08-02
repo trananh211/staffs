@@ -257,9 +257,12 @@ $(document).ready(function () {
         if ($('#js-folder').hasClass('s12')){
             $('#js-folder').removeClass('s12').addClass('s5');
             $('#js-product').show();
+            $('.js-show-folder').hide();
+            $('.js-show-folder-'+pro_dri).show();
         } else {
             $('#js-folder').removeClass('s5').addClass('s12');
             $('#js-product').hide();
+            $('.js-show-folder').hide();
         }
     });
     /*End Woocommerce Product Create Automatic*/
