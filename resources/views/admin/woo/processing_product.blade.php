@@ -83,7 +83,7 @@
                                             ?>
                                         </td>
                                         <td>{{ $list['woo_product_name'] }}</td>
-                                        <td><a href="{{ $list['woo_slug'] }}" target="_blank"></a>{{ $list['woo_slug'] }}</td>
+                                        <td><a href="{{ $list['woo_slug'] }}" target="_blank">{{ $list['woo_slug'] }}</a></td>
                                     </tr>
                                 @endforeach
                                 </tbody>
