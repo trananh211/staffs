@@ -38,3 +38,7 @@
     bottom: 10px;
     right: 20px;
 }
+
+.js-get-status-doc:hover {
+    cursor: pointer;
+}

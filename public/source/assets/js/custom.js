@@ -251,5 +251,16 @@ $(document).ready(function () {
         $('.js_con_sec').val(consumer_secret);
         console.log(id_store+'--'+url+'--'+consumer_key+'--'+consumer_secret);
     });
+
+    $('.js-get-status-doc').on('click', function (e) {
+        var pro_dri = $(this).attr('pro_dri');
+        if ($('#js-folder').hasClass('s12')){
+            $('#js-folder').removeClass('s12').addClass('s5');
+            $('#js-product').show();
+        } else {
+            $('#js-folder').removeClass('s5').addClass('s12');
+            $('#js-product').hide();
+        }
+    });
     /*End Woocommerce Product Create Automatic*/
 });
