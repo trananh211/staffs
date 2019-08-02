@@ -257,8 +257,8 @@ $(document).ready(function () {
         if ($('#js-folder').hasClass('s12')){
             $('#js-folder').removeClass('s12').addClass('s5');
             $('#js-product').show();
-            $('.js-show-folder').hide();
             $('.js-show-folder-'+pro_dri).show();
+            console.log('.js-show-folder-'+pro_dri);
         } else {
             $('#js-folder').removeClass('s5').addClass('s12');
             $('#js-product').hide();
