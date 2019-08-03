@@ -473,7 +473,7 @@ class Api extends Model
 
     public function autoUploadImage()
     {
-        $limit = 4;
+        $limit = 3;
         $checks = \DB::table('woo_image_uploads as woo_up')
             ->join('woo_product_drivers as wpd', 'wpd.id', '=', 'woo_up.woo_product_driver_id')
             ->join('woo_infos as woo_info', 'wpd.store_id', '=', 'woo_info.id')
