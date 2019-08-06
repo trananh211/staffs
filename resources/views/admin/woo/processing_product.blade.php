@@ -4,10 +4,10 @@
         <div class="col s12">
             <div class="page-title">Trạng thái Template</div>
         </div>
-        <div class="col s12" id="js-folder">
+        <div class="col s12 js-full" id="js-folder">
             <div class="card">
                 <div class="card-content">
-                    <table class="striped">
+                    <table class="bordered">
                         <thead>
                         <tr>
                             <th>#</th>
@@ -55,9 +55,12 @@
         <div class="col s7" id="js-product" style="display: none;">
             @foreach($pro_upload as $woo_product_folder_id => $products)
                 <div class="row js-show-folder js-show-folder-{{ $woo_product_folder_id }}" style="display: none;">
-                    <div class="card">
+                    <div class="card blue lighten-5">
                         <div class="card-content">
-                            <table class="striped">
+                            <table class="bordered">
+                                <div class="js-closed" title="Ẩn đi">
+                                    <i class="material-icons">fast_rewind</i>
+                                </div>
                                 <thead>
                                 <tr>
                                     <th>#</th>

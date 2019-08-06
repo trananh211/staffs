@@ -474,7 +474,7 @@ class Api extends Model
     public function autoUploadImage()
     {
         try {
-            $limit = 1;
+            $limit = 2;
             $check = \DB::table('woo_product_drivers')
                 ->where('status', 1)
                 ->orderBy('id', 'ASC')

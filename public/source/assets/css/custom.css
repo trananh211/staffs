@@ -39,6 +39,7 @@
     right: 20px;
 }
 
-.js-get-status-doc:hover {
+.js-get-status-doc:hover , .js-closed:hover {
     cursor: pointer;
 }
+

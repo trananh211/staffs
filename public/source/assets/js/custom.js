@@ -254,16 +254,25 @@ $(document).ready(function () {
 
     $('.js-get-status-doc').on('click', function (e) {
         var pro_dri = $(this).attr('pro_dri');
-        if ($('#js-folder').hasClass('s12')){
-            $('#js-folder').removeClass('s12').addClass('s5');
-            $('#js-product').show();
+        $('.js-get-status-doc').removeClass('blue lighten-5');
+        $(this).addClass('blue lighten-5');
+        if ($('#js-folder').hasClass('js-full')){
+
+            if ( ! $('#js-folder').hasClass('js-show')) {
+                $('#js-folder').removeClass('s12').addClass('s5');
+                $('#js-product').show();
+            }
+            $('.js-show-folder').hide();
             $('.js-show-folder-'+pro_dri).show();
             console.log('.js-show-folder-'+pro_dri);
-        } else {
-            $('#js-folder').removeClass('s5').addClass('s12');
-            $('#js-product').hide();
-            $('.js-show-folder').hide();
         }
+    });
+
+    $('.js-closed').on('click', function (e) {
+        $('.js-get-status-doc').removeClass('blue lighten-5');
+        $('#js-folder').removeClass('s5').addClass('s12');
+        $('#js-product').hide();
+        $('.js-show-folder').hide();
     });
     /*End Woocommerce Product Create Automatic*/
 });
