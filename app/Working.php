@@ -1229,7 +1229,8 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     )
                     ->whereIn('woo_folder_driver_id',$lst_products)
                     ->groupBy('wpd.id')
-                    ->get()->toArray();
+                    ->get()
+                    ->toArray();
                 $all = 0;
                 foreach ($lst_product_uploads as $lst)
                 {
