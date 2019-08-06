@@ -1221,9 +1221,14 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             }
             if (sizeof($lst_products) > 0)
             {
-                $lst_product_uploads = \DB::table('woo_product_drivers')
-                    ->select('id','name','woo_folder_driver_id','woo_product_name','woo_slug','status')
+                $lst_product_uploads = \DB::table('woo_product_drivers as wpd')
+                    ->leftjoin('woo_image_uploads as wup','wpd.id','=','wup.woo_product_driver_id')
+                    ->selectRaw(
+                        'wpd.id, wpd.name, wpd.woo_folder_driver_id, wpd.woo_product_name, wpd.woo_slug, wpd.status,
+                         count(wup.id) as images'
+                    )
                     ->whereIn('woo_folder_driver_id',$lst_products)
+                    ->groupBy("wpd.id")
                     ->get()->toArray();
                 $all = 0;
                 foreach ($lst_product_uploads as $lst)
@@ -1251,12 +1256,13 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                         'name' => $lst->name,
                         'woo_product_name' => $lst->woo_product_name,
                         'woo_slug' => $lst->woo_slug,
-                        'status' => $lst->status
+                        'status' => $lst->status,
+                        'images' => $lst->images
                     );
                 }
             }
         }
-//        dd($pro_status);
+//        dd($pro_upload);
         return view('/admin/woo/processing_product')
             ->with(compact('lists','data','pro_upload','pro_status'));
     }

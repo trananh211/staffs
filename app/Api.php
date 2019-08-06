@@ -584,7 +584,7 @@ class Api extends Model
             $check_processing = \DB::table('woo_product_drivers')->select('name', 'template_id')->where('status', 2)->first();
             //nếu không có file nào đang up dở
             if ($check_processing == NULL) {
-                $limit = 5;
+                $limit = 4;
                 $check = \DB::table('woo_product_drivers as wopd')
                     ->join('woo_categories as woo_cat', 'wopd.woo_category_id', '=', 'woo_cat.id')
                     ->join('woo_infos as woo_info', 'wopd.store_id', '=', 'woo_info.id')
@@ -624,6 +624,8 @@ class Api extends Model
 
                         // Tìm image
                         $scan_images = scanGoogleDir($val->path, 'file');
+//                        dd($scan_images);
+                        logfile('---- Tìm được '.sizeof($scan_images).' ảnh của '.ucwords($val->name));
                         $tmp_images = array();
                         $woo_product_driver_id_array = array();
                         foreach ($scan_images as $file) {
@@ -632,16 +634,17 @@ class Api extends Model
                                 continue;
                             }
                             if (strpos($file['name'], 'mc') !== false || strpos($file['name'], 'mk') !== false) {
+                                logfile('---- Tìm được '.sizeof($scan_images).' ảnh của '.ucwords($val->name));
                                 //down file về để up lên wordpress
                                 $rawData = Storage::cloud()->get($file['path']);
                                 $tmp_path = 'img_google/' . $val->name . '/' . $file['name'];
                                 $local_path_image_public = public_path($tmp_path);
                                 makeFolder(dirname($local_path_image_public));
-                                chmod(dirname($local_path_image_public), 0777);
+//                                chmod(dirname($local_path_image_public), 0777);
                                 if (Storage::disk('public')->put($tmp_path, $rawData)) {
                                     $local_path_image = storage_path('app/public/' . $tmp_path);
                                     makeFolder(dirname($local_path_image_public));
-                                    chmod($local_path_image, 0777);
+//                                    chmod($local_path_image, 777);
                                     File::move($local_path_image, $local_path_image_public);
                                     $image_local[] = [
                                         'woo_product_driver_id' => $val->woo_product_driver_id,
@@ -650,6 +653,7 @@ class Api extends Model
                                         'store_id' => $val->store_id,
                                         'status' => 0
                                     ];
+                                    logfile('----- Chấp nhận file '.$file['name']);
                                 }
                             }
                         }

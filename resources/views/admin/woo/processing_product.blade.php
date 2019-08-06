@@ -64,6 +64,7 @@
                                     <th data-field="id">Name</th>
                                     <th data-field="name">Product Name</th>
                                     <th data-field="price">Product Link</th>
+                                    <th data-field="image">Images</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -84,6 +85,7 @@
                                         </td>
                                         <td>{{ $list['woo_product_name'] }}</td>
                                         <td><a href="{{ $list['woo_slug'] }}" target="_blank">{{ $list['woo_slug'] }}</a></td>
+                                        <td>{{ $list['images'] }}</td>
                                     </tr>
                                 @endforeach
                                 </tbody>
