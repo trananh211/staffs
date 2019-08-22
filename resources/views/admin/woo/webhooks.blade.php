@@ -17,12 +17,12 @@
                         <tbody>
                         <tr>
                             <td>1.1</td>
-                            <td>{{ url('/api/new-order/') }}</td>
+                            <td>{{ url('/api/new-order/') }} <br> Test Local:  {{ url('/api/test-new-order/1') }}</td>
                             <td>Get new order from Woocommerce Store</td>
                         </tr>
                         <tr>
                             <td>1.2</td>
-                            <td>{{ url('/api/update-product/') }}</td>
+                            <td>{{ url('/api/update-product/') }} <br> Test Local:  {{ url('/api/test-update-product/1') }}</td>
                             <td>Get Update product from Woocommerce Store</td>
                         </tr>
                         <tr>
@@ -56,7 +56,17 @@
                             <td>Auto Gen Thumbnail</td>
                         </tr>
                         <tr>
-                            <td>6</td>
+                            <td>6.1</td>
+                            <td><a href="{{ url('/test-upload/') }}">{{ url('/test-upload/') }}</a></td>
+                            <td>Product Upload</td>
+                        </tr>
+                        <tr>
+                            <td>6.2</td>
+                            <td><a href="{{ url('/test-image/') }}">{{ url('/test-image/') }}</a></td>
+                            <td>Image Upload</td>
+                        </tr>
+                        <tr>
+                            <td>7</td>
                             <td><a href="{{ url('/see-log/') }}">{{ url('/see-log/') }}</a></td>
                             <td>See Log</td>
                         </tr>

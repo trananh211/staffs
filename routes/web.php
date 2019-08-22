@@ -75,6 +75,18 @@ Route::middleware('auth')->group(function () {
     Route::get('woo-processing-product','WooController@processingProduct');
     Route::get('test-upload','ApiController@autoUploadProduct');
     Route::get('test-image','ApiController@autoUploadImage');
+    Route::get('woo-supplier','WooController@getSupplier');
+    Route::get('woo-supplier','WooController@getSupplier');
+    Route::get('woo-get-new-supplier','WooController@getNewSupplier');
+    Route::post('woo-add-new-supplier','WooController@addNewSupplier');
+    Route::get('woo-delete-supplier/{supplier_id}','WooController@deleteSupplier');
+    Route::get('woo-get-template','WooController@getListTemplate');
+    Route::post('woo-update-template','WooController@editWooTemplate');
+    Route::get('woo-list-convert-variation','WooController@getListConvertVariation');
+    Route::get('woo-convert-variation','WooController@getConvertVariation');
+    Route::get('woo-delete-convert-variation/{id}','WooController@deleteConvertVariation');
+    Route::post('js-woo-convert-variation', 'WooController@ajaxPutConvertVariation');
+    Route::post('js-check-variation-exist', 'WooController@ajaxCheckVariationExist');
     /*End QC + Admin*/
 
     /*Staff*/

@@ -59,21 +59,39 @@ class Api extends Model
     {
         $db = array();
         logfile('=====================CREATE NEW ORDER=======================');
-//        echo "<pre>";
-//        print_r($data);
+//        dd($data);
         $lst_product_skip = $this->getProductSkip();
         if (sizeof($data['line_items']) > 0) {
             logfile('Store ' . $woo_id . ' has new ' . sizeof($data['line_items']) . ' order item.');
             $woo_infos = $this->getWooSkuInfo();
             $lst_product = array();
+            $check_exist_product_auto = \DB::table('woo_product_drivers')
+                ->where('store_id',$woo_id)
+                ->where('status',3)
+                ->pluck('woo_product_id')
+                ->toArray();
             foreach ($data['line_items'] as $key => $value) {
-                $str = "";
+                $str = ""; $variation_detail = ''; $variation_full_detail = '';
                 /*if (in_array($data['status'], array('failed', 'cancelled'))) {
                     continue;
                 }*/
+                $custom_status = env('STATUS_P_DEFAULT_PRODUCT');
+                $str_sku = '';
+                if (in_array($value['product_id'], $check_exist_product_auto))
+                {
+                    $custom_status = env('STATUS_P_AUTO_PRODUCT');
+                }
                 foreach ($value['meta_data'] as $item) {
+                    if (strpos(strtolower($item['key']), 'add') !== false) {
+                        $str_sku .= ' ' . $item['value'];
+                        $custom_status = env('STATUS_P_CUSTOM_PRODUCT');
+                    }else {
+                        $variation_detail .= $item['value'].'-';
+                    }
+                    $variation_full_detail .= $item['value'].'-;-;-';
                     $str .= $item['key'] . " : " . $item['value'] . " -;-;-\n";
                 }
+
                 $db[] = [
                     'woo_info_id' => $woo_id,
                     'order_id' => $data['id'],
@@ -82,14 +100,17 @@ class Api extends Model
                     'status' => $this->getStatusOrder($value['product_id'], $lst_product_skip),
                     'product_id' => $value['product_id'],
                     'product_name' => $value['name'],
-                    'sku' => $this->getSku($woo_infos[$woo_id], $value['product_id'], $value['name']),
-                    'sku_number' => $this->getSku('', $data['number'], $value['name']),
+                    'sku' => $this->getSku($woo_infos[$woo_id], $value['product_id'], $value['name'], $str_sku),
+                    'sku_number' => $this->getSku_number('', $data['number'], $value['name']),
                     'quantity' => $value['quantity'],
                     'payment_method' => $data['payment_method_title'],
                     'customer_note' => trim(htmlentities($data['customer_note'])),
                     'transaction_id' => $data['transaction_id'],
                     'price' => $value['price'],
                     'variation_id' => $value['variation_id'],
+                    'variation_detail' => trim(substr($variation_detail, 0, -1)),
+                    'variation_full_detail' => trim($variation_full_detail),
+                    'custom_status' => $custom_status,
                     'email' => $data['billing']['email'],
                     'fullname' => $data['shipping']['first_name'] . ' ' . $data['shipping']['last_name'],
                     'address' => (strlen($data['shipping']['address_2']) > 0) ? $data['shipping']['address_1'] . ', ' . $data['shipping']['address_2'] : $data['shipping']['address_1'],
@@ -106,17 +127,18 @@ class Api extends Model
             }
         }
         if (sizeof($db) > 0) {
-            \DB::beginTransaction();
-            try {
+//            dd($db);
+//            \DB::beginTransaction();
+//            try {
                 \DB::table('woo_orders')->insert($db);
                 $return = true;
                 $save = "Save to database successfully";
-                \DB::commit(); // if there was no errors, your query will be executed
-            } catch (\Exception $e) {
-                $return = false;
-                $save = "[Error] Save to database error.";
-                \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
-            }
+//                \DB::commit(); // if there was no errors, your query will be executed
+//            } catch (\Exception $e) {
+//                $return = false;
+//                $save = "[Error] Save to database error.";
+//                \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+//            }
             logfile($save . "\n");
         }
 
@@ -368,17 +390,30 @@ class Api extends Model
         return \DB::table('woo_infos')->pluck('sku', 'id')->toArray();
     }
 
-    private static function getSku($woo_sku, $product_id, $product_name)
+    private static function getSku($woo_sku, $product_id, $product_name, $str_sku = null)
     {
         /*Tach product name*/
-        $product_name = preg_replace('/\s+/', '', $product_name);
-        $tmp = explode('-', $product_name);
+        $product_name = preg_replace('/\s+/', ' ', $product_name);
+        $str_sku = preg_replace('/\s+/', '', ucwords($str_sku));
+        $tmp = explode(" ", $product_name);
         if (sizeof($tmp) > 1) {
-            $tmp[0] = (strlen($woo_sku) > 0) ? $woo_sku . '-' . $product_id : $product_id;
-            $sku = implode('-', $tmp);
+//            $tmp[0] = (strlen($woo_sku) > 0) ? $woo_sku . '-' . $product_id : $product_id;
+//            $sku = implode('-', $tmp);
+            if ($str_sku == null) {
+                $sku = $tmp[0] . $tmp[sizeof($tmp) - 1];
+            } else {
+                $sku = $str_sku . $tmp[sizeof($tmp) - 1];
+            }
         } else {
             $sku = (strlen($woo_sku) > 0) ? $woo_sku . '-' . $product_id : $product_id;
         }
+        return $sku;
+    }
+
+    private static function getSku_number($woo_sku, $product_id)
+    {
+        /*Tach product name*/
+        $sku = (strlen($woo_sku) > 0) ? $woo_sku . '-' . $product_id : $product_id;
         return $sku;
     }
 
@@ -404,6 +439,7 @@ class Api extends Model
                 $woocommerce = $this->getConnectStore($rq['url'], $rq['consumer_key'], $rq['consumer_secret']);
                 $i = $woocommerce->get('products/' . $rq['id_product']);
                 $template_data = json_decode(json_encode($i), True);
+                $template_name = $template_data['name'];
                 $description = htmlentities(str_replace("\n", "<br />", $template_data['description']));
                 $template_data['description'] = $description;
                 //xoa cac key khong can thiet
@@ -424,6 +460,7 @@ class Api extends Model
                 if ($result) {
                     logfile('-- Tạo json file template thành công. chuyển sang tạo variantions file json');
                     $woo_template_id = \DB::table('woo_templates')->insertGetId([
+                        'product_name' => $template_name,
                         'template_id' => $template_id,
                         'store_id' => $id_store,
                         'template_path' => $template_path,
@@ -522,9 +559,9 @@ class Api extends Model
                         //Kết nối với woocommerce
                         $woocommerce = $this->getConnectStore($store['url'], $store['consumer_key'], $store['consumer_secret']);
                         $check_upload_false = true;
-                        $i= 0;
+                        $i = 0;
                         foreach ($store['images'] as $product_id => $images) {
-                            if ($i >= $limit){
+                            if ($i >= $limit) {
                                 break;
                             }
                             $i++;

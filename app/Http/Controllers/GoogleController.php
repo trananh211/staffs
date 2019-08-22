@@ -53,12 +53,18 @@ class GoogleController extends Controller
         $lists = \DB::table('workings')
             ->join('woo_orders as wd', 'workings.woo_order_id', '=', 'wd.id')
             ->join('woo_products as wpd', 'workings.product_id', '=', 'wpd.product_id')
+            ->leftjoin('woo_product_drivers as wpd_goog', function ($join) {
+                $join->on('wpd.product_id', '=', 'wpd_goog.woo_product_id');
+                $join->on('wpd.woo_info_id', '=', 'wpd_goog.store_id');
+            })
             ->select(
                 'workings.id as working_id',
                 'wd.id as woo_order_id', 'wd.order_status', 'wd.product_name', 'wd.number', 'wd.fullname', 'wd.address',
                 'wd.city', 'wd.phone', 'wd.postcode', 'wd.country', 'wd.state', 'wd.status as fulfill_status',
                 'wd.quantity', 'wd.customer_note', 'wd.email', 'wd.fullname', 'wd.sku', 'wd.sku_number',
-                'wpd.name as product_origin_name', 'wpd.product_id'
+                'wd.variation_detail',
+                'wpd.name as product_origin_name', 'wpd.product_id',
+                'wpd_goog.template_id'
             )
             ->where([
                 ['workings.status', '=', env('STATUS_WORKING_DONE')]
@@ -66,6 +72,7 @@ class GoogleController extends Controller
             ->orderBy('workings.woo_order_id', 'ASC')
             ->get()
             ->toArray();
+        dd($lists);
         if (sizeof($lists) > 0) {
             $check_again = array();
             $data = array();
