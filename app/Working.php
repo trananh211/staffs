@@ -1415,6 +1415,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                         $json_data = $rq['json_data'];
                         $data = array();
                         foreach ($json_data as $val) {
+                            $variation_old_slug = mb_ereg_replace("[.]", '-', $val['variation_old']);
                             $data[] = [
                                 'variation_change_id' => $variation_change_id,
                                 'variation_old' => trim($val['variation_old']),
@@ -1422,7 +1423,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                                 'variation_new' => trim($val['variation_new']),
                                 'variation_sku' => trim($val['variation_sku']),
                                 'variation_old_slug' => str_replace(" ", "-",
-                                    mb_ereg_replace("([^\w\s\d\~,;\[\]\(\).])", '', strtolower(trim($val['variation_old'])))),
+                                    mb_ereg_replace("([^\w\s\d\~,;\[\]\(\).-])", '', strtolower(trim($variation_old_slug)))),
                                 'created_at' => date("Y-m-d H:i:s"),
                                 'updated_at' => date("Y-m-d H:i:s")
                             ];
