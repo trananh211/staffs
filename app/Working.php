@@ -186,8 +186,9 @@ class Working extends Model
                 $jobs = DB::table('woo_orders')
                     ->select('id', 'woo_info_id', 'order_id', 'product_id', 'number')
                     ->where('status', env('STATUS_WORKING_NEW'))
+                    ->where('custom_status','!=',env('STATUS_P_AUTO_PRODUCT'))
                     ->orderBy('id', 'ASC')
-                    ->limit(3)
+                    ->limit(env("STAFF_GET_JOB_LIMIT"))
                     ->get()->toArray();
                 if (sizeof($jobs) > 0) {
                     $db = array();
@@ -1146,6 +1147,38 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         }
     }
 
+    public function editWooTemplate($request)
+    {
+        try {
+            $rq = $request->all();
+            $message_status = 'error';
+            $message = '';
+            $product_name = ucwords(trim($rq['product_name']));
+            $id = trim($rq['id']);
+            $supplier_id = trim($rq['supplier_id']);
+            $base_price = trim($rq['base_price']);
+            $variation_change_id = trim($rq['variation_change_id']);
+            $result = \DB::table('woo_templates')->where('id', $id)->update([
+                'product_name' => $product_name,
+                'supplier_id' => $supplier_id,
+                'variation_change_id' => ($variation_change_id > 0)? $variation_change_id: null,
+                'base_price' => $base_price,
+                'updated_at' => date("Y-m-d H:i:s")
+            ]);
+            if ($result) {
+                $message_status = 'success';
+                $message = 'Cập nhật template thành công.';
+            } else {
+                $message = 'Cập nhật template thất bại. Mời bạn thử lại';
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+            echo $e->getMessage();
+        }
+        return redirect('woo-get-template')->with($message_status, $message);
+    }
+
     public function saveCreateTemplate($request)
     {
         try {
@@ -1202,43 +1235,43 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     {
         $data = array();
         $lists = \DB::table('woo_folder_drivers as wfd')
-            ->join('woo_infos as wif','wfd.store_id','=','wif.id')
+            ->join('woo_infos as wif', 'wfd.store_id', '=', 'wif.id')
             ->select(
-                'wfd.id','wfd.name','wfd.status','wfd.updated_at',
+                'wfd.id', 'wfd.name', 'wfd.status', 'wfd.updated_at',
                 'wif.name as store_name'
             )
             ->whereDate('wfd.created_at', '>', Carbon::now()->subDays(30))
-            ->orderBy('wfd.created_at','DESC')
+            ->orderBy('wfd.created_at', 'DESC')
             ->get()->toArray();
         $pro_upload = array();
         $pro_status = array();
-        if (sizeof($lists) > 0)
-        {
+        if (sizeof($lists) > 0) {
             $lst_products = array();
-            foreach ($lists as $list)
-            {
+            foreach ($lists as $list) {
                 $lst_products[] = $list->id;
             }
-            if (sizeof($lst_products) > 0)
-            {
-                $lst_product_uploads = \DB::table('woo_product_drivers')
-                    ->select('id','name','woo_folder_driver_id','woo_product_name','woo_slug','status')
-                    ->whereIn('woo_folder_driver_id',$lst_products)
-                    ->get()->toArray();
+            if (sizeof($lst_products) > 0) {
+                $lst_product_uploads = \DB::table('woo_product_drivers as wpd')
+                    ->leftjoin('woo_image_uploads as wup', 'wpd.id', '=', 'wup.woo_product_driver_id')
+                    ->selectRaw(
+                        'wpd.id, wpd.name, wpd.woo_folder_driver_id, wpd.woo_product_name, wpd.woo_slug, wpd.status,
+                         count(DISTINCT(wup.id)) as images'
+                    )
+                    ->whereIn('woo_folder_driver_id', $lst_products)
+                    ->groupBy('wpd.id')
+                    ->get()
+                    ->toArray();
                 $all = 0;
-                foreach ($lst_product_uploads as $lst)
-                {
-                    if (!array_key_exists($lst->woo_folder_driver_id, $pro_status))
-                    {
+                foreach ($lst_product_uploads as $lst) {
+                    if (!array_key_exists($lst->woo_folder_driver_id, $pro_status)) {
                         $uploading = 0;
                         $done = 0;
                         $all = 1;
                     } else {
-                        $all+=1;
+                        $all += 1;
                     }
-                    if ($lst->status == 1)
-                    {
-                        $uploading+=1;
+                    if ($lst->status == 1) {
+                        $uploading += 1;
                     } else if ($lst->status == 3) {
                         $done += 1;
                     }
@@ -1251,14 +1284,216 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                         'name' => $lst->name,
                         'woo_product_name' => $lst->woo_product_name,
                         'woo_slug' => $lst->woo_slug,
-                        'status' => $lst->status
+                        'status' => $lst->status,
+                        'images' => $lst->images
                     );
                 }
             }
         }
-//        dd($pro_status);
+//        dd($pro_upload);
         return view('/admin/woo/processing_product')
-            ->with(compact('lists','data','pro_upload','pro_status'));
+            ->with(compact('lists', 'data', 'pro_upload', 'pro_status'));
+    }
+
+    public function addNewSupplier($request)
+    {
+        $rq = $request->all();
+        $name = trim(ucwords(strtolower($rq['name'])));
+        $note = trim($rq['note']);
+        $status = trim($rq['status']);
+        $alert = 'error';
+        $check = \DB::table('suppliers')->where('name', $name)->first();
+        if ($check == null) {
+            //tạo mới thư mục trên driver
+            $path = createDir($name, env('GOOGLE_SUP_FOLDER'));
+            $result = \DB::table('suppliers')->insert([
+                'name' => $name,
+                'note' => htmlentities(trim($note)),
+                'path' => $path,
+                'status' => $status,
+                'created_at' => date("Y-m-d H:i:s"),
+                'updated_at' => date("Y-m-d H:i:s")
+            ]);
+            $message = 'Tạo mới supplier thành công.';
+
+            if ($result) {
+                $alert = 'success';
+            } else {
+                $message = 'Xảy ra lỗi. Không thể tạo mới supplier lúc này. Xin mời bạn thử lại';
+            }
+        } else {
+            if (isset($rq['id'])) {
+                //cap nhat lai thong tin supplier
+                $result = \DB::table('suppliers')->where('id', $rq['id'])->update([
+                    'name' => $name,
+                    'note' => htmlentities(trim($note)),
+                    'status' => $status,
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+
+                if ($result) {
+                    $alert = 'success';
+                    $message = 'Cập nhật supplier thành công.';
+                } else {
+                    $message = 'Cập nhật supplier thất bại.';
+                }
+            } else {
+                $message = 'Đã tồn tại supplier này rồi. Mời bạn kiểm tra lại nhé.';
+            }
+        }
+        return redirect('woo-supplier')->with($alert, $message);
+    }
+
+    public function editSupplier($supplier_id)
+    {
+        $alert = 'error';
+        $supplier = \DB::table('suppliers')
+            ->select('id', 'name', 'note', 'status')->where('id', $supplier_id)->get()->toArray();
+        if (sizeof($supplier) == 0) {
+            $message = 'Không tồn tại supplier này. Mời bạn tạo mới lại.';
+            return redirect('woo-supplier')->with($alert, $message);
+        } else {
+            $data = array();
+            return view('/admin/woo/add_new_supplier', compact('data', 'supplier'));
+        }
+    }
+
+    public function deleteSupplier($supplier_id)
+    {
+        try {
+            $alert = 'error';
+            $exists = \DB::table('suppliers')->where('id', $supplier_id)->first();
+            if ($exists == null) {
+                $message = 'Không tồn tại supplier này trên hệ thống.';
+            } else {
+                $check = $exists;
+                $result = \DB::table('suppliers')->where('id', $supplier_id)->delete();
+                if ($result) {
+                    $r = deleteDir($check->name, dirname($check->path));
+                    if ($r) {
+                        $alert = 'success';
+                        $message = 'Xóa thành công.';
+                    } else {
+                        $message = 'Xóa trong database thành công. Nhưng không thể xóa Driver Goolge. Mời bạn xóa tay';
+                    }
+                } else {
+                    $message = ' Xảy ra lỗi không thể xóa supplier. Mời bạn thử lại sau';
+                }
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+            logfile($e->getMessage());
+            echo $e->getMessage();
+        }
+        return redirect('woo-supplier')->with($alert, $message);
+    }
+
+    public function ajaxPutConvertVariation($request)
+    {
+        try {
+            $uid = $this->checkAuth();
+            $alert = 'error';
+            $message = '';
+            $url = '';
+            if ($uid) {
+                $rq = $request->all();
+                $variation_name = trim(ucwords($rq['variation_name']));
+                $variation_suplier = trim($rq['variation_suplier']);
+                $check = \DB::table('variation_changes')
+                    ->where('name', $variation_name)->where('suplier_id', $variation_suplier)
+                    ->first();
+
+                if ($check == null) {
+                    $variation_change_id = \DB::table('variation_changes')->insertGetId([
+                        'name' => $variation_name,
+                        'suplier_id' => $variation_suplier,
+                        'created_at' => date("Y-m-d H:i:s"),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                    if ($variation_change_id) {
+                        $json_data = $rq['json_data'];
+                        $data = array();
+                        foreach ($json_data as $val) {
+                            $variation_old_slug = mb_ereg_replace("[.]", '-', $val['variation_old']);
+                            $data[] = [
+                                'variation_change_id' => $variation_change_id,
+                                'variation_old' => trim($val['variation_old']),
+                                'variation_compare' => trim($val['variation_compare']),
+                                'variation_new' => trim($val['variation_new']),
+                                'variation_sku' => trim($val['variation_sku']),
+                                'variation_old_slug' => str_replace(" ", "-",
+                                    mb_ereg_replace("([^\w\s\d\~,;\[\]\(\).-])", '', strtolower(trim($variation_old_slug)))),
+                                'created_at' => date("Y-m-d H:i:s"),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                        }
+                        $result = \DB::table('variation_change_items')->insert($data);
+                        if ($result) {
+                            $alert = 'success';
+                            $message = 'Tạo thành công variation.';
+                            $url = url('woo-list-convert-variation');
+                        }
+                    }
+                } else {
+                    $message = 'Đã tồn tại variation name này rồi. Mời bạn thử lại với tên khác';
+                }
+            } else {
+                $message = 'Đã hết phiên login. Mời bạn tải lại trang và làm lại từ đầu.';
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $alert = 'error';
+            logfile($e->getMessage());
+            $message = $e->getMessage();
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return response()->json([
+            'message' => $message,
+            'result' => $alert,
+            'url' => $url
+        ]);
+    }
+
+    public function deleteConvertVariation($id)
+    {
+        try {
+            \DB::table('variation_changes')->where('id', $id)->delete();
+            \DB::table('variation_change_items')->where('variation_change_id', $id)->delete();
+            $alert = 'success';
+            $message = 'Xóa thành công';
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $alert = 'error';
+            logfile($e->getMessage());
+            $message = 'Xóa thất bại. ' . $e->getMessage();
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return redirect('woo-list-convert-variation')->with($alert, $message);
+    }
+
+    public function ajaxCheckVariationExist($request)
+    {
+        $uid = $this->checkAuth();
+        if ($uid) {
+            $rq = $request->all();
+            $variation_name = trim(ucwords($rq['variation_name']));
+            $variation_suplier = trim($rq['variation_suplier']);
+            $check = \DB::table('variation_changes')
+                ->where('name', $variation_name)->where('suplier_id', $variation_suplier)
+                ->first();
+            if ($check != null) {
+                $message = '<small class="red-text">Tên <b>' . $variation_name . '</b> đã tồn tại rồi. Mời bạn chọn tên khác.</small>';
+                $alert = 'error';
+            } else {
+                $message = '<small class="green-text">Bạn có thể sử dụng tên <b>' . $variation_name . '</b> này.</small>';
+                $alert = 'success';
+            }
+            return response()->json([
+                'message' => $message,
+                'result' => $alert
+            ]);
+        }
     }
     /*End Admin + QC*/
 }

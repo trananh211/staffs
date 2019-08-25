@@ -17,12 +17,12 @@
                         <tbody>
                         <tr>
                             <td>1.1</td>
-                            <td>{{ url('/api/new-order/') }}</td>
+                            <td>{{ url('/api/new-order/') }} <br> Test Local:  {{ url('/api/test-new-order/1') }}</td>
                             <td>Get new order from Woocommerce Store</td>
                         </tr>
                         <tr>
                             <td>1.2</td>
-                            <td>{{ url('/api/update-product/') }}</td>
+                            <td>{{ url('/api/update-product/') }} <br> Test Local:  {{ url('/api/test-update-product/1') }}</td>
                             <td>Get Update product from Woocommerce Store</td>
                         </tr>
                         <tr>
@@ -32,13 +32,18 @@
                         </tr>
                         <tr>
                             <td>3.1</td>
-                            <td><a href="{{ url('/fulfillment/') }}">{{ url('/fulfillment/') }}</a></td>
+                            <td><a href="<?php echo e(url('/fulfillment/')); ?>"><?php echo e(url('/fulfillment/')); ?></a></td>
                             <td>Fulfillment By Hand</td>
                         </tr>
                         <tr>
                             <td>3.2</td>
-                            <td><a href="{{ url('/uploadFileDriver/') }}">{{ url('/uploadFileDriver/') }}</a></td>
-                            <td>Upload Driver By Hand</td>
+                            <td><a href="<?php echo e(url('/upload-file-driver/')); ?>"><?php echo e(url('/upload-file-driver/')); ?></a></td>
+                            <td>Upload Driver Custom</td>
+                        </tr>
+                        <tr>
+                            <td>3.2</td>
+                            <td><a href="<?php echo e(url('/upload-file-driver-auto/')); ?>"><?php echo e(url('/upload-file-driver-auto/')); ?></a></td>
+                            <td>Upload Driver Auto</td>
                         </tr>
                         <tr>
                             <td>4.1</td>
@@ -56,7 +61,17 @@
                             <td>Auto Gen Thumbnail</td>
                         </tr>
                         <tr>
-                            <td>6</td>
+                            <td>6.1</td>
+                            <td><a href="{{ url('/test-upload/') }}">{{ url('/test-upload/') }}</a></td>
+                            <td>Product Upload</td>
+                        </tr>
+                        <tr>
+                            <td>6.2</td>
+                            <td><a href="{{ url('/test-image/') }}">{{ url('/test-image/') }}</a></td>
+                            <td>Image Upload</td>
+                        </tr>
+                        <tr>
+                            <td>7</td>
                             <td><a href="{{ url('/see-log/') }}">{{ url('/see-log/') }}</a></td>
                             <td>See Log</td>
                         </tr>

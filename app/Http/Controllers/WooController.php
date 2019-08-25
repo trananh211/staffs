@@ -291,6 +291,101 @@ class WooController extends Controller
         $work = new Working();
         return $work->processingProduct();
     }
+
+    public function getSupplier()
+    {
+        $data = array();
+        $lists = \DB::table('suppliers')
+            ->select('id', 'name', 'status', 'note')
+            ->orderBy('status', 'DESC')
+            ->get()->toArray();
+        return view('/admin/woo/supplier')->with(compact('lists', 'data'));
+    }
+
+    public function getNewSupplier()
+    {
+        $data = array();
+        return view('/admin/woo/add_new_supplier')->with(compact('data'));
+    }
+
+    public function addNewSupplier(Request $request)
+    {
+        $work = new Working();
+        return $work->addNewSupplier($request);
+    }
+
+    public function deleteSupplier($supplier_id)
+    {
+        $work = new Working();
+        return $work->deleteSupplier($supplier_id);
+    }
+
+    public function editSupplier($supplier_id)
+    {
+        $work = new Working();
+        return $work->editSupplier($supplier_id);
+    }
+
+    public function getListTemplate()
+    {
+        $lists = \DB::table('woo_templates as w_temp')
+            ->leftjoin('woo_infos', 'w_temp.store_id', '=', 'woo_infos.id')
+            ->leftjoin('suppliers as sup', 'w_temp.supplier_id', '=', 'sup.id')
+            ->select(
+                'w_temp.id', 'w_temp.product_name', 'w_temp.supplier_id', 'w_temp.store_id', 'w_temp.template_id',
+                'w_temp.base_price','w_temp.variation_change_id' ,'woo_infos.name as store_name',
+                'sup.name as sup_name'
+            )
+            ->get()->toArray();
+        $suppliers = \DB::table('suppliers')->select('id', 'name')->get()->toArray();
+        $variation_changes = \DB::table('variation_changes')->select('id','name')->get()->toArray();
+        $data = array();
+        return view('/admin/woo/list_templates')
+            ->with(compact('lists', 'suppliers','variation_changes', 'data'));
+    }
+
+    public function editWooTemplate(Request $request)
+    {
+        $work = new Working();
+        return $work->editWooTemplate($request);
+    }
+
+    public function getListConvertVariation()
+    {
+        $data = array();
+        $lists = \DB::table('variation_changes as var_chg')
+            ->leftjoin('suppliers', 'var_chg.suplier_id','=', 'suppliers.id')
+            ->select('var_chg.id','var_chg.name as variation_name','suppliers.name as supplier_name')
+            ->orderBy('var_chg.id','DESC')
+            ->get()->toArray();
+        return view('/admin/woo/list_convert_variation',compact('data','lists'));
+    }
+
+    public function deleteConvertVariation($id)
+    {
+        $work = new Working();
+        return $work->deleteConvertVariation($id);
+    }
+
+    public function getConvertVariation()
+    {
+        $data = array();
+        $supliers = \DB::table('suppliers')->select('id','name')->get()->toArray();
+        return view('/admin/woo/get_convert_variation',compact('data','supliers'));
+    }
+
+    public function ajaxPutConvertVariation(Request $request)
+    {
+        $work = new Working();
+        return $work->ajaxPutConvertVariation($request);
+    }
+
+    public function ajaxCheckVariationExist(Request $request)
+    {
+        $work = new Working();
+        return $work->ajaxCheckVariationExist($request);
+    }
+
     /*End Tạo sản phẩm */
 
     /*End Admin + QC*/

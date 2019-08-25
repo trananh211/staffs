@@ -17,7 +17,7 @@ $(document).ready(function () {
             data: {idea_id: idea_id},
             dataType: 'JSON',
             // dataType: 'html',
-            beforeSend: function() {
+            beforeSend: function () {
                 $('#loading').fadeIn();
             },
             success: function (data) {
@@ -202,8 +202,7 @@ $(document).ready(function () {
         if (list.length == 0) {
             Materialize.toast('Bạn phải chọn sản phẩm trước đã!', 4000);
         } else {
-            if(confirm("Bạn có chắc chắn thực hiện việc này?"))
-            {
+            if (confirm("Bạn có chắc chắn thực hiện việc này?")) {
                 var url = $(this).attr('data-url');
                 $.ajax({
                     method: "POST",
@@ -227,8 +226,7 @@ $(document).ready(function () {
         }
     });
 
-    function checkbox()
-    {
+    function checkbox() {
         var list = new Array();
         $('.js-checkbox-one').each(function (index, value) {
             if ($(this).is(':checked')) {
@@ -240,27 +238,174 @@ $(document).ready(function () {
     }
 
     /*Woocommerce Product Create Automatic*/
-    $('#woo-tem-choose-store').on('change' , function (e) {
+    $('#woo-tem-choose-store').on('change', function (e) {
         var optionSelected = $(this).find("option:selected");
-        var id_store  = optionSelected.val();
-        var consumer_key  = optionSelected.attr('con_key');
-        var consumer_secret  = optionSelected.attr('con_sec');
-        var url  = optionSelected.attr('url');
+        var id_store = optionSelected.val();
+        var consumer_key = optionSelected.attr('con_key');
+        var consumer_secret = optionSelected.attr('con_sec');
+        var url = optionSelected.attr('url');
         $('.js_url').val(url);
         $('.js_con_key').val(consumer_key);
         $('.js_con_sec').val(consumer_secret);
-        console.log(id_store+'--'+url+'--'+consumer_key+'--'+consumer_secret);
+        console.log(id_store + '--' + url + '--' + consumer_key + '--' + consumer_secret);
     });
 
     $('.js-get-status-doc').on('click', function (e) {
         var pro_dri = $(this).attr('pro_dri');
-        if ($('#js-folder').hasClass('s12')){
-            $('#js-folder').removeClass('s12').addClass('s5');
-            $('#js-product').show();
-        } else {
-            $('#js-folder').removeClass('s5').addClass('s12');
-            $('#js-product').hide();
+        $('.js-get-status-doc').removeClass('blue lighten-5');
+        $(this).addClass('blue lighten-5');
+        if ($('#js-folder').hasClass('js-full')) {
+
+            if (!$('#js-folder').hasClass('js-show')) {
+                $('#js-folder').removeClass('s12').addClass('s5');
+                $('#js-product').show();
+            }
+            $('.js-show-folder').hide();
+            $('.js-show-folder-' + pro_dri).show();
+            console.log('.js-show-folder-' + pro_dri);
         }
     });
+
+    $('.js-closed').on('click', function (e) {
+        $('.js-get-status-doc').removeClass('blue lighten-5');
+        $('#js-folder').removeClass('s5').addClass('s12');
+        $('#js-product').hide();
+        $('.js-show-folder').hide();
+    });
+
+    //add variation
+    $('.js-variation-add').on('click', function (e) {
+        var variation_old = $('.js-variation-v1').val();
+        var variation_compare = $('.js-variation-v2').val();
+        var variation_new = $('.js-variation-v3').val();
+        var variation_sku = $('.js-variation-v-sku').val();
+        if (variation_old == '' || variation_compare == '' || variation_new == '') {
+            alert('Mời bạn nhập đầy đủ các trường giá trị quy đổi.');
+        } else {
+            var num = $('.js-variation-item').length;
+            var item = num + 1;
+            var random = Math.random().toString(36).substring(7);
+            var text = '<li class="js-variation-item collection-item js-collection-item-' + num + '">\n' +
+                '                                <span class="js-variation-number">' + item + '.</span>\n' +
+                '                                <span class="js-variation-data-' + num + '">\n' +
+                '                                    <span class="grey-text text-darken-2 js-variation-data-old">' + variation_old + '</span> -\n' +
+                '                                    <span class="orange-text text-darken-2 js-variation-data-compare">' + variation_compare + '</span> -\n' +
+                '                                    <span class="green-text text-darken-2 js-variation-data-new">' + variation_new + '</span> -\n' +
+                '                                    <span class="brown-text text-darken-2 js-variation-data-sku">' + variation_sku + '</span>\n' +
+                '                                </span>\n' +
+                '                                <a href="javascript:void(0);" class="pull-right right remove-variation-item-' + random + '"><i class="material-icons">delete</i></a>\n' +
+                '                            </li>\n' +
+                '<script>$(".remove-variation-item-' + random + '").on("click", function () {\n' +
+                '        $(this).parent().remove();\n' +
+                '    });</script>';
+            $('ul.collection').prepend(text);
+        }
+    });
+
+    $('.js-variation-finish').on('click', function (e) {
+        e.preventDefault();
+        var num = $('.js-variation-item').length;
+        var variation_name = $('.js-variation-name').val();
+        var variation_suplier = $('.js-variation-suplier').val();
+        var json_data = [];
+        // var variation_old, variation_new, variation_compare, variation_sku;
+        $('.js-variation-item').each(function (index, value) {
+            var variation_old = $('.js-variation-data-' + index + ' .js-variation-data-old').text();
+            var variation_compare = $('.js-variation-data-' + index + ' .js-variation-data-compare').text();
+            var variation_new = $('.js-variation-data-' + index + ' .js-variation-data-new').text();
+            var variation_sku = $('.js-variation-data-' + index + ' .js-variation-data-sku').text();
+            // console.log(index+'---'+variation_old+'---'+variation_compare+'---'+variation_new+'---'+variation_sku);
+            var data = {
+                'variation_old': variation_old,
+                'variation_compare': variation_compare,
+                'variation_new': variation_new,
+                'variation_sku': variation_sku,
+            };
+            json_data.push(data);
+        });
+
+        if (variation_name.length == 0) {
+            Materialize.toast('Bạn phải chọn đặt tên cho Variation Change này!', 4000);
+        } else if (variation_suplier == null) {
+            Materialize.toast('Bạn phải chọn suplier!', 4000);
+        } else if (json_data.length == 0) {
+            Materialize.toast('Bạn phải tạo mới các biến variation!', 4000);
+        } else {
+            if (confirm("Bạn đã chắc chắn tạo đủ hết variation chưa?")) {
+                var url = $('#js-variation-url').attr('data-url');
+                $.ajax({
+                    method: "POST",
+                    url: url,
+                    data: {
+                        'variation_name': variation_name,
+                        'variation_suplier': variation_suplier,
+                        'json_data': json_data
+                    },
+                    dataType: 'JSON',
+                    // dataType: 'html',
+                    success: function (data) {
+                        // console.log('success');
+                        // console.log(data);
+                        alert(data.message);
+                        if (data.result == 'success') {
+                            $(location).attr('href', data.url);
+                        } else {
+                            window.location.reload();
+                        }
+                    },
+                    error: function (error) {
+                        // window.location.reload();
+                        console.log('error');
+                        console.log(error);
+                    }
+                })
+            }
+        }
+    });
+
+    $(".remove-variation-item").on("click", function () {
+        $(this).parent().remove();
+    });
+
+    $('.js-variation-name').on('blur', function () {
+        checkVariationChange();
+    });
+
+    $('.js-variation-suplier').on('change', function () {
+        checkVariationChange();
+    });
+
+    function checkVariationChange() {
+        var variation_name = $('.js-variation-name').val();
+        var variation_suplier = $('.js-variation-suplier').val();
+        if (variation_name.length > 0 && variation_suplier != null) {
+            var url = $('#js-variation-check').attr('data-url');
+            $.ajax({
+                method: "POST",
+                url: url,
+                data: {'variation_name': variation_name, 'variation_suplier': variation_suplier},
+                dataType: 'JSON',
+                // dataType: 'html',
+                success: function (data) {
+                    // Materialize.toast(data.message, 5000);
+                    // window.location.reload();
+                    // console.log('success');
+                    // console.log(data);
+                    if (data.result != 'success') {
+                        console.log(data.result + ' da vao den day roi');
+                        $('.js-variation-name').val('').focus();
+                    }
+                    $('#js-variation-check-result').html(data.message);
+                },
+                error: function (error) {
+                    // window.location.reload();
+                    console.log('error');
+                    console.log(error);
+                    Materialize.toast("Xảy ra lỗi. Mời bạn tải lại trang", 5000);
+                }
+            })
+        }
+    }
+
     /*End Woocommerce Product Create Automatic*/
 });
