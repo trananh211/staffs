@@ -104,7 +104,8 @@ Route::middleware('auth')->group(function () {
 
 Route::get('test','GoogleController@test');
 Route::get('fulfillment','GoogleController@fulfillment');
-Route::get('uploadFileDriver','GoogleController@uploadFileDriver');
+Route::get('upload-file-driver','GoogleController@uploadFileDriver');
+Route::get('upload-file-driver-auto','GoogleController@uploadProductAutoToDriver');
 Route::get('getFileTracking','TrackingController@getFileTracking');
 Route::get('getInfoTracking','TrackingController@getInfoTracking');
 Route::get('autoGenThumb','WooController@autoGenThumb');

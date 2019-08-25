@@ -32,13 +32,18 @@
                         </tr>
                         <tr>
                             <td>3.1</td>
-                            <td><a href="{{ url('/fulfillment/') }}">{{ url('/fulfillment/') }}</a></td>
+                            <td><a href="<?php echo e(url('/fulfillment/')); ?>"><?php echo e(url('/fulfillment/')); ?></a></td>
                             <td>Fulfillment By Hand</td>
                         </tr>
                         <tr>
                             <td>3.2</td>
-                            <td><a href="{{ url('/uploadFileDriver/') }}">{{ url('/uploadFileDriver/') }}</a></td>
-                            <td>Upload Driver By Hand</td>
+                            <td><a href="<?php echo e(url('/upload-file-driver/')); ?>"><?php echo e(url('/upload-file-driver/')); ?></a></td>
+                            <td>Upload Driver Custom</td>
+                        </tr>
+                        <tr>
+                            <td>3.2</td>
+                            <td><a href="<?php echo e(url('/upload-file-driver-auto/')); ?>"><?php echo e(url('/upload-file-driver-auto/')); ?></a></td>
+                            <td>Upload Driver Auto</td>
                         </tr>
                         <tr>
                             <td>4.1</td>
