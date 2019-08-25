@@ -507,7 +507,6 @@ class GoogleController extends Controller
                 logfile('-- Xảy ra lỗi. Không thể upload file lên vào thời điểm này');
             }
         } else {
-            echo "vao day chua";
             logfile('-- Đã hết file custom để Upload fulfill. Chuyển sang fulfill file Product Auto');
             $this->uploadProductAutoToDriver();
         }

@@ -28,11 +28,11 @@ class Kernel extends ConsoleKernel
         $schedule->exec('chmod -R 777 '.storage_path())->dailyAt('00:20');
 
         /** Run every minute specified queue if not already started */
-        $schedule->command('queue:work --stop-when-empty')->everyFiveMinutes();
+        $schedule->command('queue:work --stop-when-empty')->everyMinute();
         /*Export file excel lên thư mục fulfill*/
-        $schedule->call('App\Http\Controllers\GoogleController@fulfillment')->twiceDaily(1,16);
+        $schedule->call('App\Http\Controllers\GoogleController@fulfillment')->twiceDaily(1,15);
         /*Upload file image lên thư mục fulfill*/
-        $schedule->call('App\Http\Controllers\GoogleController@uploadFileDriver')->everyTenMinutes()
+        $schedule->call('App\Http\Controllers\GoogleController@uploadFileDriver')->everyFiveMinutes()
             ->between('1:00', '23:00');
         $schedule->call('App\Http\Controllers\ApiController@checkPaymentAgain')->hourlyAt(17);
         /*Tracking API*/
