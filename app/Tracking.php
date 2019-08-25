@@ -84,7 +84,7 @@ class Tracking extends Model
             }
             \DB::commit(); // if there was no errors, your query will be executed
         } catch (\Exception $e) {
-            $save = "[Tracking Error] Xảy ra lỗi nội bộ: \n".$e ."\n";
+            $save = "[Tracking Error] Xảy ra lỗi nội bộ: \n" . $e . "\n";
             logfile($save);
             \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
         }
@@ -95,14 +95,21 @@ class Tracking extends Model
     {
         $db = array();
         $ar_working_id = array();
+        $ar_woo_order_id = array();
         foreach ($data as $value) {
             $tmp = explode('-', $value['orderid']);
-            $working_id = $tmp[sizeof($tmp) - 1];
-
-            $ar_working_id[] = $working_id;
-            $db[$working_id] = [
-                'tracking_number' => preg_replace('/\s+/', '', htmlentities(sanitizer(trim($value['tracking'])))),
-                'working_id' => $working_id,
+            $woo_order_id = $tmp[sizeof($tmp) - 1];
+            $ar_working_id[] = $woo_order_id;
+            $ar_woo_order_id[] = $woo_order_id;
+            $tracking_number = preg_replace('/\s+/', '', htmlentities(sanitizer(trim($value['tracking']))));
+            if (trim($tracking_number) == '')
+            {
+                continue;
+                logfile('-- [Warning] Tracking của Order: '.$value['order_id'].' rỗng. Bỏ qua.');
+            }
+            $db[$woo_order_id] = [
+                'tracking_number' => $tracking_number,
+                'woo_order_id' => $woo_order_id,
                 'order_id' => $value['orderid'],
                 'status' => env('TRACK_NEW'),
                 'is_check' => 0,
@@ -111,55 +118,47 @@ class Tracking extends Model
                 'updated_at' => date("Y-m-d H:i:s")
             ];
         }
-        if (sizeof($ar_working_id) > 0) {
+        if (sizeof($ar_woo_order_id) > 0) {
             //Kiểm tra tồn tại của tracking
             $trackings = \DB::table('trackings')
-                ->whereIn('working_id', $ar_working_id)
-                ->pluck('tracking_number', 'working_id')
+                ->whereIn('woo_order_id', $ar_woo_order_id)
+                ->pluck('tracking_number', 'woo_order_id')
                 ->toArray();
             // Lấy danh sách những tracking đã hoạt động để bỏ qua tạo mới
             $trackings_active = \DB::table('trackings')
-                ->whereIn('working_id', $ar_working_id)
+                ->whereIn('woo_order_id', $ar_woo_order_id)
                 ->where('status', '>', env('TRACK_NOTFOUND'))
-                ->pluck('tracking_number', 'working_id')
-                ->toArray();
-            //lấy woo_order_id từ workings table
-            $workings = \DB::table('workings')
-                ->whereIn('id', $ar_working_id)
-                ->pluck('woo_order_id', 'id')
+                ->pluck('tracking_number', 'woo_order_id')
                 ->toArray();
             // Nếu chưa có file nào từng tồn tại ở DB
             if (sizeof($trackings) == 0) {
-                logfile('--- Đây là tracking mới. Chuẩn bị tạo mới fulfillment');
-                foreach ($db as $working_id => $dt) {
-                    $db[$working_id]['woo_order_id'] = $workings[$working_id];
-                }
                 \DB::table('trackings')->insert($db);
-                logfile('--- Tạo thành công ' . sizeOf($db) . 'tracking mới.');
+                logfile('--- Tạo thành công ' . sizeOf($db) . ' tracking mới.');
             } else {
                 $del_trackings = array();
-                foreach ($db as $working_id => $value) {
+                foreach ($db as $woo_order_id => $value) {
                     // Nếu phát hiện ra có tracking đã active thì bỏ qua luôn
-                    if (array_key_exists($working_id, $trackings_active)) {
-                        logfile('---- Tracking ' . $trackings_active[$working_id] . ' : đã actived không thể thêm tự động.');
-                        unset($db[$working_id]);
+                    if (array_key_exists($woo_order_id, $trackings_active)) {
+                        logfile('---- Tracking của ' . $value['order_id'] . ' : '
+                            . $trackings_active[$woo_order_id] . ' : đã actived không thể thêm tự động.');
+                        unset($db[$woo_order_id]);
                         continue;
                     }
-                    if (array_key_exists($working_id, $trackings)) {
-                        if ($value['tracking_number'] == $trackings[$working_id]) {
-                            logfile('---- Tracking đã tồn tại. bỏ qua : ' . $value['tracking_number']);
-                            unset($db[$working_id]);
+                    if (array_key_exists($woo_order_id, $trackings)) {
+                        if ($value['tracking_number'] == $trackings[$woo_order_id]) {
+                            logfile('---- Tracking của ' . $value['order_id'] . ' đã tồn tại. bỏ qua : '
+                                . $value['tracking_number']);
+                            unset($db[$woo_order_id]);
                             continue;
                         } else {
-                            $del_trackings[] = $working_id;
+                            $del_trackings[] = $woo_order_id;
                         }
                     }
-                    $db[$working_id]['woo_order_id'] = $workings[$working_id];
                 }
-                /*Nếu supplier gửi lên file tracking mới*/
+                /*Nếu supplier gửi lên file tracking mới. Xóa tracking cũ đi để thêm mới*/
                 if (sizeof($del_trackings) > 0) {
                     logfile('--- Supplier gửi lên ' . sizeof($del_trackings) . ' file tracking mới');
-                    \DB::table('trackings')->whereIn('working_id', $del_trackings)->delete();
+                    \DB::table('trackings')->whereIn('woo_order_id', $del_trackings)->delete();
                 }
                 // Nếu vẫn tồn tại tracking mới. Lưu vào database
                 if (sizeof($db) > 0) {
