@@ -281,13 +281,13 @@ function sanitizer($file)
 }
 
 /*GOOGLE API*/
-function createDir($name, $path = null)
+function createDir($name, $parent_path = null)
 {
     $name = trim($name);
     $return = false;
     $recursive = false; // Get subdirectories also?
-    if (Storage::cloud()->makeDirectory($path . '/' . $name)) {
-        $dir = collect(Storage::cloud()->listContents($path, $recursive))
+    if (Storage::cloud()->makeDirectory($parent_path . '/' . $name)) {
+        $dir = collect(Storage::cloud()->listContents($parent_path, $recursive))
             ->where('type', '=', 'dir')
             ->where('filename', '=', $name)
             ->sortBy('timestamp')
@@ -302,13 +302,45 @@ function checkDirExist($name, $path, $parent_path)
     $name = trim($name);
     $return = false;
     $recursive = false; // Get subdirectories also?
-    $check_before = collect(Storage::cloud()->listContents($parent_path, $recursive))
-        ->where('type', '=', 'dir')
-        ->where('filename', '=', $name)
-        ->where('path', '=', $path)
-        ->first();
+    if ($path == '')
+    {
+        $check_before = collect(Storage::cloud()->listContents($parent_path, $recursive))
+            ->where('type', '=', 'dir')
+            ->where('filename', '=', $name)
+            ->first();
+    } else {
+        $check_before = collect(Storage::cloud()->listContents($parent_path, $recursive))
+            ->where('type', '=', 'dir')
+            ->where('filename', '=', $name)
+            ->where('path', '=', $path)
+            ->first();
+    }
     if ($check_before) {
         $return = true;
+    }
+    return $return;
+}
+
+function getDirExist($name, $path, $parent_path)
+{
+    $name = trim($name);
+    $return = false;
+    $recursive = false; // Get subdirectories also?
+    if ($path == '')
+    {
+        $check_before = collect(Storage::cloud()->listContents($parent_path, $recursive))
+            ->where('type', '=', 'dir')
+            ->where('filename', '=', $name)
+            ->first();
+    } else {
+        $check_before = collect(Storage::cloud()->listContents($parent_path, $recursive))
+            ->where('type', '=', 'dir')
+            ->where('filename', '=', $name)
+            ->where('path', '=', $path)
+            ->first();
+    }
+    if ($check_before) {
+        $return = $check_before;
     }
     return $return;
 }
@@ -332,12 +364,12 @@ function scanFolder($path)
     return $check;
 }
 
-function deleteDir($name, $path = null)
+function deleteDir($name, $parent_path = null)
 {
     $return = false;
     $name = trim($name);
     $recursive = false; // Get subdirectories also?
-    $check_before = collect(Storage::cloud()->listContents($path, $recursive))
+    $check_before = collect(Storage::cloud()->listContents($parent_path, $recursive))
         ->where('type', '=', 'dir')
         ->where('filename', '=', $name)
         ->first();
@@ -424,6 +456,22 @@ function getFile($filename, $path, $parent_path = null)
         if (Storage::cloud()->delete($check_before['path'])) {
             $return = true;
         }
+    }
+    return $return;
+}
+
+function checkFileExist($filename, $parent_path)
+{
+    $return = false;
+    $name = trim($filename);
+    $recursive = false; // Get subdirectories also?
+    $check_before = collect(Storage::cloud()->listContents($parent_path, $recursive))
+        ->where('type', '=', 'file')
+        ->where('name', '=', $filename)
+        ->first();
+    if ($check_before)
+    {
+        $return = true;
     }
     return $return;
 }

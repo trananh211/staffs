@@ -344,10 +344,9 @@ $(document).ready(function () {
                     dataType: 'JSON',
                     // dataType: 'html',
                     success: function (data) {
-                        // Materialize.toast(data.message, 5000);
-                        alert(data.message);
                         // console.log('success');
                         // console.log(data);
+                        alert(data.message);
                         if (data.result == 'success') {
                             $(location).attr('href', data.url);
                         } else {

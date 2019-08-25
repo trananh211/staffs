@@ -127,18 +127,17 @@ class Api extends Model
             }
         }
         if (sizeof($db) > 0) {
-//            dd($db);
-//            \DB::beginTransaction();
-//            try {
+            \DB::beginTransaction();
+            try {
                 \DB::table('woo_orders')->insert($db);
                 $return = true;
                 $save = "Save to database successfully";
-//                \DB::commit(); // if there was no errors, your query will be executed
-//            } catch (\Exception $e) {
-//                $return = false;
-//                $save = "[Error] Save to database error.";
-//                \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
-//            }
+                \DB::commit(); // if there was no errors, your query will be executed
+            } catch (\Exception $e) {
+                $return = false;
+                $save = "[Error] Save to database error.";
+                \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+            }
             logfile($save . "\n");
         }
 
@@ -393,6 +392,8 @@ class Api extends Model
     private static function getSku($woo_sku, $product_id, $product_name, $str_sku = null)
     {
         /*Tach product name*/
+        $product_name = sanitizer($product_name);
+        $str_sku = sanitizer($str_sku);
         $product_name = preg_replace('/\s+/', ' ', $product_name);
         $str_sku = preg_replace('/\s+/', '', ucwords($str_sku));
         $tmp = explode(" ", $product_name);
