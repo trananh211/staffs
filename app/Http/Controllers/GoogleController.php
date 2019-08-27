@@ -140,6 +140,7 @@ class GoogleController extends Controller
                         if (in_array($list['woo_order_id'], $check_again)) continue;
                         $check_again[] = $list['woo_order_id'];
                         logfile('-- Đơn hàng ' . $list['number'] . ' chưa thanh toán tiền');
+                        unset($lists[$k]);
                         continue;
                     } else {
                         $key = $list['store_id'] . '_' . $list['template_id'];
@@ -288,7 +289,7 @@ class GoogleController extends Controller
                     // gom tất cả file working thành công vào 1 mảng
                     $ud_working_move = array_merge($ud_working_move, $ar_file_fulfill[$list['supplier_id']]);
                     $ud_order_move = array_merge($ud_order_move, $ar_order_fulfill[$list['supplier_id']]);
-                    logfile('-- Fulfill file excel thành công của supplier:' . $list_orders['supplier_name'] . ' số lượng: ' . sizeof($dt));
+                    logfile('-- Fulfill file excel thành công của supplier: ' . $list_orders['supplier_name'] . ' số lượng: ' . sizeof($dt));
                 }
 //                    \File::delete($check['full']);
             }

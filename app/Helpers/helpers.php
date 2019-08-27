@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Log;
 
 function logfile($str)
 {
+    echo $str."<br>";
     \Log::info($str);
 }
 
@@ -523,9 +524,7 @@ function infoShop()
 
 function getNewOrder()
 {
-    return \DB::table('woo_orders')->where('status', env('STATUS_WORKING_NEW'))
-        ->where('custom_status', env('STATUS_P_CUSTOM_PRODUCT'))
-        ->count();
+    return \DB::table('woo_orders')->where('status', env('STATUS_WORKING_NEW'))->count();
 }
 
 function getworkingOrder()
