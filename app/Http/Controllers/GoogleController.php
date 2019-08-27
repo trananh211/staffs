@@ -136,10 +136,14 @@ class GoogleController extends Controller
                     $list['product_origin_name'] = sanitizer($list['product_origin_name']);
                     /*Nếu khách chưa trả tiền. Kiểm tra lại với shop*/
                     if (in_array($list['order_status'], array('failed', 'cancelled', 'canceled', 'pending'))) {
-                        if ($list['fulfill_status'] == env('STATUS_NOTFULFILL')) continue;
+                        logfile('-- Đơn hàng ' . $list['number'] . ' chưa thanh toán tiền');
+                        if ($list['fulfill_status'] == env('STATUS_NOTFULFILL'))
+                        {
+                            unset($lists[$k]);
+                            continue;
+                        }
                         if (in_array($list['woo_order_id'], $check_again)) continue;
                         $check_again[] = $list['woo_order_id'];
-                        logfile('-- Đơn hàng ' . $list['number'] . ' chưa thanh toán tiền');
                         unset($lists[$k]);
                         continue;
                     } else {
