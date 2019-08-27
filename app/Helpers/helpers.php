@@ -524,7 +524,7 @@ function infoShop()
 function getNewOrder()
 {
     return \DB::table('woo_orders')->where('status', env('STATUS_WORKING_NEW'))
-        ->where('status_custom', env('STATUS_P_CUSTOM_PRODUCT'))
+        ->where('custom_status', env('STATUS_P_CUSTOM_PRODUCT'))
         ->count();
 }
 
