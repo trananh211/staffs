@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Log;
 
 function logfile($str)
 {
-    echo $str."<br>";
+//    echo $str."<br>";
     \Log::info($str);
 }
 

@@ -489,7 +489,7 @@ class GoogleController extends Controller
             })
             ->select(
                 'workings.id as working_id',
-                'wod.id as woo_order_id', 'wod.sku', 'wod.woo_info_id as store_id',
+                'wod.id as woo_order_id', 'wod.sku', 'wod.woo_info_id as store_id', 'wod.number',
                 'file.name as filename', 'file.path', 'file.id as working_file_id', 'file.is_mockup',
                 'wpd_goog.template_id'
             )
@@ -753,6 +753,13 @@ class GoogleController extends Controller
                 $parent_path = $file['path_gg_driver'];
                 $dir_info = public_path($file['path'] . $file['filename']);
                 $new_name = $file['sku'] . '_' . $file['filename'];
+                //đổi tên file trùng với sku
+                $str_file_old = $file['number'].'-PID-'.$file['working_id'];
+                $tmp = explode($str_file_old, $new_name);
+                if (sizeof($tmp) > 1)
+                {
+                    $new_name = preg_replace('([\s]+)', '', implode('',$tmp));
+                }
                 $path = upFile($dir_info, $parent_path, $new_name);
                 if ($path) {
                     logfile('-- Up thành công file ' . $file['filename'] . ' lên google Driver');

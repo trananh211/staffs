@@ -48,3 +48,6 @@
     max-height: 100%;
     height: inherit !important;
 }
+.hidden {
+    display: none;
+}
