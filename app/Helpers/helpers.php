@@ -5,7 +5,9 @@ use Illuminate\Support\Facades\Log;
 
 function logfile($str)
 {
-    \Log::info($str);
+//    echo $str."<br>";
+    $datetime = Carbon::now('Asia/Ho_Chi_Minh');
+    \Log::info($datetime.'==> '.$str);
 }
 
 function getMessage($message)
@@ -523,9 +525,7 @@ function infoShop()
 
 function getNewOrder()
 {
-    return \DB::table('woo_orders')->where('status', env('STATUS_WORKING_NEW'))
-        ->where('status_custom', env('STATUS_P_CUSTOM_PRODUCT'))
-        ->count();
+    return \DB::table('woo_orders')->where('status', env('STATUS_WORKING_NEW'))->count();
 }
 
 function getworkingOrder()

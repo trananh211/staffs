@@ -1400,6 +1400,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 $rq = $request->all();
                 $variation_name = trim(ucwords($rq['variation_name']));
                 $variation_suplier = trim($rq['variation_suplier']);
+
                 $check = \DB::table('variation_changes')
                     ->where('name', $variation_name)->where('suplier_id', $variation_suplier)
                     ->first();
@@ -1413,20 +1414,27 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     ]);
                     if ($variation_change_id) {
                         $json_data = $rq['json_data'];
-                        $data = array();
-                        foreach ($json_data as $val) {
-                            $variation_old_slug = mb_ereg_replace("[.]", '-', $val['variation_old']);
-                            $data[] = [
-                                'variation_change_id' => $variation_change_id,
-                                'variation_old' => trim($val['variation_old']),
-                                'variation_compare' => trim($val['variation_compare']),
-                                'variation_new' => trim($val['variation_new']),
-                                'variation_sku' => trim($val['variation_sku']),
-                                'variation_old_slug' => str_replace(" ", "-",
-                                    mb_ereg_replace("([^\w\s\d\~,;\[\]\(\).-])", '', strtolower(trim($variation_old_slug)))),
-                                'created_at' => date("Y-m-d H:i:s"),
-                                'updated_at' => date("Y-m-d H:i:s")
-                            ];
+                        $tmp_variation_data = explode("\n", $json_data);
+                        if (sizeof($tmp_variation_data) > 0)
+                        {
+                            foreach ($tmp_variation_data as $variation_data){
+                                if (trim($variation_data) == '') {
+                                    continue;
+                                }
+                                $tmp = explode(';', $variation_data);
+                                $variation_old_slug = mb_ereg_replace("[.]", '-', $tmp[0]);
+                                $data[] = [
+                                    'variation_change_id' => $variation_change_id,
+                                    'variation_old' => trim($tmp[0]),
+                                    'variation_compare' => trim($tmp[1]),
+                                    'variation_new' => trim($tmp[2]),
+                                    'variation_sku' => trim($tmp[3]),
+                                    'variation_old_slug' => str_replace(" ", "-",
+                                        mb_ereg_replace("([^\w\s\d\~,;\[\]\(\).-])", '', strtolower(trim($variation_old_slug)))),
+                                    'created_at' => date("Y-m-d H:i:s"),
+                                    'updated_at' => date("Y-m-d H:i:s")
+                                ];
+                            }
                         }
                         $result = \DB::table('variation_change_items')->insert($data);
                         if ($result) {

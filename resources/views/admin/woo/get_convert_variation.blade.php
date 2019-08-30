@@ -9,7 +9,8 @@
                 <div class="card-content">
                     <div class="row" id="js-variation-check" data-url="{{ url('js-check-variation-exist') }}">
                         <div class="input-field col s8">
-                            <input type="text" class="validate js-variation-name" placeholder="Tên của variation đang thay đổi">
+                            <input type="text" class="validate js-variation-name"
+                                   placeholder="Tên của variation đang thay đổi">
                             <label for="first_name">Variation Name</label>
                             <span id="js-variation-check-result"></span>
                         </div>
@@ -22,9 +23,22 @@
                                 @endforeach
                             </select>
                         </div>
-
                     </div>
                     <div class="row">
+                        <div class="input-field col s12">
+                            <small>
+                                Giá trị ban đầu ; Giá trị trung gian ; Giá trị quy đổi ; Giá trị Sku
+                            </small>
+                            <textarea id="textarea1" name="js-variation-full"
+                                      class="js-variation-full materialize-textarea"
+                                      placeholder="Giá trị ban đầu ; Giá trị trung gian ; Giá trị quy đổi ; Giá trị Sku
+                                      VD: men us 15/ eu 7 ; 280 ; men us 14.5/ eu 6.5 ; SKU
+                                        "
+                            ></textarea>
+                            <label for="textarea1">Textarea</label>
+                        </div>
+                    </div>
+                    <div class="row hidden">
                         <div class="input-field col s3">
                             <input type="text" class="validate js-variation-v1" placeholder="men us 15/ eu 7">
                             <label for="first_name">Giá Trị ban đầu</label>
@@ -38,19 +52,23 @@
                             <label for="last_name">Giá trị quy đổi</label>
                         </div>
                         <div class="input-field col s3">
-                            <input type="text" class="validate js-variation-v-sku" placeholder="Có thể có hoặc để trống">
+                            <input type="text" class="validate js-variation-v-sku"
+                                   placeholder="Có thể có hoặc để trống">
                             <label for="last_name">Giá trị Sku</label>
                         </div>
                     </div>
                     <div class="row">
-                        <a class="js-variation-add waves-effect waves-light btn green m-b-xs">Thêm mới</a>
+                        <a class="js-variation-add waves-effect waves-light btn green m-b-xs hidden">Thêm mới</a>
                         <a class="js-variation-finish waves-effect waves-light btn green m-b-xs">Hoàn tất</a>
                     </div>
-                    <div class="row" id="js-variation-url" data-url="{{ url('js-woo-convert-variation') }}">
-                        <ul class="collection">
+                    <div class="hidden">
+                        <div class="row" id="js-variation-url" data-url="{{ url('js-woo-convert-variation') }}">
+                            <ul class="collection">
 
-                        </ul>
+                            </ul>
+                        </div>
                     </div>
+
                 </div>
             </div>
         </div>

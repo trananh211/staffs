@@ -307,22 +307,23 @@ $(document).ready(function () {
         var num = $('.js-variation-item').length;
         var variation_name = $('.js-variation-name').val();
         var variation_suplier = $('.js-variation-suplier').val();
-        var json_data = [];
-        // var variation_old, variation_new, variation_compare, variation_sku;
-        $('.js-variation-item').each(function (index, value) {
-            var variation_old = $('.js-variation-data-' + index + ' .js-variation-data-old').text();
-            var variation_compare = $('.js-variation-data-' + index + ' .js-variation-data-compare').text();
-            var variation_new = $('.js-variation-data-' + index + ' .js-variation-data-new').text();
-            var variation_sku = $('.js-variation-data-' + index + ' .js-variation-data-sku').text();
-            // console.log(index+'---'+variation_old+'---'+variation_compare+'---'+variation_new+'---'+variation_sku);
-            var data = {
-                'variation_old': variation_old,
-                'variation_compare': variation_compare,
-                'variation_new': variation_new,
-                'variation_sku': variation_sku,
-            };
-            json_data.push(data);
-        });
+        var json_data = $('.js-variation-full').val();
+        // var json_data = [];
+        // // var variation_old, variation_new, variation_compare, variation_sku;
+        // $('.js-variation-item').each(function (index, value) {
+        //     var variation_old = $('.js-variation-data-' + index + ' .js-variation-data-old').text();
+        //     var variation_compare = $('.js-variation-data-' + index + ' .js-variation-data-compare').text();
+        //     var variation_new = $('.js-variation-data-' + index + ' .js-variation-data-new').text();
+        //     var variation_sku = $('.js-variation-data-' + index + ' .js-variation-data-sku').text();
+        //     // console.log(index+'---'+variation_old+'---'+variation_compare+'---'+variation_new+'---'+variation_sku);
+        //     var data = {
+        //         'variation_old': variation_old,
+        //         'variation_compare': variation_compare,
+        //         'variation_new': variation_new,
+        //         'variation_sku': variation_sku,
+        //     };
+        //     json_data.push(data);
+        // });
 
         if (variation_name.length == 0) {
             Materialize.toast('Bạn phải chọn đặt tên cho Variation Change này!', 4000);
@@ -331,7 +332,7 @@ $(document).ready(function () {
         } else if (json_data.length == 0) {
             Materialize.toast('Bạn phải tạo mới các biến variation!', 4000);
         } else {
-            if (confirm("Bạn đã chắc chắn tạo đủ hết variation chưa?")) {
+            // if (confirm("Bạn đã chắc chắn tạo đủ hết variation chưa?")) {
                 var url = $('#js-variation-url').attr('data-url');
                 $.ajax({
                     method: "POST",
@@ -360,7 +361,7 @@ $(document).ready(function () {
                     }
                 })
             }
-        }
+        // }
     });
 
     $(".remove-variation-item").on("click", function () {

@@ -136,10 +136,15 @@ class GoogleController extends Controller
                     $list['product_origin_name'] = sanitizer($list['product_origin_name']);
                     /*Nếu khách chưa trả tiền. Kiểm tra lại với shop*/
                     if (in_array($list['order_status'], array('failed', 'cancelled', 'canceled', 'pending'))) {
-                        if ($list['fulfill_status'] == env('STATUS_NOTFULFILL')) continue;
+                        logfile('-- Đơn hàng ' . $list['number'] . ' chưa thanh toán tiền');
+                        if ($list['fulfill_status'] == env('STATUS_NOTFULFILL'))
+                        {
+                            unset($lists[$k]);
+                            continue;
+                        }
                         if (in_array($list['woo_order_id'], $check_again)) continue;
                         $check_again[] = $list['woo_order_id'];
-                        logfile('-- Đơn hàng ' . $list['number'] . ' chưa thanh toán tiền');
+                        unset($lists[$k]);
                         continue;
                     } else {
                         $key = $list['store_id'] . '_' . $list['template_id'];
@@ -288,7 +293,7 @@ class GoogleController extends Controller
                     // gom tất cả file working thành công vào 1 mảng
                     $ud_working_move = array_merge($ud_working_move, $ar_file_fulfill[$list['supplier_id']]);
                     $ud_order_move = array_merge($ud_order_move, $ar_order_fulfill[$list['supplier_id']]);
-                    logfile('-- Fulfill file excel thành công của supplier:' . $list_orders['supplier_name'] . ' số lượng: ' . sizeof($dt));
+                    logfile('-- Fulfill file excel thành công của supplier: ' . $list_orders['supplier_name'] . ' số lượng: ' . sizeof($dt));
                 }
 //                    \File::delete($check['full']);
             }
@@ -484,7 +489,7 @@ class GoogleController extends Controller
             })
             ->select(
                 'workings.id as working_id',
-                'wod.id as woo_order_id', 'wod.sku', 'wod.woo_info_id as store_id',
+                'wod.id as woo_order_id', 'wod.sku', 'wod.woo_info_id as store_id', 'wod.number',
                 'file.name as filename', 'file.path', 'file.id as working_file_id', 'file.is_mockup',
                 'wpd_goog.template_id'
             )
@@ -748,6 +753,13 @@ class GoogleController extends Controller
                 $parent_path = $file['path_gg_driver'];
                 $dir_info = public_path($file['path'] . $file['filename']);
                 $new_name = $file['sku'] . '_' . $file['filename'];
+                //đổi tên file trùng với sku
+                $str_file_old = $file['number'].'-PID-'.$file['working_id'];
+                $tmp = explode($str_file_old, $new_name);
+                if (sizeof($tmp) > 1)
+                {
+                    $new_name = preg_replace('([\s]+)', '', implode('',$tmp));
+                }
                 $path = upFile($dir_info, $parent_path, $new_name);
                 if ($path) {
                     logfile('-- Up thành công file ' . $file['filename'] . ' lên google Driver');
