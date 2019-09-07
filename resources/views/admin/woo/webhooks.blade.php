@@ -75,6 +75,11 @@
                             <td><a href="{{ url('/see-log/') }}">{{ url('/see-log/') }}</a></td>
                             <td>See Log</td>
                         </tr>
+                        <tr>
+                            <td>8</td>
+                            <td><a href="{{ url('/tracking-number/') }}">{{ url('/tracking-number/') }}</a></td>
+                            <td>Tracking Number</td>
+                        </tr>
                         </tbody>
                     </table>
                 </div>

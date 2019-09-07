@@ -105,7 +105,7 @@ class Tracking extends Model
             if (trim($tracking_number) == '')
             {
                 continue;
-                logfile('-- [Warning] Tracking của Order: '.$value['order_id'].' rỗng. Bỏ qua.');
+                logfile('-- [Warning] Tracking của Order: '.$value['order_id'].' rỗng. Bỏ qua!');
             }
             $db[$woo_order_id] = [
                 'tracking_number' => $tracking_number,
@@ -281,4 +281,68 @@ class Tracking extends Model
         }
         return $return;
     }
+
+    /*Paypal tracking*/
+    public function postTrackingNumber($request)
+    {
+//        echo "<pre>";
+        $rq = $request->all();
+        $paypal_file = $rq['paypal_file'];
+        $tracking_file = $rq['tracking_file'];
+        echo storage_path('paypal')."\n";
+        makeFolder(storage_path('paypal'));
+        $file_paypal = $paypal_file->move(storage_path('paypal'),$paypal_file->getClientOriginalName());
+        if ($file_paypal)
+        {
+            $file_tracking = $tracking_file->move(storage_path('paypal'),$tracking_file->getClientOriginalName());
+            if ($file_tracking)
+            {
+                $path_file_paypal = storage_path('paypal/'.$paypal_file->getClientOriginalName());
+                $path_file_tracking = storage_path('paypal/'.$tracking_file->getClientOriginalName());
+                $data_paypal = readFileExcel($path_file_paypal);
+                $data_tracking = readFileExcel($path_file_tracking);
+                $lst_tracking_number = array();
+                foreach ($data_tracking as $val_tracking)
+                {
+                    $order = trim($val_tracking['order']);
+                    if (array_key_exists($order, $lst_tracking_number))
+                    {
+                        //neu chua ton tai
+                        if (strpos($lst_tracking_number[$order], $val_tracking['tracking_number']) !== false)
+                        {
+                            continue;
+                        } else {
+                            if ($lst_tracking_number[$order] == '')
+                            {
+                                $lst_tracking_number[$order] = $val_tracking['tracking_number'];
+                            } else {
+                                $lst_tracking_number[$order] .= ','.$val_tracking['tracking_number'];
+                            }
+                        }
+                    } else {
+                        $lst_tracking_number[$order] = $val_tracking['tracking_number'];
+                    }
+                }
+
+                foreach ($data_paypal as $k => $paypal)
+                {
+                    $order = str_replace("ZAC-ZAC-","ZAC-",$paypal['invoice_number']);
+                    if (array_key_exists($order, $lst_tracking_number))
+                    {
+                        $data_paypal[$k]['tracking'] = $lst_tracking_number[$order];
+                    } else {
+                        $data_paypal[$k]['tracking'] = '';
+                    }
+                }
+                echo "<pre>";
+                print_r($data_paypal);
+                $check = createFileExcel('tracking_full',$data_paypal, storage_path('paypal') ,'paypal');
+            }
+
+        }
+
+    }
+
+
+    /*End Paypal tracking*/
 }

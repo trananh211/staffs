@@ -6,6 +6,7 @@
     width: 64px;
     height: 64px;
 }
+
 .lds-dual-ring:after {
     content: " ";
     display: block;
@@ -17,6 +18,7 @@
     border-color: #fff transparent #fff transparent;
     animation: lds-dual-ring 1.2s linear infinite;
 }
+
 @keyframes lds-dual-ring {
     0% {
         transform: rotate(0deg);
@@ -27,7 +29,7 @@
 }
 
 #loading {
-    border : 2px solid #78909c;
+    border: 2px solid #78909c;
     width: 50px;
     height: 50px;
     background-color: #2e7d32;
@@ -39,7 +41,7 @@
     right: 20px;
 }
 
-.js-get-status-doc:hover , .js-closed:hover {
+.js-get-status-doc:hover, .js-closed:hover {
     cursor: pointer;
 }
 
@@ -48,6 +50,11 @@
     max-height: 100%;
     height: inherit !important;
 }
+
 .hidden {
     display: none;
+}
+
+#list-order tr td, #list-order tr th {
+    font-size: 12px;
 }

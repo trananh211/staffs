@@ -54,8 +54,11 @@
                             <th>#</th>
                             <th>Order</th>
                             <th>Name</th>
+                            <th>Sku</th>
+                            <th>Variation</th>
+                            <th>Email</th>
                             <th>Status</th>
-                            <th>Quantity</th>
+                            <th>Qty</th>
                             <th>Payment</th>
                             <th>Date</th>
                             <th>Tracking</th>
@@ -66,8 +69,11 @@
                             <th>#</th>
                             <th>Order</th>
                             <th>Name</th>
+                            <th>Sku</th>
+                            <th>Variation</th>
+                            <th>Email</th>
                             <th>Status</th>
-                            <th>Quantity</th>
+                            <th>Qty</th>
                             <th>Payment</th>
                             <th>Date</th>
                             <th>Tracking</th>
@@ -78,8 +84,17 @@
                             @foreach($list_order as $key => $order)
                                 <tr>
                                     <td>{{ $key+1 }}</td>
-                                    <td>{{ $order->number }}{{ ($order->working_id != '')? '-'.$order->working_id : '' }}</td>
+                                    <td>{{ $order->number.'-'.$order->id }}</td>
                                     <td>{{ $order->product_name }}</td>
+                                    <td>{{ $order->sku }}</td>
+                                    <td>
+                                        <?php
+                                            $tmp = str_replace("-;-;-","-",$order->variation_full_detail);
+                                            $variation_full = str_replace($order->variation_detail, '', $tmp);
+                                        ?>
+                                        {{ str_replace('-', '', $variation_full) }}
+                                    </td>
+                                    <td>{{ $order->email }}</td>
                                     <td>{!! statusJob($order->status, 0, '') !!}</td>
                                     <td>{{ $order->quantity }}</td>
                                     <td>{!! statusPayment($order->order_status, $order->payment_method) !!}</td>

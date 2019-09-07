@@ -66,6 +66,7 @@ Route::middleware('auth')->group(function () {
     Route::post('update-order','WooController@updateOrder');
     Route::post('up-design-normal','WooController@upDesignNormal');
     Route::post('ajax-skip-product','WooController@axSkipProduct');
+    Route::post('ajax-re-send-email','WooController@axReSendEmail');
 
     //woo products create automatic
     Route::get('woo-create-template','WooController@viewCreateTemplate');
@@ -109,6 +110,8 @@ Route::get('upload-file-driver-auto','GoogleController@uploadProductAutoToDriver
 Route::get('getFileTracking','TrackingController@getFileTracking');
 Route::get('getInfoTracking','TrackingController@getInfoTracking');
 Route::get('autoGenThumb','WooController@autoGenThumb');
+Route::get('tracking-number','TrackingController@getTrackingNumber');
+Route::post('pay-tracking','TrackingController@postTrackingNumber');
 
 Auth::routes();
 
