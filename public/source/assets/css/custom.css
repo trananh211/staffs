@@ -48,3 +48,6 @@
     max-height: 100%;
     height: inherit !important;
 }
+#list-order tr td,#list-order tr th {
+    font-size: 12px;
+}

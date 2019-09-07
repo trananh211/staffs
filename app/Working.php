@@ -97,7 +97,8 @@ class Working extends Model
             ->select(
                 'woo_orders.id', 'woo_orders.number', 'woo_orders.status', 'woo_orders.product_name',
                 'woo_orders.quantity', 'woo_orders.price', 'woo_orders.created_at', 'woo_orders.payment_method',
-                'woo_infos.name', 'woo_orders.order_status',
+                'woo_infos.name', 'woo_orders.order_status', 'woo_infos.email',
+                'woo_orders.sku', 'woo_orders.variation_full_detail', 'woo_orders.variation_detail',
                 't.tracking_number', 't.status as tracking_status', 'workings.id as working_id'
             )
             ->where($where)
@@ -186,7 +187,7 @@ class Working extends Model
                 $jobs = DB::table('woo_orders')
                     ->select('id', 'woo_info_id', 'order_id', 'product_id', 'number')
                     ->where('status', env('STATUS_WORKING_NEW'))
-                    ->where('custom_status','!=',env('STATUS_P_AUTO_PRODUCT'))
+                    ->where('custom_status', '!=', env('STATUS_P_AUTO_PRODUCT'))
                     ->orderBy('id', 'ASC')
                     ->limit(env("STAFF_GET_JOB_LIMIT"))
                     ->get()->toArray();
@@ -696,7 +697,6 @@ class Working extends Model
         /*Move file về thư mục done*/
         $where = [
             ['workings.id', '=', $order_id],
-            ['workings.id', '=', $order_id],
             ['wfl.is_mockup', '=', 1],
         ];
         $working = \DB::table('workings')
@@ -753,6 +753,62 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         }
         \Session::flash($status, $message);
         return back();
+    }
+
+    public function axReSendEmail($request)
+    {
+        $uid = $this->checkAuth();
+        if ($uid) {
+            $rq = $request->all();
+            $working_id = $rq['working_id'];
+            $order_id = $rq['order_id'];
+
+            $where = [
+                ['workings.id', '=', $working_id],
+                ['wfl.is_mockup', '=', 1],
+            ];
+            $working = \DB::table('workings')
+                ->join('working_files as wfl', 'workings.id', '=', 'wfl.working_id')
+                ->join('woo_orders as wod', 'workings.woo_order_id', '=', 'wod.id')
+                ->select(
+                    'workings.id', 'workings.number', 'workings.status', 'workings.woo_order_id', 'workings.woo_info_id',
+                    'wfl.path', 'wfl.name', 'wod.email as customer_email', 'wod.fullname as customer_name'
+                )
+                ->where($where)
+                ->first();
+            if ($working !== NULL) {
+                /*Todo: Xây dựng hàm gửi email tới khách hàng ở đây */
+                $info = \DB::table('woo_infos')
+                    ->select('name', 'email', 'password', 'host', 'port', 'security')
+                    ->where('id', $working->woo_info_id)
+                    ->first();
+                $title = '[ ' . $info->name . ' ] Update information about order ' . $working->number;
+                $file = public_path($working->path . $working->name);
+                $body = "Dear " . $working->customer_name . ",
+We send you this email with information about " . $working->number . " order. 
+We send detailed information about the design in the attached file below. 
+If you want to resubmit your order redesign request, please reply to the message within 24 hours from the time you receive this email, after 24 hours we will move on to the next stage. 
+If you are satisfied with the product, please do not reply to this email.
+Thank you for your purchase at our store. Wish you a good day and lots of luck.
+            ";
+                $info->email_to = $working->customer_email;
+                $info->title = $title;
+                $info->body = $body;
+                $info->file = $file;
+                dispatch(new SendPostEmail($info));
+                /*End todo: Xây dựng hàm gửi email */
+                $status = 'success';
+                $message = "Gửi lại email thành công. ";
+            } else {
+                $status = 'error';
+                $message = "Xảy ra lỗi. Không thể tìm thấy file đang làm việc. Mời bạn thử lại. ";
+            }
+
+            return response()->json([
+                'status' => $status,
+                'message' => $message
+            ]);
+        }
     }
 
     public function redoDesigner($request)
@@ -1161,7 +1217,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             $result = \DB::table('woo_templates')->where('id', $id)->update([
                 'product_name' => $product_name,
                 'supplier_id' => $supplier_id,
-                'variation_change_id' => ($variation_change_id > 0)? $variation_change_id: null,
+                'variation_change_id' => ($variation_change_id > 0) ? $variation_change_id : null,
                 'base_price' => $base_price,
                 'updated_at' => date("Y-m-d H:i:s")
             ]);

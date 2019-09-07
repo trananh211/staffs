@@ -261,6 +261,12 @@ class WooController extends Controller
         return $work->axSkipProduct($request);
     }
 
+    public function axReSendEmail(Request $request)
+    {
+        $work = new Working();
+        return $work->axReSendEmail($request);
+    }
+
     public function autoGenThumb()
     {
         $work = new Working();

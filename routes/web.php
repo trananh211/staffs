@@ -66,6 +66,7 @@ Route::middleware('auth')->group(function () {
     Route::post('update-order','WooController@updateOrder');
     Route::post('up-design-normal','WooController@upDesignNormal');
     Route::post('ajax-skip-product','WooController@axSkipProduct');
+    Route::post('ajax-re-send-email','WooController@axReSendEmail');
 
     //woo products create automatic
     Route::get('woo-create-template','WooController@viewCreateTemplate');

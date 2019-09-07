@@ -237,6 +237,30 @@ $(document).ready(function () {
         return list;
     }
 
+    /*re send email to customer*/
+    $('.js-re-send-email').on( 'click', function (e) {
+        e.preventDefault();
+        var working_id = $(this).attr('working_id');
+        var order_id = $(this).attr('order_id');
+        var url = $(this).attr('data-url');
+        $(this).parents('tr').addClass('js-remove-table');
+        $.ajax({
+            method: "POST",
+            url: url,
+            data: {working_id : working_id, order_id: order_id},
+            dataType: 'JSON',
+            // dataType: 'html',
+            success: function (data) {
+                Materialize.toast(data.message, 5000);
+                // console.log(data);
+            },
+            error: function (error) {
+                window.location.reload();
+                console.log(error);
+            }
+        })
+    } );
+
     /*Woocommerce Product Create Automatic*/
     $('#woo-tem-choose-store').on('change', function (e) {
         var optionSelected = $(this).find("option:selected");
