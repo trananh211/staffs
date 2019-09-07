@@ -523,8 +523,12 @@ function infoShop()
 
 function getNewOrder()
 {
-    return \DB::table('woo_orders')->where('status', env('STATUS_WORKING_NEW'))
-        ->where('status_custom', env('STATUS_P_CUSTOM_PRODUCT'))
+    $where = [
+        ['status', '=', env('STATUS_WORKING_NEW')],
+        ['custom_status', '=', env('STATUS_P_CUSTOM_PRODUCT')],
+    ];
+    return \DB::table('woo_orders')
+        ->where($where)
         ->count();
 }
 
@@ -605,4 +609,34 @@ function readFileJson($path_file)
     $jsonString = File::get($path_file);
     $data = json_decode($jsonString, true);
     return $data;
+}
+
+function readFileExcel($path_file)
+{
+    $return = false;
+    $dt = Excel::load($path_file)->get()->toArray();
+    if (sizeof($dt) > 0)
+    {
+        $return = $dt;
+    }
+    return $return;
+}
+
+function createFileExcel($name_file, $data, $path ,$sheet_name = null)
+{
+    if ($sheet_name == null)
+    {
+        $sheet_name = 'Sheet 1';
+    }
+    $check = Excel::create($name_file, function ($excel) use ($data, $sheet_name) {
+        $excel->sheet($sheet_name, function ($sheet) use ($data) {
+            $sheet->fromArray($data);
+        });
+    })->store('csv', $path, true);
+    if ($check)
+    {
+        return true;
+    } else {
+        return false;
+    }
 }

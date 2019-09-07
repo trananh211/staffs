@@ -24,4 +24,16 @@ class TrackingController extends Controller
         $track = new Tracking();
         return $track->tracking();
     }
+
+    public function getTrackingNumber()
+    {
+        $data = array();
+        return view('/addon/show_tracking_form',compact('data'));
+    }
+
+    public function postTrackingNumber(Request $request)
+    {
+        $track = new Tracking();
+        return $track->postTrackingNumber($request);
+    }
 }
