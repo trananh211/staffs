@@ -109,6 +109,8 @@ Route::get('upload-file-driver-auto','GoogleController@uploadProductAutoToDriver
 Route::get('getFileTracking','TrackingController@getFileTracking');
 Route::get('getInfoTracking','TrackingController@getInfoTracking');
 Route::get('autoGenThumb','WooController@autoGenThumb');
+Route::get('tracking-number','TrackingController@getTrackingNumber');
+Route::post('pay-tracking','TrackingController@postTrackingNumber');
 
 Auth::routes();
 
