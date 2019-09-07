@@ -97,7 +97,7 @@ class Working extends Model
             ->select(
                 'woo_orders.id', 'woo_orders.number', 'woo_orders.status', 'woo_orders.product_name',
                 'woo_orders.quantity', 'woo_orders.price', 'woo_orders.created_at', 'woo_orders.payment_method',
-                'woo_infos.name', 'woo_orders.order_status', 'woo_infos.email',
+                'woo_infos.name', 'woo_orders.order_status', 'woo_orders.email',
                 'woo_orders.sku', 'woo_orders.variation_full_detail', 'woo_orders.variation_detail',
                 't.tracking_number', 't.status as tracking_status', 'workings.id as working_id'
             )
