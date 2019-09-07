@@ -392,39 +392,6 @@
             <li class="no-padding">
                 <a class="waves-effect waves-grey" href="{{ url('/') }}"><i
                         class="material-icons">settings_input_svideo</i>Dashboard</a></li>
-            @if( Auth::user()->level == env('SADMIN'))
-                <li class="no-padding">
-                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">apps</i>
-                        Woocommerce
-                        <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
-                    </a>
-                    <div class="collapsible-body">
-                        <ul>
-                            <li><a href="{{ url('woo-list-store') }}">List Store</a></li>
-                            <li><a href="{{ url('woo_connect') }}">Connect</a></li>
-                            <li><a href="{{ url('woo-webhooks') }}">Webhooks</a></li>
-                        </ul>
-                    </div>
-                </li>
-            @endif
-
-            @if( in_array( Auth::user()->level, array( env('ADMIN'),env('QC'),env('SADMIN')) ) )
-                <li class="no-padding">
-                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">work</i>
-                        Products
-                        <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
-                    </a>
-                    <div class="collapsible-body">
-                        <ul>
-                            <li><a href="{{ url('woo-processing-product') }}">Processing Template</a></li>
-                            <li><a href="{{ url('woo-create-template') }}">Create Template</a></li>
-                            <li><a href="{{ url('woo-supplier') }}">Supplier</a></li>
-                            <li><a href="{{ url('woo-get-template') }}">Edit Template</a></li>
-                            <li><a href="{{ url('woo-list-convert-variation') }}">Convert Variation</a></li>
-                        </ul>
-                    </div>
-                </li>
-            @endif
 
             @if( in_array( Auth::user()->level, array( env('ADMIN'),env('QC'),env('SADMIN')) ) )
                 <li class="no-padding">
@@ -471,6 +438,41 @@
                     </div>
                 </li>
             @endif
+
+            @if( Auth::user()->level == env('SADMIN'))
+                <li class="no-padding">
+                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">apps</i>
+                        Woocommerce
+                        <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
+                    </a>
+                    <div class="collapsible-body">
+                        <ul>
+                            <li><a href="{{ url('woo-list-store') }}">List Store</a></li>
+                            <li><a href="{{ url('woo_connect') }}">Connect</a></li>
+                            <li><a href="{{ url('woo-webhooks') }}">Webhooks</a></li>
+                        </ul>
+                    </div>
+                </li>
+            @endif
+
+            @if( in_array( Auth::user()->level, array( env('ADMIN'),env('QC'),env('SADMIN')) ) )
+                <li class="no-padding">
+                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">work</i>
+                        Products
+                        <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
+                    </a>
+                    <div class="collapsible-body">
+                        <ul>
+                            <li><a href="{{ url('woo-processing-product') }}">Processing Template</a></li>
+                            <li><a href="{{ url('woo-create-template') }}">Create Template</a></li>
+                            <li><a href="{{ url('woo-supplier') }}">Supplier</a></li>
+                            <li><a href="{{ url('woo-get-template') }}">Edit Template</a></li>
+                            <li><a href="{{ url('woo-list-convert-variation') }}">Convert Variation</a></li>
+                        </ul>
+                    </div>
+                </li>
+            @endif
+
             @if( Auth::user()->level == env('WORKER'))
                 <li class="no-padding"><a class="waves-effect waves-grey" href="{{ url('staff-dashboard') }}">
                         <i class="material-icons">trending_up</i>Workings

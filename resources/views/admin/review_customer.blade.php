@@ -18,6 +18,7 @@
                             <th class="center">Designer</th>
                             <th class="center">QC</th>
                             <th class="center">Action</th>
+                            <th class="center">FulFill</th>
                         </tr>
                         </thead>
                         <tfoot>
@@ -30,6 +31,7 @@
                             <th class="center">Designer</th>
                             <th class="center">QC</th>
                             <th class="center">Action</th>
+                            <th class="center">FulFill</th>
                         </tr>
                         </tfoot>
                         <tbody>
@@ -44,10 +46,7 @@
                                     <td class="center">{{ $list->worker_name }}</td>
                                     <td class="center">{{ $list->qc_name }}</td>
                                     <td class="center">
-                                        <a working_id="{{ $list->id }}" order_id="{{ $list->woo_order_id }}"
-                                           class="waves-effect waves-light btn green m-b-xs js-done-job">
-                                            Supplier
-                                        </a>
+
                                         <a class="waves-effect waves-grey btn white modal-trigger m-b-xs"
                                            href="#modal{{ $key }}">Image</a>
                                         <div id="modal{{ $key }}" class="modal"
@@ -140,6 +139,19 @@
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <a working_id="{{ $list->id }}" order_id="{{ $list->woo_order_id }}"
+                                           data-url="{{ url('ajax-re-send-email') }}"
+                                           onclick="return confirm('Bạn có chắc chắn muốn gửi lại email cho khách hàng này?');"
+                                           class="waves-effect waves-light btn blue m-b-xs js-re-send-email">
+                                            ReSend
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a working_id="{{ $list->id }}" order_id="{{ $list->woo_order_id }}"
+                                           class="waves-effect waves-light btn green m-b-xs js-done-job">
+                                            Supplier
+                                        </a>
                                     </td>
                                 </tr>
                             @endforeach
