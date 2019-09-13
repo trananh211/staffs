@@ -6,20 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Paypal extends Model
 {
-    private $apiContext;
+
 //    private $url = 'https://api.paypal.com/';
     private $url = 'https://api.sandbox.paypal.com/';
-
-    public function getApiContext($clientId, $clientSecret, $enableSandbox = false)
-    {
-        $apiContext = new ApiContext(
-            new OAuthTokenCredential($clientId, $clientSecret)
-        );
-        $apiContext->setConfig([
-            'mode' => $enableSandbox ? 'sandbox' : 'live'
-        ]);
-        return $apiContext;
-    }
 
     public function connect($clientId, $secret)
     {
