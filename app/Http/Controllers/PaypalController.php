@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Paypal;
 use Illuminate\Http\Request;
+use App\Goutte\Client;
 
 class PaypalController extends Controller
 {

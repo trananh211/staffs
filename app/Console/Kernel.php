@@ -27,6 +27,9 @@ class Kernel extends ConsoleKernel
         $schedule->exec('chmod -R 777 '.public_path())->dailyAt('00:10');
         $schedule->exec('chmod -R 777 '.storage_path())->dailyAt('00:20');
 
+        /** Quet carrires moi o paypal*/
+        $schedule->command('scan:paypal')->dailyAt('23:37');
+
         /** Run every minute specified queue if not already started */
         $schedule->command('queue:work --stop-when-empty')->everyMinute();
         /*Export file excel lên thư mục fulfill*/
