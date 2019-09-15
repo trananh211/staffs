@@ -31,3 +31,7 @@ Route::get('/email-test','ApiController@sendEmail');
 
 Route::get('/paypal-test','PaypalController@test');
 
+Route::get('/paypal-update','ApiController@updateOrderPaypal');
+
+Route::get('/check-payment-again','ApiController@checkPaymentAgain');
+

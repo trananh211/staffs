@@ -63,12 +63,18 @@ class ApiController extends Controller
         return $api->checkPaymentAgain();
     }
 
+    public function updateOrderPaypal()
+    {
+        $api = new Api();
+        return $api->updateOrderPaypal();
+    }
+
     public function testNewOrder($filename)
     {
         $files = File::get(storage_path('file/' . $filename . '.json'));
         $data = json_decode($files, true);
         $api = new Api();
-        $webhook_source = 'https://sportgear247.com';
+        $webhook_source = 'https://clumsysaurus.com/';
         $store = DB::table('woo_infos')
             ->where('url', $webhook_source)
             ->pluck('id')

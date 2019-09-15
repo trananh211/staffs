@@ -2,13 +2,69 @@
 
 namespace App;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
 
 class Paypal extends Model
 {
 
+    public $timestamps = true;
+    protected $table = 'paypals';
+
 //    private $url = 'https://api.paypal.com/';
     private $url = 'https://api.sandbox.paypal.com/';
+
+    public function create($request)
+    {
+        \DB::beginTransaction();
+        try {
+            $rq = $request->all();
+            $data = $rq;
+            unset($data['_token']);
+            $data['note'] = trim(htmlentities($rq['note']));
+            $action = false;
+            if (isset($rq['active']) && $rq['active'] == 'on') {
+                unset($data['active']);
+                $data['status'] = 1;
+                $action = true;
+            } else {
+                $data['status'] = 0;
+            }
+            $store_id = $rq['store_id'];
+            $date = date("Y-m-d H:i:s");
+            $data['created_at'] = $date;
+            $data['updated_at'] = $date;
+
+            if ($action) {
+                \DB::table('paypals')->where('store_id', $store_id)->update([
+                    'status' => 0,
+                    'updated_at' => $date
+                ]);
+            }
+            $paypal_id = \DB::table('paypals')->insertGetId($data);
+            if ($action) {
+                \DB::table('woo_orders')
+                    ->where([
+                        ['woo_info_id', '=', $store_id],
+                        ['payment_method', '=', 'Paypal'],
+                        ['paypal_id', '=', 0]
+                    ])
+                    ->update([
+                        'paypal_id' => $paypal_id,
+                        'updated_at' => $date
+                    ]);
+            }
+            $status = 'success';
+            $message = 'Kết nối tài khoản paypal thành công.';
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $status = 'error';
+            $message = 'Xảy ra lỗi. Hãy thử lại.';
+            logfile($message . ' - ' . $e->getMessage());
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return redirect('paypal-connect')->with($status, $message);
+    }
 
     public function connect($clientId, $secret)
     {
@@ -33,52 +89,94 @@ class Paypal extends Model
         return $json;
     }
 
-    public function test()
+    public function getNewTracking($lists, $database)
     {
-        $client_id = 'AXYckDa34gcMixJNiHHKAi9NOHniOAyg3fD8gN5ynfRDgRWLCCjaWt6rcOhLTnkrbX6jQeshnxg5lAD7';
-        $client_secret = 'EFZDAjMrCS1qOD9bV6YoSPgFOux2srRwJ3WwOOzBz3RoRSFlmCOLzRwb7lKandMADBgq3trU6gSLXBrj';
+        \DB::beginTransaction();
+        try {
+            foreach ($lists as $paypal) {
+                $client_id = $paypal['client_id'];
+                $client_secret = $paypal['client_secret'];
+                $json_data = $this->connect($client_id, $client_secret);
+                $access_token = $json_data->access_token;
+                $data['trackers'] = $paypal['trackers'];
+                $new_data = json_encode($data);
+                $result = $this->addTracking($new_data, $access_token);
+            }
+            if ($result) {
+                if (sizeof($database['new_shipped']) > 0) {
+                    \DB::table('trackings')->whereIn('id', $database['new_shipped'])
+                        ->update([
+                            'payment_status' => env('TRACK_INTRANSIT')
+                        ]);
+                }
+                if (sizeof($database['new_pickup']) > 0) {
+                    \DB::table('trackings')->whereIn('id', $database['new_pickup'])
+                        ->update([
+                            'payment_status' => env('TRACK_PICKUP')
+                        ]);
+                }
+                if (sizeof($database['new_delivered']) > 0) {
+                    \DB::table('trackings')->whereIn('id', $database['new_delivered'])
+                        ->update([
+                            'payment_status' => env('TRACK_DELIVERED')
+                        ]);
+                }
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $status = 'error';
+            $message = 'Xảy ra lỗi. Hãy thử lại.';
+            logfile($message . ' - ' . $e->getMessage());
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+    }
 
-        $json_data = $this->connect($client_id, $client_secret);
-
-        $data = array(
-            'trackers' => array(
-                array(
-                    "transaction_id" => '1WY22840YW683581B',
-                    "tracking_number" => 'LS035149979CN',
-                    "status" => "SHIPPED",
-                    "carrier" => "USPS"
-                ),
-                array(
-                    "transaction_id" => '07776782R2315113C',
-                    "tracking_number" => 'LS035149978CN',
-                    "status" => "SHIPPED",
-                    "carrier" => "USPS"
-                )
-            )
-        );
-
-        $update_data = array(
-            "transaction_id" => "07776782R2315113C",
-            'tracking_number' => 'LS035149982CN',
-            "status" => "SHIPPED",
-//            "status" => "CANCELLED",
-            "carrier" => "USPS"
-//            "carrier" => "AUSTRALIA_POST"
-        );
-        echo "<pre>";
-        $data = json_encode($data);
-        $update_data = json_encode($update_data);
-        $access_token = $json_data->access_token;
-        echo $access_token . "\n";
-
-//        $json = $this->getPaymentStatus('07776782R2315113C',$access_token);
-
-//        $json = $this->addTracking($data, $access_token);
-
-        $path = '07776782R2315113C-LS035149982CN';
-        $json = $this->updateTracking($path ,$update_data, $access_token);
-
-        var_dump($json);
+    public function getUpdateTracking($lists)
+    {
+        \DB::beginTransaction();
+        try {
+            $update_pickup = $update_delivered = array();
+            foreach ($lists as $paypal) {
+                $client_id = $paypal['client_id'];
+                $client_secret = $paypal['client_secret'];
+                $json_data = $this->connect($client_id, $client_secret);
+                $access_token = $json_data->access_token;
+                foreach ($paypal['data'] as $dt) {
+                    $update_data = $dt;
+                    $tracking_id = $dt['tracking_id'];
+                    unset($update_data['tracking_id']);
+                    $update_data = json_encode($update_data);
+                    $path = $dt['transaction_id'] . '-' . $dt['tracking_number'];
+                    $json = $this->updateTracking($path, $update_data, $access_token);
+                    if ($json) {
+                        if ($dt['status'] == 'LOCAL_PICKUP') {
+                            $update_pickup[] = $tracking_id;
+                        }
+                        if ($dt['status'] == 'DELIVERED') {
+                            $update_delivered[] = $tracking_id;
+                        }
+                    }
+                }
+            }
+            if (sizeof($update_pickup) > 0) {
+                \DB::table('trackings')->whereIn('id', $update_pickup)
+                    ->update([
+                        'payment_status' => env('TRACK_PICKUP')
+                    ]);
+            }
+            if (sizeof($update_delivered) > 0) {
+                \DB::table('trackings')->whereIn('id', $update_delivered)
+                    ->update([
+                        'payment_status' => env('TRACK_DELIVERED')
+                    ]);
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $status = 'error';
+            $message = 'Xảy ra lỗi. Hãy thử lại.';
+            logfile($message . ' - ' . $e->getMessage());
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
     }
 
     private function addTracking($data, $token)
@@ -159,5 +257,53 @@ class Paypal extends Model
         }
         curl_close($curl);
         return $json;
+    }
+
+    public function test()
+    {
+        $client_id = 'AXYckDa34gcMixJNiHHKAi9NOHniOAyg3fD8gN5ynfRDgRWLCCjaWt6rcOhLTnkrbX6jQeshnxg5lAD7';
+        $client_secret = 'EFZDAjMrCS1qOD9bV6YoSPgFOux2srRwJ3WwOOzBz3RoRSFlmCOLzRwb7lKandMADBgq3trU6gSLXBrj';
+
+        $json_data = $this->connect($client_id, $client_secret);
+
+        $data = array(
+            'trackers' => array(
+                array(
+                    "transaction_id" => '1WY22840YW683581B',
+                    "tracking_number" => 'LS035149979CN',
+                    "status" => "SHIPPED",
+                    "carrier" => "USPS"
+                ),
+                array(
+                    "transaction_id" => '07776782R2315113C',
+                    "tracking_number" => 'LS035149978CN',
+                    "status" => "SHIPPED",
+                    "carrier" => "USPS"
+                )
+            )
+        );
+
+        $update_data = array(
+            "transaction_id" => "07776782R2315113C",
+            'tracking_number' => 'LS035149982CN',
+            "status" => "SHIPPED",
+//            "status" => "CANCELLED",
+            "carrier" => "USPS"
+//            "carrier" => "AUSTRALIA_POST"
+        );
+        echo "<pre>";
+        $data = json_encode($data);
+        $update_data = json_encode($update_data);
+        $access_token = $json_data->access_token;
+        echo $access_token . "\n";
+
+//        $json = $this->getPaymentStatus('07776782R2315113C',$access_token);
+
+//        $json = $this->addTracking($data, $access_token);
+
+        $path = '07776782R2315113C-LS035149982CN';
+        $json = $this->updateTracking($path, $update_data, $access_token);
+
+        var_dump($json);
     }
 }

@@ -15,7 +15,16 @@ class PaypalController extends Controller
      */
     public function index()
     {
-        //
+        $data = array();
+        $stores = \DB::table('woo_infos')->select('id', 'name')->get()->toArray();
+        $paypals = \DB::table('paypals')
+            ->leftjoin('woo_infos', 'paypals.store_id', '=', 'woo_infos.id')
+            ->select(
+                'paypals.id as paypal_id', 'paypals.email as paypal_email', 'paypals.status', 'paypals.note',
+                'woo_infos.name as store_name'
+            )
+            ->get()->toArray();
+        return view('/addon/paypal_connect', compact('data', 'stores', 'paypals'));
     }
 
     /**
@@ -23,15 +32,16 @@ class PaypalController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function create()
+    public function create(Request $request)
     {
-        //
+        $paypal = new Paypal();
+        return $paypal->create($request);
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
@@ -42,7 +52,7 @@ class PaypalController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Paypal  $paypal
+     * @param  \App\Paypal $paypal
      * @return \Illuminate\Http\Response
      */
     public function show(Paypal $paypal)
@@ -53,7 +63,7 @@ class PaypalController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Paypal  $paypal
+     * @param  \App\Paypal $paypal
      * @return \Illuminate\Http\Response
      */
     public function edit(Paypal $paypal)
@@ -64,8 +74,8 @@ class PaypalController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Paypal  $paypal
+     * @param  \Illuminate\Http\Request $request
+     * @param  \App\Paypal $paypal
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, Paypal $paypal)
@@ -76,7 +86,7 @@ class PaypalController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Paypal  $paypal
+     * @param  \App\Paypal $paypal
      * @return \Illuminate\Http\Response
      */
     public function destroy(Paypal $paypal)

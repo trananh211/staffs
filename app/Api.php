@@ -54,6 +54,20 @@ class Api extends Model
         return $status;
     }
 
+    private function getPaypalId($woo_id)
+    {
+        $check_paypal = \DB::table('paypals')
+            ->select('id')
+            ->where('store_id', $woo_id)
+            ->where('status', 1)
+            ->first();
+        $paypal_id = 0;
+        if ($check_paypal) {
+            $paypal_id = $check_paypal->id;
+        }
+        return $paypal_id;
+    }
+
     /*Create new order*/
     public function createOrder($data, $woo_id)
     {
@@ -64,31 +78,33 @@ class Api extends Model
         if (sizeof($data['line_items']) > 0) {
             logfile('Store ' . $woo_id . ' has new ' . sizeof($data['line_items']) . ' order item.');
             $woo_infos = $this->getWooSkuInfo();
+            $paypal_id = $this->getPaypalId($woo_id);
             $lst_product = array();
             $check_exist_product_auto = \DB::table('woo_product_drivers')
-                ->where('store_id',$woo_id)
-                ->where('status',3)
+                ->where('store_id', $woo_id)
+                ->where('status', 3)
                 ->pluck('woo_product_id')
                 ->toArray();
             foreach ($data['line_items'] as $key => $value) {
-                $str = ""; $variation_detail = ''; $variation_full_detail = '';
+                $str = "";
+                $variation_detail = '';
+                $variation_full_detail = '';
                 /*if (in_array($data['status'], array('failed', 'cancelled'))) {
                     continue;
                 }*/
                 $custom_status = env('STATUS_P_DEFAULT_PRODUCT');
                 $str_sku = '';
-                if (in_array($value['product_id'], $check_exist_product_auto))
-                {
+                if (in_array($value['product_id'], $check_exist_product_auto)) {
                     $custom_status = env('STATUS_P_AUTO_PRODUCT');
                 }
                 foreach ($value['meta_data'] as $item) {
                     if (strpos(strtolower($item['key']), 'add') !== false) {
                         $str_sku .= ' ' . $item['value'];
                         $custom_status = env('STATUS_P_CUSTOM_PRODUCT');
-                    }else {
-                        $variation_detail .= $item['value'].'-';
+                    } else {
+                        $variation_detail .= $item['value'] . '-';
                     }
-                    $variation_full_detail .= $item['value'].'-;-;-';
+                    $variation_full_detail .= $item['value'] . '-;-;-';
                     $str .= $item['key'] . " : " . $item['value'] . " -;-;-\n";
                 }
 
@@ -103,7 +119,8 @@ class Api extends Model
                     'sku' => $this->getSku($woo_infos[$woo_id], $value['product_id'], $value['name'], $str_sku),
                     'sku_number' => $this->getSku_number('', $data['number'], $value['name']),
                     'quantity' => $value['quantity'],
-                    'payment_method' => $data['payment_method_title'],
+                    'payment_method' => trim($data['payment_method_title']),
+                    'payment_id' => (trim($data['payment_method_title']) == 'Paypal') ? $paypal_id : 0,
                     'customer_note' => trim(htmlentities($data['customer_note'])),
                     'transaction_id' => $data['transaction_id'],
                     'price' => $value['price'],
@@ -270,6 +287,7 @@ class Api extends Model
 
     public function checkPaymentAgain()
     {
+        logfile('---------------- [Payment Again]------------------');
         $lists = \DB::table('woo_orders')
             ->join('woo_infos', 'woo_orders.woo_info_id', '=', 'woo_infos.id')
             ->select(
@@ -279,29 +297,82 @@ class Api extends Model
             ->where('woo_orders.status', env('STATUS_NOTFULFILL'))
             ->get();
         if (sizeof($lists) > 0) {
-            \DB::beginTransaction();
-            try {
-                foreach ($lists as $list) {
-                    $woocommerce = $this->getConnectStore($list->url, $list->consumer_key, $list->consumer_secret);
-                    $info = $woocommerce->get('orders/' . $list->order_id);
-                    if ($info && $list->order_status !== $info->status) {
-                        \DB::table('woo_orders')->where('id', $list->id)
-                            ->update([
-                                'order_status' => $info->status,
-                                'status' => env('STATUS_WORKING_DONE')
-                            ]);
+            $status = env('STATUS_WORKING_DONE');
+            $this->checkPaymentAgain($lists, $status);
+        } else {
+            logfile('-- [Payment Again] Chuyển sang kiểm tra đơn hàng auto');
+//
+//            $list_auto = \DB::table('woo_orders')
+//                ->join('woo_infos', 'woo_orders.woo_info_id', '=', 'woo_infos.id')
+//                ->select(
+//                    'woo_orders.id', 'woo_orders.woo_info_id', 'woo_orders.order_id', 'woo_orders.order_status',
+//                    'woo_infos.url', 'woo_infos.consumer_key', 'woo_infos.consumer_secret'
+//                )
+//                ->where('woo_orders.status', env('STATUS_WORKING_NEW'))
+//                ->where('woo_orders.custom_status', '<>',env('STATUS_P_CUSTOM_PRODUCT'))
+//                ->get();
+//            if (sizeof($list_auto) > 0)
+//            {
+//                $this->checkPaymentAgain($list_auto);
+//            } else {
+//                logfile('-- [Payment Again] Check Payment không tìm thấy pending');
+//            }
+            logfile('-- [Payment Again] Check Payment không tìm thấy pending');
+        }
+    }
+
+    public function updateOrderPaypal()
+    {
+        $lists = \DB::table('woo_orders')
+            ->join('woo_infos', 'woo_orders.woo_info_id', '=', 'woo_infos.id')
+            ->select(
+                'woo_orders.id', 'woo_orders.woo_info_id', 'woo_orders.order_id', 'woo_orders.order_status',
+                'woo_infos.url', 'woo_infos.consumer_key', 'woo_infos.consumer_secret'
+            )
+            ->where('woo_orders.transaction_id', '')
+            ->get();
+        if (sizeof($lists) > 0)
+        {
+            $this->actionCheckPayment($lists, null);
+        }
+    }
+
+    private function actionCheckPayment($lists, $status = null)
+    {
+        \DB::beginTransaction();
+        try {
+            foreach ($lists as $list) {
+                $woocommerce = $this->getConnectStore($list->url, $list->consumer_key, $list->consumer_secret);
+                $info = $woocommerce->get('orders/' . $list->order_id);
+                if ($info) {
+                    if ($status != null && $list->order_status !== $info->status)
+                    {
+                        $update = [
+                            'transaction_id' => $info->transaction_id,
+                            'order_status' => $info->status,
+                            'status' => $status
+                        ];
+                    } else {
+                        $update = [
+                            'transaction_id' => $info->transaction_id,
+                            'order_status' => $info->status
+                        ];
+                    }
+                    $result = \DB::table('woo_orders')->where('id', $list->id)->update($update);
+                    if ($result) {
+                        logfile('-- [Payment Again] Cập nhật thành công ' . $list->number);
+                    } else {
+                        logfile('-- [Payment Again] [Error] Cập nhật thất bại ' . $list->number);
                     }
                 }
-                $return = true;
-                \DB::commit(); // if there was no errors, your query will be executed
-            } catch (\Exception $e) {
-                $return = false;
-                \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
             }
-            logfile('Đã kiểm tra check payment');
-        } else {
-            logfile('Check Payment không tìm thấy pending');
+            $return = true;
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $return = false;
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
         }
+        logfile('-- [Payment Again] Đã kiểm tra xong ' . sizeof($lists) . ' check payment');
     }
 
     public function updateSku()
