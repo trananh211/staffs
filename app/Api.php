@@ -98,14 +98,16 @@ class Api extends Model
                     $custom_status = env('STATUS_P_AUTO_PRODUCT');
                 }
                 foreach ($value['meta_data'] as $item) {
-                    if (strpos(strtolower($item['key']), 'add') !== false) {
-                        $str_sku .= ' ' . $item['value'];
-                        $custom_status = env('STATUS_P_CUSTOM_PRODUCT');
-                    } else {
-                        $variation_detail .= $item['value'] . '-';
+                    if (!is_array($item['value']) && strpos(strtolower($item['key']), 'id_add') === false) {
+                        if (strpos(strtolower($item['key']), 'add') !== false) {
+                            $str_sku .= ' ' . $item['value'];
+                            $custom_status = env('STATUS_P_CUSTOM_PRODUCT');
+                        } else {
+                            $variation_detail .= $item['value'] . '-';
+                        }
+                        $variation_full_detail .= $item['value'] . '-;-;-';
+                        $str .= $item['key'] . " : " . $item['value'] . " -;-;-\n";
                     }
-                    $variation_full_detail .= $item['value'] . '-;-;-';
-                    $str .= $item['key'] . " : " . $item['value'] . " -;-;-\n";
                 }
 
                 $db[] = [
@@ -120,7 +122,7 @@ class Api extends Model
                     'sku_number' => $this->getSku_number('', $data['number'], $value['name']),
                     'quantity' => $value['quantity'],
                     'payment_method' => trim($data['payment_method_title']),
-                    'payment_id' => (trim($data['payment_method_title']) == 'Paypal') ? $paypal_id : 0,
+                    'paypal_id' => (trim(strtolower($data['payment_method_title'])) == 'paypal') ? $paypal_id : 0,
                     'customer_note' => trim(htmlentities($data['customer_note'])),
                     'transaction_id' => $data['transaction_id'],
                     'price' => $value['price'],
@@ -331,8 +333,7 @@ class Api extends Model
             )
             ->where('woo_orders.transaction_id', '')
             ->get();
-        if (sizeof($lists) > 0)
-        {
+        if (sizeof($lists) > 0) {
             $this->actionCheckPayment($lists, null);
         }
     }
@@ -345,8 +346,7 @@ class Api extends Model
                 $woocommerce = $this->getConnectStore($list->url, $list->consumer_key, $list->consumer_secret);
                 $info = $woocommerce->get('orders/' . $list->order_id);
                 if ($info) {
-                    if ($status != null && $list->order_status !== $info->status)
-                    {
+                    if ($status != null && $list->order_status !== $info->status) {
                         $update = [
                             'transaction_id' => $info->transaction_id,
                             'order_status' => $info->status,
@@ -607,8 +607,8 @@ class Api extends Model
                     $tmp_woo_up_id = array();
                     foreach ($checks as $val) {
                         $tmp[$val->woo_product_id][] = [
-                            'src' => $val->woo_up_url
-//                        'src' => 'https://image.shutterstock.com/image-photo/white-transparent-leaf-on-mirror-260nw-1029171697.jpg'
+//                            'src' => $val->woo_up_url
+                            'src' => 'https://image.shutterstock.com/image-photo/white-transparent-leaf-on-mirror-260nw-1029171697.jpg'
                         ];
                         $tmp_woo_up_id[$val->woo_product_id][] = $val->woo_up_id;
                         $stores[$val->store_id] = [

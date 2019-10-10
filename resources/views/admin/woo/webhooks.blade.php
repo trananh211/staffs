@@ -84,6 +84,12 @@
                         </tr>
 
                         <tr>
+                            <td>7.2</td>
+                            <td><a href="{{ url('/api/paypal-id/') }}">{{ url('/api/paypal-id/') }}</a></td>
+                            <td>Paypay ID</td>
+                        </tr>
+
+                        <tr>
                             <td>End</td>
                             <td><a href="{{ url('/see-log/') }}">{{ url('/see-log/') }}</a></td>
                             <td>See Log</td>

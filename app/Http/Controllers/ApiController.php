@@ -74,7 +74,11 @@ class ApiController extends Controller
         $files = File::get(storage_path('file/' . $filename . '.json'));
         $data = json_decode($files, true);
         $api = new Api();
-        $webhook_source = 'https://clumsysaurus.com/';
+        if($filename%2 == 0){
+            $webhook_source = 'https://clumsysaurus.com';
+        } else {
+            $webhook_source = 'https://sportgear247.com';
+        }
         $store = DB::table('woo_infos')
             ->where('url', $webhook_source)
             ->pluck('id')

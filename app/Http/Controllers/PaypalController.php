@@ -99,4 +99,10 @@ class PaypalController extends Controller
         $paypal = new Paypal();
         return $paypal->test();
     }
+
+    public function updatePaypalId()
+    {
+        $paypal = new Paypal();
+        return $paypal->updatePaypalId();
+    }
 }

@@ -11,8 +11,8 @@ class Paypal extends Model
     public $timestamps = true;
     protected $table = 'paypals';
 
-//    private $url = 'https://api.paypal.com/';
-    private $url = 'https://api.sandbox.paypal.com/';
+    private $url = 'https://api.paypal.com/';
+//    private $url = 'https://api.sandbox.paypal.com/';
 
     public function create($request)
     {
@@ -257,6 +257,49 @@ class Paypal extends Model
         }
         curl_close($curl);
         return $json;
+    }
+
+    public function updatePaypalId()
+    {
+
+        $lists = \DB::table('woo_orders as wod')
+            ->select('wod.id','wod.woo_info_id')
+            ->where('wod.payment_method','Paypal')
+            ->where('wod.paypal_id',0)
+            ->get()->toArray();
+
+        if (sizeof($lists) > 0)
+        {
+            $paypals = \DB::table('paypals')
+                ->select('store_id','id')
+                ->where('status',1)
+                ->get()->toArray();
+            $lst_paypal = array();
+            foreach ($paypals as $paypal)
+            {
+                $lst_paypal[$paypal->store_id] = $paypal->id;
+            }
+            $db = array();
+            foreach ($lists as $list)
+            {
+                if (array_key_exists($list->woo_info_id, $lst_paypal)){
+                    $db[$lst_paypal[$list->woo_info_id]][] = $list->id;
+                }
+            }
+
+            if (sizeof($db) >0)
+            {
+                foreach ($db as $paypal_id => $update_data)
+                {
+                    \DB::table('woo_orders')->whereIn('id',$update_data)->update([
+                        'paypal_id' => $paypal_id
+                    ]);
+                    echo "Update thanh cong paypal_id : ".$paypal_id." co ".sizeof($update_data)." order <br>";
+                }
+            }
+        } else {
+            echo "Đã hết order có thể cập nhật paypal id <br>";
+        }
     }
 
     public function test()
