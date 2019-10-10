@@ -320,7 +320,7 @@ class Working extends Model
                                         'updated_at' => date("Y-m-d H:i:s")
                                     ];
                                     $message .= getSuccessMessage('File ' . $f . ' tải lên thành công');
-                                    $img .= thumb_c(env('APP_URL') . env('DIR_THUMB') . 'thumb_' . $f, 50, $f);
+                                    $img .= thumb_c('/'.$thumb, 50, $f);
                                 } else {
                                     $message .= getErrorMessage('File ' . $f . ' không thể tải lên lúc này. Mời thử lại');
                                 }

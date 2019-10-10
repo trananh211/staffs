@@ -68,6 +68,10 @@ Route::middleware('auth')->group(function () {
     Route::post('ajax-skip-product','WooController@axSkipProduct');
     Route::post('ajax-re-send-email','WooController@axReSendEmail');
 
+    /** Paypal */
+    Route::get('paypal-connect','PaypalController@index');
+    Route::post('paypal-create','PaypalController@create');
+
     //woo products create automatic
     Route::get('woo-create-template','WooController@viewCreateTemplate');
     Route::post('woo-check-template','ApiController@checkTemplate');

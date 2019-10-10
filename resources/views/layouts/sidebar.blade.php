@@ -449,6 +449,7 @@
                         <ul>
                             <li><a href="{{ url('woo-list-store') }}">List Store</a></li>
                             <li><a href="{{ url('woo_connect') }}">Connect</a></li>
+                            <li><a href="{{ url('paypal-connect') }}">Paypal Account</a></li>
                             <li><a href="{{ url('woo-webhooks') }}">Webhooks</a></li>
                         </ul>
                     </div>
