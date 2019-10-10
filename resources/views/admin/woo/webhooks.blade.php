@@ -70,15 +70,29 @@
                             <td><a href="{{ url('/test-image/') }}">{{ url('/test-image/') }}</a></td>
                             <td>Image Upload</td>
                         </tr>
+
                         <tr>
                             <td>7</td>
-                            <td><a href="{{ url('/see-log/') }}">{{ url('/see-log/') }}</a></td>
-                            <td>See Log</td>
-                        </tr>
-                        <tr>
-                            <td>8</td>
                             <td><a href="{{ url('/tracking-number/') }}">{{ url('/tracking-number/') }}</a></td>
                             <td>Tracking Number</td>
+                        </tr>
+
+                        <tr>
+                            <td>7.1</td>
+                            <td><a href="{{ url('/api/paypal-update/') }}">{{ url('/api/paypal-update/') }}</a></td>
+                            <td>Update Payment</td>
+                        </tr>
+
+                        <tr>
+                            <td>7.2</td>
+                            <td><a href="{{ url('/api/paypal-id/') }}">{{ url('/api/paypal-id/') }}</a></td>
+                            <td>Paypay ID</td>
+                        </tr>
+
+                        <tr>
+                            <td>End</td>
+                            <td><a href="{{ url('/see-log/') }}">{{ url('/see-log/') }}</a></td>
+                            <td>See Log</td>
                         </tr>
                         </tbody>
                     </table>

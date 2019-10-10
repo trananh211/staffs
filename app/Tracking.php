@@ -10,6 +10,7 @@ use \Cache;
 use File;
 use Excel;
 use Storage;
+use App\Paypal;
 
 class Tracking extends Model
 {
@@ -176,11 +177,11 @@ class Tracking extends Model
     {
         //Kiểm tra xem có file tracking nào đang không tồn tại hay không
         $lists = \DB::table('trackings')
-            ->select('id', 'tracking_number', 'status', 'order_id')
+            ->select('id', 'tracking_number', 'status', 'order_id', 'woo_order_id', 'payment_status')
             ->where('is_check', 0)
             ->where('status', '!=', env('TRACK_DELIVERED'))
             ->orderBy('updated_at', 'DESC')
-            ->limit(30)
+            ->limit(env('TRACK_LIMIT_CHECK'))
             ->get();
         if (sizeof($lists) > 0) {
             logfile("[Tracking] Kiểm tra tracking của " . sizeof($lists) . " đơn hàng");
@@ -188,6 +189,10 @@ class Tracking extends Model
             $ar_data = array();
             $checked = [];
             $ar_update = array();
+            /*Paypal*/
+            $paypal_array = array();
+            $lst_order_update = array();
+            /*End Paypal*/
             foreach ($lists as $list) {
                 $checked[] = $list->id;
                 //nhiều order chung 1 tracking number vẫn phải được cập nhật
@@ -209,13 +214,31 @@ class Tracking extends Model
                 $result = $this->checkTrackingResult($info_track['value'], $ar_data[$tracking_number]->status);
                 if ($result) {
                     $ar_update[$result][] = $tracking_number;
-                    logfile('--- Cập nhật đơn hàng : ' . $ar_data[$tracking_number]->order_id .
+                    if (in_array($result, array(
+                        env('TRACK_INTRANSIT'), env('TRACK_PICKUP'),env('TRACK_DELIVERED')
+                    )))
+                    {
+                        $carries_name = trim($info_track['carrier_to']);
+                        $paypal_array[$ar_data[$tracking_number]->woo_order_id] = [
+                            'order_id' => $ar_data[$tracking_number]->woo_order_id,
+                            'tracking_number' => $tracking_number,
+                            'status_tracking' => $result,
+                            'carriers_name' => $carries_name,
+                            'payment_status' => $ar_data[$tracking_number]->payment_status,
+                            'tracking_id' => $ar_data[$tracking_number]->id
+                        ];
+                        $lst_order_update[] = $ar_data[$tracking_number]->woo_order_id;
+                    }
+                    logfile('-- [Tracking] Cập nhật đơn hàng : ' . $ar_data[$tracking_number]->order_id .
                         ' có mã tracking : ' . $tracking_number . ' thay đổi thành ' . $info_track['value']);
                 } else {
-                    logfile('--- Đơn hàng : ' . $ar_data[$tracking_number]->order_id .
+                    logfile('-- [Tracking] Đơn hàng : ' . $ar_data[$tracking_number]->order_id .
                         ' có mã tracking : ' . $tracking_number . ' chưa thay đổi trạng thái ' . $info_track['value']);
                 }
             }
+            $this->sendPaypalDetail($lst_order_update, $paypal_array);
+            die();
+
             if (sizeof($ar_update) > 0) {
                 //Cap nhật trạng thái mới
                 foreach ($ar_update as $tracking_status => $list_tracking) {
@@ -245,7 +268,7 @@ class Tracking extends Model
                     ]);
             }
         } else {
-            logfile('[Tracking] Đã hết file tracking. Cập nhật lại danh sách order chưa DELIVERED');
+            logfile('-- [Tracking] Đã hết file tracking. Cập nhật lại danh sách order chưa DELIVERED');
             \DB::table('trackings')
                 ->whereNotIn('status', array(env('TRACK_DELIVERED', env('TRACK_EXPIRED'))))
                 ->update([
@@ -283,6 +306,111 @@ class Tracking extends Model
     }
 
     /*Paypal tracking*/
+    private function sendPaypalDetail($list_order, $paypal_detail)
+    {
+        logfile('-- [Tracking Paypal] Kiểm tra có order nào của paypal thì cập nhật mới');
+        $check = \DB::table('woo_orders as wod')
+            ->leftjoin('paypals', 'wod.paypal_id', '=', 'paypals.id')
+            ->select(
+                'wod.id as order_id','wod.transaction_id',
+                'paypals.id as paypal_id','paypals.client_id', 'paypals.client_secret'
+            )
+            ->whereIn('wod.id',$list_order)
+            ->where('wod.payment_method','Paypal')
+            ->get()->toArray();
+        if (sizeof($check) > 0)
+        {
+            $lst_status = array(
+                env('TRACK_INTRANSIT') => 'SHIPPED',
+                env('TRACK_PICKUP') => 'LOCAL_PICKUP',
+                env('TRACK_DELIVERED') => 'DELIVERED'
+            );
+            $stores = array();
+            $update_tracking = array();
+            //khai báo biến cập nhật database tracking
+            $new_shipped = $new_pickup = $new_delivered = array();
+            //end khai báo biến cập nhật database tracking
+            $carries = \DB::table('paypal_carriers')->pluck('enumerated_value','name')->toArray();
+//            print_r($paypal_detail);
+//            print_r($carries);
+            foreach ($check as $item)
+            {
+                if ($item->paypal_id == '' || $item->client_id == '' || $item->client_secret == '')
+                {
+                    continue;
+                }
+                $stores[$item->paypal_id]['client_id'] = $item->client_id;
+                $stores[$item->paypal_id]['client_secret'] = $item->client_secret;
+                $order_id = $item->order_id;
+                $tracking_number = $paypal_detail[$order_id]['tracking_number'];
+                $status_tracking = $paypal_detail[$order_id]['status_tracking'];
+                $status = $lst_status[$status_tracking];
+                $carrier = $carries[$paypal_detail[$order_id]['carriers_name']];
+
+                //Nếu chưa up tracking lên paypal lần nào
+                $payment_status = $paypal_detail[$order_id]['payment_status'];
+                // Nếu chưa up tracking bao giờ
+                if ($payment_status == 0)
+                {
+                    $stores[$item->paypal_id]['trackers'][] = [
+                        "transaction_id" => $item->transaction_id,
+                        "tracking_number" => $tracking_number,
+                        "status" => $status,
+                        "carrier" => $carrier
+                    ];
+                    if ($status_tracking == env('TRACK_INTRANSIT'))
+                    {
+                        $new_shipped[] = $paypal_detail[$order_id]['tracking_id'];
+                    } else if ($status_tracking == env('TRACK_PICKUP')) {
+                        $new_pickup[] = $paypal_detail[$order_id]['tracking_id'];
+                    } else if ($status_tracking == env('TRACK_DELIVERED')) {
+                        $new_delivered[] = $paypal_detail[$order_id]['tracking_id'];
+                    }
+                } else {
+                    // Nếu đã từng up tracking. Chỉ cập nhật
+                    if ($status_tracking > $payment_status)
+                    {
+                        $update_tracking[$item->paypal_id]['client_id'] = $item->client_id;
+                        $update_tracking[$item->paypal_id]['client_secret'] = $item->client_secret;
+                        $update_tracking[$item->paypal_id]['data'][] = [
+                            "transaction_id" => $item->transaction_id,
+                            "tracking_number" => $tracking_number,
+                            "status" => $status,
+                            "carrier" => $carrier,
+                            "tracking_id" => $paypal_detail[$order_id]['tracking_id']
+                        ];
+                    }
+                }
+            }
+
+            /** Nếu store tồn tại tracking cần up lên Paypal*/
+            if (sizeof($stores) > 0)
+            {
+                $database = [
+                    'new_shipped' => $new_shipped,
+                    'new_pickup' => $new_pickup,
+                    'new_delivered' => $new_delivered
+                ];
+                $paypal = new Paypal();
+                $paypal->getNewTracking($stores, $database);
+            }
+
+            /** Nếu store tồn tại tracking cần cập nhật trên Paypal*/
+            if (sizeof($update_tracking) > 0)
+            {
+                $database = [
+                    'update_pickup' => $update_pickup,
+                    'update_delivered' => $update_delivered
+                ];
+                $paypal = new Paypal();
+                $paypal->getUpdateTracking($update_tracking);
+            }
+        } else {
+            logfile('-- [Tracking Paypal] Không có order nào từ paypal cập nhật mới');
+        }
+        die();
+    }
+
     public function postTrackingNumber($request)
     {
 //        echo "<pre>";

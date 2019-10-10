@@ -45,6 +45,12 @@ class GoogleController extends Controller
         $paths = array(
             env('DIR_EXCEL_EXPORT')
         );
+        $path_export = env('DIR_EXCEL_EXPORT');
+        if (!File::exists(storage_path($path_export))) {
+//            exec ("find /path/to/folder -type d -exec chmod 0770 {} +");//for sub directory
+//            exec ("find /path/to/folder -type f -exec chmod 0644 {} +");//for files inside directory
+            exec("find ".$path_export." -type f -exec chmod 0777 {} +");//for files inside directory
+        }
         foreach ($paths as $path) {
             if (!File::exists(storage_path($path))) {
                 File::makeDirectory(storage_path($path), $mode = 0777, true, true);

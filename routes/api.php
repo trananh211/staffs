@@ -28,3 +28,12 @@ Route::get('/test-update-product/{filename}','ApiController@testUpdateProduct');
 Route::get('/update-sku','ApiController@updateSku');
 
 Route::get('/email-test','ApiController@sendEmail');
+
+Route::get('/paypal-test','PaypalController@test');
+
+Route::get('/paypal-id','PaypalController@updatePaypalId');
+
+Route::get('/paypal-update','ApiController@updateOrderPaypal');
+
+Route::get('/check-payment-again','ApiController@checkPaymentAgain');
+
