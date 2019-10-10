@@ -304,8 +304,8 @@ class Paypal extends Model
 
     public function test()
     {
-        $client_id = 'AXYckDa34gcMixJNiHHKAi9NOHniOAyg3fD8gN5ynfRDgRWLCCjaWt6rcOhLTnkrbX6jQeshnxg5lAD7';
-        $client_secret = 'EFZDAjMrCS1qOD9bV6YoSPgFOux2srRwJ3WwOOzBz3RoRSFlmCOLzRwb7lKandMADBgq3trU6gSLXBrj';
+        $client_id = '';
+        $client_secret = '';
 
         $json_data = $this->connect($client_id, $client_secret);
 
