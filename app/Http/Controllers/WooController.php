@@ -332,6 +332,12 @@ class WooController extends Controller
         return $work->editSupplier($supplier_id);
     }
 
+    public function viewFromCreateTemplate()
+    {
+        $work = new Working();
+        return $work->viewFromCreateTemplate();
+    }
+
     public function getListTemplate()
     {
         $lists = \DB::table('woo_templates as w_temp')
@@ -391,7 +397,6 @@ class WooController extends Controller
         $work = new Working();
         return $work->ajaxCheckVariationExist($request);
     }
-
     /*End Tạo sản phẩm */
 
     /*End Admin + QC*/
