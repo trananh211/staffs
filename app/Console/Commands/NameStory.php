@@ -71,7 +71,7 @@ class NameStory extends Command
         $result = false;
         $webs = \DB::table('woo_templates')
             ->select('id', 'template_id', 'website_id', 'store_id')
-            ->where('store_id', '<>', '')
+            ->where('website_id', '<>', '')
             ->where('status', 0)
             ->limit(1)->get()->toArray();
         if (sizeof($webs) > 0) {
