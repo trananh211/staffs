@@ -136,7 +136,7 @@ class ScrapProducts extends Command
             ->where([
                 ['woo_category_id', '=', NULL]
             ])
-//            ->limit(50)
+            ->limit(33)
             ->get()->toArray();
         if (sizeof($lst_product_category) > 0) {
             $category_store_lst = array();
