@@ -89,7 +89,7 @@ class NameStory extends Command
         $page = 1;
         $data = array();
         do {
-            echo $page . '-aaa' . "\n";
+            echo $page . '-page' . "\n";
             $url = $link . $page;
             $curent_page = $page;
             $client = new \Goutte\Client();
