@@ -86,7 +86,7 @@ class NameStory extends Command
         $website = $this->website;
         $domain = 'https://namestories.com';
         $link = $domain . '/collections/all?page=';
-        $page = 370;
+        $page = 1;
         $data = array();
         do {
             echo $page . '-aaa' . "\n";
