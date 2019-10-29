@@ -310,13 +310,16 @@ class ScrapProducts extends Command
             $prod_data = array();
             // Tìm template
             $template_json = readFileJson($val['template_path']);
+            // Chọn name
+            $tmp_namestories_name = explode(trim($val['category_name']),$val['product_name']);
             $tmp_name = explode('-', $template_json['name']);
-            $woo_product_name = ucwords($tmp_name[0] . $val['product_name'] . ' -' . $tmp_name[1]);
+            $woo_product_name = ucwords(trim($val['category_name'])).' '.ucwords($tmp_name[0] . trim($tmp_namestories_name[1]) . ' -' . $tmp_name[1]);
+
+            // Kết thúc chọn name
             logfile("-- Đang tạo sản phẩm mới : " . $woo_product_name);
-            echo '-- Đang tạo sản phẩm mới' . $woo_product_name . "\n";
             $prod_data = $template_json;
             $prod_data['name'] = $woo_product_name;
-            $prod_data['status'] = 'publish';
+            $prod_data['status'] = 'draft';
             $prod_data['categories'] = [
                 ['id' => $val['woo_category_id']]
             ];
@@ -346,6 +349,7 @@ class ScrapProducts extends Command
                 ->update([
                     'woo_product_id' => $woo_product_id,
                     'woo_product_name' => $woo_product_name,
+                    'woo_slug' => $save_product->permalink,
                     'status' => 1,
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
@@ -378,11 +382,16 @@ class ScrapProducts extends Command
                     'menu_order' => $variation_json['menu_order'],
                     'meta_data' => $variation_json['meta_data'],
                 );
-                $woocommerce->post('products/' . $woo_product_id . '/variations', $variation_data);
-
+                $re = $woocommerce->post('products/' . $woo_product_id . '/variations', $variation_data);
                 $str = ('-- Đang cập nhật variation '. $color_slug.' của '.$woo_product_id);
 //                echo $str;
             }
+            $tmp = array(
+                'id' => $woo_product_id,
+                'status' => 'publish',
+                'date_created' => date("Y-m-d H:i:s", strtotime(" -3 days"))
+            );
+            $result = $woocommerce->put('products/' . $woo_product_id, $tmp);
         }
     }
     /* End website namestories.com */
