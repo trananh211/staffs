@@ -46,6 +46,10 @@ class Kernel extends ConsoleKernel
         /*Upload Product*/
         $schedule->call('App\Http\Controllers\ApiController@autoUploadProduct')->everyFiveMinutes();
         $schedule->call('App\Http\Controllers\ApiController@autoUploadImage')->everyMinute();
+
+        /** Cao san pham*/
+        $schedule->command('scan:website')->dailyAt('22:37');
+        $schedule->command('scrap:product')->everyFiveMinutes()->between('0:30', '5:30');
     }
 
     /**

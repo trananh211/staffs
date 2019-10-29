@@ -472,6 +472,17 @@
                         </ul>
                     </div>
                 </li>
+                <li class="no-padding">
+                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">work</i>
+                        Web Scraper
+                        <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
+                    </a>
+                    <div class="collapsible-body">
+                        <ul>
+                            <li><a href="{{ url('scrap-create-template') }}">Connect Template</a></li>
+                        </ul>
+                    </div>
+                </li>
             @endif
 
             @if( Auth::user()->level == env('WORKER'))

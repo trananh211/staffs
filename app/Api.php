@@ -492,11 +492,17 @@ class Api extends Model
     /*
      * Kiem tra template da ton tai hay chua. Neu chua thi luu vao database
      * */
-    public function checkTemplate($request)
+    public function checkTemplate($request, $scrap = null)
     {
         try {
             $rq = $request->all();
             $template_id = $rq['id_product'];
+            if($scrap == 1)
+            {
+                $website_id = $rq['website_id'];
+            } else {
+                $website_id = null;
+            }
             $id_store = $rq['id_store'];
             $check_exist = \DB::table('woo_templates')
                 ->where('template_id', $template_id)
@@ -521,7 +527,6 @@ class Api extends Model
                     unset($template_data[$v]);
                 }
                 //tao thu muc de luu template
-//                $path = public_path() . '/template/' . $id_store . '/' . $template_id . '/';
                 $path = storage_path('app/public') . '/template/' . $id_store . '/' . $template_id . '/';
                 makeFolder(($path));
                 // Write File
@@ -535,6 +540,7 @@ class Api extends Model
                         'product_name' => $template_name,
                         'template_id' => $template_id,
                         'store_id' => $id_store,
+                        'website_id' => $website_id,
                         'template_path' => $template_path,
                         'created_at' => date("Y-m-d H:i:s"),
                         'updated_at' => date("Y-m-d H:i:s")
@@ -566,7 +572,12 @@ class Api extends Model
                 }
             }
             $data = array();
-            return view("/admin/woo/save_path_template", compact('data', "template_data", 'rq'));
+            if ($scrap != null)
+            {
+                return redirect('scrap-create-template')->with('success','Connect với template thành công');
+            } else {
+                return view("/admin/woo/save_path_template", compact('data', "template_data", 'rq'));
+            }
         } catch (\Exception $e) {
             return $e->getMessage();
         }

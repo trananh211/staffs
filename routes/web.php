@@ -92,6 +92,8 @@ Route::middleware('auth')->group(function () {
     Route::get('woo-delete-convert-variation/{id}','WooController@deleteConvertVariation');
     Route::post('js-woo-convert-variation', 'WooController@ajaxPutConvertVariation');
     Route::post('js-check-variation-exist', 'WooController@ajaxCheckVariationExist');
+    Route::get('scrap-create-template','WooController@viewFromCreateTemplate');
+    Route::post('scrap-save-template','ApiController@scrapSaveTemplate');
     /*End QC + Admin*/
 
     /*Staff*/

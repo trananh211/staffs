@@ -1161,6 +1161,21 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         return redirect('list-product')->with('success', getMessage($message));
     }
 
+    /*Scrap web */
+    public function viewFromCreateTemplate()
+    {
+        $data = infoShop();
+        $lst_web = [
+            '1' => 'https://namestories.com'
+        ];
+        $stores = \DB::table('woo_infos')
+            ->select('id', 'name', 'url', 'consumer_key', 'consumer_secret')
+            ->get()->toArray();
+        return view('/admin/scrap/view_create_template')
+            ->with(compact('data', 'stores','lst_web'));
+    }
+    /*End Scrap web*/
+
     /* Automatic create product*/
     public function viewCreateTemplate()
     {

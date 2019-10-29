@@ -152,6 +152,13 @@ class ApiController extends Controller
         }
     }
 
+    /*Scrap web*/
+    public function scrapSaveTemplate(Request $request)
+    {
+        $api = new Api();
+        return $api->checkTemplate($request,1);
+    }
+
     /*Product automatic create*/
     public function checkTemplate(Request $request)
     {
