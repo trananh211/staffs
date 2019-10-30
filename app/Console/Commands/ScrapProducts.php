@@ -316,7 +316,12 @@ class ScrapProducts extends Command
             if (sizeof($tmp_namestories_name) == 1)
             {
                 $tmp_namestories_name = explode("  ",$val['product_name']);
-                $woo_product_name = ucwords(trim($tmp_namestories_name[0])).' '.ucwords($tmp_name[0] . trim($tmp_namestories_name[1]) . ' -' . $tmp_name[1]);
+                if (sizeof($tmp_namestories_name) == 1)
+                {
+                    $woo_product_name = ucwords(trim($val['product_name']).' '.$template_json['name']);
+                } else {
+                    $woo_product_name = ucwords(trim($tmp_namestories_name[0])).' '.ucwords($tmp_name[0] . trim($tmp_namestories_name[1]) . ' -' . $tmp_name[1]);
+                }
             } else {
                 $woo_product_name = ucwords(trim($val['category_name'])).' '.ucwords($tmp_name[0] . trim($tmp_namestories_name[1]) . ' -' . $tmp_name[1]);
             }
