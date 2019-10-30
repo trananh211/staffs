@@ -115,7 +115,7 @@ class ScrapProducts extends Command
             )
             ->where('spd.status', 0)
             ->orderByRaw('spd.website_id ASC', 'spd.store_id ASC')
-            ->limit(1)
+            ->limit(2)
             ->get()->toArray();
         if (sizeof($products) > 0) {
             $result = json_decode(json_encode($products), true);
@@ -313,8 +313,13 @@ class ScrapProducts extends Command
             // Chọn name
             $tmp_namestories_name = explode(trim($val['category_name']),$val['product_name']);
             $tmp_name = explode('-', $template_json['name']);
-            $woo_product_name = ucwords(trim($val['category_name'])).' '.ucwords($tmp_name[0] . trim($tmp_namestories_name[1]) . ' -' . $tmp_name[1]);
-
+            if (sizeof($tmp_namestories_name) == 1)
+            {
+                $tmp_namestories_name = explode("  ",$val['product_name']);
+                $woo_product_name = ucwords(trim($tmp_namestories_name[0])).' '.ucwords($tmp_name[0] . trim($tmp_namestories_name[1]) . ' -' . $tmp_name[1]);
+            } else {
+                $woo_product_name = ucwords(trim($val['category_name'])).' '.ucwords($tmp_name[0] . trim($tmp_namestories_name[1]) . ' -' . $tmp_name[1]);
+            }
             // Kết thúc chọn name
             logfile("-- Đang tạo sản phẩm mới : " . $woo_product_name);
             $prod_data = $template_json;
