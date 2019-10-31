@@ -175,6 +175,7 @@ class Tracking extends Model
     /*Hàm lấy info tracking*/
     public function getInfoTracking()
     {
+        echo "<pre>";
         //Kiểm tra xem có file tracking nào đang không tồn tại hay không
         $lists = \DB::table('trackings')
             ->select('id', 'tracking_number', 'status', 'order_id', 'woo_order_id', 'payment_status')
@@ -236,10 +237,11 @@ class Tracking extends Model
                         ' có mã tracking : ' . $tracking_number . ' chưa thay đổi trạng thái ' . $info_track['value']);
                 }
             }
-            $this->sendPaypalDetail($lst_order_update, $paypal_array);
-            die();
+//            $this->sendPaypalDetail($lst_order_update, $paypal_array);
 
             if (sizeof($ar_update) > 0) {
+                echo "<pre>";
+                print_r($ar_update);
                 //Cap nhật trạng thái mới
                 foreach ($ar_update as $tracking_status => $list_tracking) {
                     \DB::table('trackings')->whereIn('tracking_number', $list_tracking)
@@ -259,6 +261,8 @@ class Tracking extends Model
                     }
                 }
             }
+            echo sizeof($checked);
+            print_r($checked);
             //Cập nhật trạng thái đã checking
             if (sizeof($checked) > 0) {
                 \DB::table('trackings')->whereIn('id', $checked)
