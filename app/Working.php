@@ -1165,9 +1165,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     public function viewFromCreateTemplate()
     {
         $data = infoShop();
-        $lst_web = [
-            '1' => 'https://namestories.com'
-        ];
+        $lst_web = website();
         $stores = \DB::table('woo_infos')
             ->select('id', 'name', 'url', 'consumer_key', 'consumer_secret')
             ->get()->toArray();
