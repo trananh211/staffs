@@ -40,8 +40,8 @@ class Kernel extends ConsoleKernel
             ->between('1:00', '23:00');
         //$schedule->call('App\Http\Controllers\ApiController@checkPaymentAgain')->hourlyAt(17);
         /*Tracking API*/
-        $schedule->call('App\Http\Controllers\TrackingController@getFileTracking')->hourlyAt(13);
-        $schedule->call('App\Http\Controllers\TrackingController@getInfoTracking')->hourlyAt(33);
+//        $schedule->call('App\Http\Controllers\TrackingController@getFileTracking')->hourlyAt(13);
+//        $schedule->call('App\Http\Controllers\TrackingController@getInfoTracking')->hourlyAt(33);
 
         /*Upload Product*/
         $schedule->call('App\Http\Controllers\ApiController@autoUploadProduct')->everyFiveMinutes();
@@ -49,7 +49,7 @@ class Kernel extends ConsoleKernel
 
         /** Cao san pham*/
         $schedule->command('scan:website')->dailyAt('22:37');
-        $schedule->command('scrap:product')->everyFiveMinutes()->between('0:30', '22:30');
+        $schedule->command('scrap:product')->everyFiveMinutes()->between('0:30', '5:30');
     }
 
     /**

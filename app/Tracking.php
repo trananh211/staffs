@@ -5,6 +5,8 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Client;
+use Symfony\Component\DomCrawler\Crawler;
+use GuzzleHttp\Psr7\Response;
 use DB;
 use \Cache;
 use File;
@@ -103,10 +105,9 @@ class Tracking extends Model
             $ar_working_id[] = $woo_order_id;
             $ar_woo_order_id[] = $woo_order_id;
             $tracking_number = preg_replace('/\s+/', '', htmlentities(sanitizer(trim($value['tracking']))));
-            if (trim($tracking_number) == '')
-            {
+            if (trim($tracking_number) == '') {
                 continue;
-                logfile('-- [Warning] Tracking của Order: '.$value['order_id'].' rỗng. Bỏ qua!');
+                logfile('-- [Warning] Tracking của Order: ' . $value['order_id'] . ' rỗng. Bỏ qua!');
             }
             $db[$woo_order_id] = [
                 'tracking_number' => $tracking_number,
@@ -208,7 +209,8 @@ class Tracking extends Model
 //            $response = $client->request('GET', $url);
 //            var_dump($response->getContent());
 //            $json_data = json_decode($response->getBody(), true);
-
+            $json_data = $this->getInfo17Track(rtrim($str_url, ','));
+            die();
             $data = file_get_contents($url);
             $json_data = json_decode($data, true);
             foreach ($json_data as $info_track) {
@@ -223,9 +225,8 @@ class Tracking extends Model
                 if ($result) {
                     $ar_update[$result][] = $tracking_number;
                     if (in_array($result, array(
-                        env('TRACK_INTRANSIT'), env('TRACK_PICKUP'),env('TRACK_DELIVERED')
-                    )))
-                    {
+                        env('TRACK_INTRANSIT'), env('TRACK_PICKUP'), env('TRACK_DELIVERED')
+                    ))) {
                         $carries_name = trim($info_track['carrier_to']);
                         $paypal_array[$ar_data[$tracking_number]->woo_order_id] = [
                             'order_id' => $ar_data[$tracking_number]->woo_order_id,
@@ -287,6 +288,59 @@ class Tracking extends Model
         }
     }
 
+    private function getInfo17Track2($url)
+    {
+        $link = 'https://t.17track.net/en#nums=' . $url;
+        echo $link . "\n";
+
+        $html = '';
+        // Send an asynchronous request.
+        $client = new \GuzzleHttp\Client();
+        $request = new \GuzzleHttp\Psr7\Request('GET', $link);
+        $promise = $client->sendAsync($request)->then(function ($response) use (&$html) {
+            echo 'I completed! ' . "\n";
+            $contents = $response->getBody()->getContents();
+            $crawler = new Crawler($contents);
+//            var_dump($crawler);
+            echo $crawler->filter('.tracklist-item')->count();
+//            $newCrawler = new Crawler($response);
+//            print_r($newCrawler);
+//            $crawler = new \Symfony\Component\DomCrawler\Crawler($response->getBody());
+//            echo $crawler->filter('.jcTrackContainer .tracklist-item')->count();
+        });
+        $promise->wait();
+//        echo "<pre>";
+//        $stream = $html;
+//        $contents = $stream->getContents();
+//        $crawler = new Crawler($contents);
+//        echo $crawler->filter('.jcTrackContainer')->count();
+//        echo $html;
+//
+
+//        $crawler = $response;
+//        echo $crawler->filter('.jcTrackContainer .tracklist-item')->count();
+    }
+
+    private function getInfo17Track($url)
+    {
+        $link = 'https://t.17track.net/en#nums=' . $url;
+        echo $link . "\n";
+        $client = new \GuzzleHttp\Client();
+
+        $promise1 = $client->getAsync($link)->then(
+            function ($response) {
+                return $response->getBody();
+            },
+            function ($exception) {
+                return $exception->getMessage();
+            }
+        );
+        $response1 = $promise1->wait();
+        $contents = $response1->getContents();
+        $crawler = new Crawler($contents);
+        echo $crawler->filter('.tracklist-item')->count();
+    }
+
     private function checkTrackingResult($text, $value_old)
     {
         $text = strtolower($text);
@@ -320,14 +374,13 @@ class Tracking extends Model
         $check = \DB::table('woo_orders as wod')
             ->leftjoin('paypals', 'wod.paypal_id', '=', 'paypals.id')
             ->select(
-                'wod.id as order_id','wod.transaction_id',
-                'paypals.id as paypal_id','paypals.client_id', 'paypals.client_secret'
+                'wod.id as order_id', 'wod.transaction_id',
+                'paypals.id as paypal_id', 'paypals.client_id', 'paypals.client_secret'
             )
-            ->whereIn('wod.id',$list_order)
-            ->where('wod.payment_method','Paypal')
+            ->whereIn('wod.id', $list_order)
+            ->where('wod.payment_method', 'Paypal')
             ->get()->toArray();
-        if (sizeof($check) > 0)
-        {
+        if (sizeof($check) > 0) {
             $lst_status = array(
                 env('TRACK_INTRANSIT') => 'SHIPPED',
                 env('TRACK_PICKUP') => 'LOCAL_PICKUP',
@@ -338,13 +391,11 @@ class Tracking extends Model
             //khai báo biến cập nhật database tracking
             $new_shipped = $new_pickup = $new_delivered = array();
             //end khai báo biến cập nhật database tracking
-            $carries = \DB::table('paypal_carriers')->pluck('enumerated_value','name')->toArray();
+            $carries = \DB::table('paypal_carriers')->pluck('enumerated_value', 'name')->toArray();
 //            print_r($paypal_detail);
 //            print_r($carries);
-            foreach ($check as $item)
-            {
-                if ($item->paypal_id == '' || $item->client_id == '' || $item->client_secret == '')
-                {
+            foreach ($check as $item) {
+                if ($item->paypal_id == '' || $item->client_id == '' || $item->client_secret == '') {
                     continue;
                 }
                 $stores[$item->paypal_id]['client_id'] = $item->client_id;
@@ -358,16 +409,14 @@ class Tracking extends Model
                 //Nếu chưa up tracking lên paypal lần nào
                 $payment_status = $paypal_detail[$order_id]['payment_status'];
                 // Nếu chưa up tracking bao giờ
-                if ($payment_status == 0)
-                {
+                if ($payment_status == 0) {
                     $stores[$item->paypal_id]['trackers'][] = [
                         "transaction_id" => $item->transaction_id,
                         "tracking_number" => $tracking_number,
                         "status" => $status,
                         "carrier" => $carrier
                     ];
-                    if ($status_tracking == env('TRACK_INTRANSIT'))
-                    {
+                    if ($status_tracking == env('TRACK_INTRANSIT')) {
                         $new_shipped[] = $paypal_detail[$order_id]['tracking_id'];
                     } else if ($status_tracking == env('TRACK_PICKUP')) {
                         $new_pickup[] = $paypal_detail[$order_id]['tracking_id'];
@@ -376,8 +425,7 @@ class Tracking extends Model
                     }
                 } else {
                     // Nếu đã từng up tracking. Chỉ cập nhật
-                    if ($status_tracking > $payment_status)
-                    {
+                    if ($status_tracking > $payment_status) {
                         $update_tracking[$item->paypal_id]['client_id'] = $item->client_id;
                         $update_tracking[$item->paypal_id]['client_secret'] = $item->client_secret;
                         $update_tracking[$item->paypal_id]['data'][] = [
@@ -392,8 +440,7 @@ class Tracking extends Model
             }
 
             /** Nếu store tồn tại tracking cần up lên Paypal*/
-            if (sizeof($stores) > 0)
-            {
+            if (sizeof($stores) > 0) {
                 $database = [
                     'new_shipped' => $new_shipped,
                     'new_pickup' => $new_pickup,
@@ -404,8 +451,7 @@ class Tracking extends Model
             }
 
             /** Nếu store tồn tại tracking cần cập nhật trên Paypal*/
-            if (sizeof($update_tracking) > 0)
-            {
+            if (sizeof($update_tracking) > 0) {
                 $database = [
                     'update_pickup' => $update_pickup,
                     'update_delivered' => $update_delivered
@@ -425,34 +471,28 @@ class Tracking extends Model
         $rq = $request->all();
         $paypal_file = $rq['paypal_file'];
         $tracking_file = $rq['tracking_file'];
-        echo storage_path('paypal')."\n";
+        echo storage_path('paypal') . "\n";
         makeFolder(storage_path('paypal'));
-        $file_paypal = $paypal_file->move(storage_path('paypal'),$paypal_file->getClientOriginalName());
-        if ($file_paypal)
-        {
-            $file_tracking = $tracking_file->move(storage_path('paypal'),$tracking_file->getClientOriginalName());
-            if ($file_tracking)
-            {
-                $path_file_paypal = storage_path('paypal/'.$paypal_file->getClientOriginalName());
-                $path_file_tracking = storage_path('paypal/'.$tracking_file->getClientOriginalName());
+        $file_paypal = $paypal_file->move(storage_path('paypal'), $paypal_file->getClientOriginalName());
+        if ($file_paypal) {
+            $file_tracking = $tracking_file->move(storage_path('paypal'), $tracking_file->getClientOriginalName());
+            if ($file_tracking) {
+                $path_file_paypal = storage_path('paypal/' . $paypal_file->getClientOriginalName());
+                $path_file_tracking = storage_path('paypal/' . $tracking_file->getClientOriginalName());
                 $data_paypal = readFileExcel($path_file_paypal);
                 $data_tracking = readFileExcel($path_file_tracking);
                 $lst_tracking_number = array();
-                foreach ($data_tracking as $val_tracking)
-                {
+                foreach ($data_tracking as $val_tracking) {
                     $order = trim($val_tracking['order']);
-                    if (array_key_exists($order, $lst_tracking_number))
-                    {
+                    if (array_key_exists($order, $lst_tracking_number)) {
                         //neu chua ton tai
-                        if (strpos($lst_tracking_number[$order], $val_tracking['tracking_number']) !== false)
-                        {
+                        if (strpos($lst_tracking_number[$order], $val_tracking['tracking_number']) !== false) {
                             continue;
                         } else {
-                            if ($lst_tracking_number[$order] == '')
-                            {
+                            if ($lst_tracking_number[$order] == '') {
                                 $lst_tracking_number[$order] = $val_tracking['tracking_number'];
                             } else {
-                                $lst_tracking_number[$order] .= ','.$val_tracking['tracking_number'];
+                                $lst_tracking_number[$order] .= ',' . $val_tracking['tracking_number'];
                             }
                         }
                     } else {
@@ -460,11 +500,9 @@ class Tracking extends Model
                     }
                 }
 
-                foreach ($data_paypal as $k => $paypal)
-                {
-                    $order = str_replace("ZAC-ZAC-","ZAC-",$paypal['invoice_number']);
-                    if (array_key_exists($order, $lst_tracking_number))
-                    {
+                foreach ($data_paypal as $k => $paypal) {
+                    $order = str_replace("ZAC-ZAC-", "ZAC-", $paypal['invoice_number']);
+                    if (array_key_exists($order, $lst_tracking_number)) {
                         $data_paypal[$k]['tracking'] = $lst_tracking_number[$order];
                     } else {
                         $data_paypal[$k]['tracking'] = '';
@@ -472,7 +510,7 @@ class Tracking extends Model
                 }
                 echo "<pre>";
                 print_r($data_paypal);
-                $check = createFileExcel('tracking_full',$data_paypal, storage_path('paypal') ,'paypal');
+                $check = createFileExcel('tracking_full', $data_paypal, storage_path('paypal'), 'paypal');
             }
 
         }

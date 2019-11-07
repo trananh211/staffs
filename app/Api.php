@@ -618,9 +618,10 @@ class Api extends Model
                     $tmp_woo_up_id = array();
                     foreach ($checks as $val) {
                         $tmp[$val->woo_product_id][] = [
-//                            'src' => $val->woo_up_url
-                            'src' => 'https://image.shutterstock.com/image-photo/white-transparent-leaf-on-mirror-260nw-1029171697.jpg'
+                            'src' => $val->woo_up_url
+//                            'src' => 'https://image.shutterstock.com/image-photo/white-transparent-leaf-on-mirror-260nw-1029171697.jpg'
                         ];
+
                         $tmp_woo_up_id[$val->woo_product_id][] = $val->woo_up_id;
                         $stores[$val->store_id] = [
                             'url' => $val->url,
