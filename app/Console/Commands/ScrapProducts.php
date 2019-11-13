@@ -243,6 +243,7 @@ class ScrapProducts extends Command
                         $this->getProductNamestories($dt);
                         break;
                     case 2:
+                    case 3:
                         $this->getProductEsty($dt);
                         break;
                     default:
@@ -439,12 +440,11 @@ class ScrapProducts extends Command
             $variation_id[$dt['template_id']] = $dt['template_id'];
         }
         if (sizeof($data) > 0) {
-            $this->createProductEsty($data, $variation_id);
-//            try {
-//                $this->createProductEsty($data, $variation_id);
-//            } catch (\Exception $e) {
-//                logfile($e->getMessage());
-//            }
+            try {
+                $this->createProductEsty($data, $variation_id);
+            } catch (\Exception $e) {
+                logfile($e->getMessage());
+            }
         }
     }
 
