@@ -185,7 +185,6 @@ class NameStory extends Command
                     $dt = $this->scanCollectionEsty($client, $url, $category_name, $website_id, $template_id, $store_id, $woo_template_id);
                     $data = array_merge($data, $dt);
                     $i++;
-                    break;
                 }
             }
         } else {
