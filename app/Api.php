@@ -729,7 +729,7 @@ class Api extends Model
                 ['template_id', '=', $temps->template_id],
                 ['store_id', '=', $temps->store_id]
             ];
-            $limit = 2;
+            $limit = 20;
             if ($temps->website_id != NULL) // sản phẩm cần xóa ở bản scrap_product
             {
                 $products = \DB::table('scrap_products')
@@ -773,6 +773,7 @@ class Api extends Model
                     logfile('-- [Error] Không thể xóa sản phẩm thuộc template= '.$temps->template_id.' và store: '.$temps->store_id);
                 }
             } else {
+                \DB::table('woo_templates')->where('id',$temps->id)->update([ 'status' => 24 ]);
                 logfile('-- Đã hết sản phẩm để xóa.');
             }
         } else {

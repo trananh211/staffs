@@ -40,6 +40,7 @@ class TestCommand extends Command
     public function handle()
     {
         $controller = new ApiController(); // make sure to import the controller
+//        $controller->autoUploadProduct();
         $controller->autoUploadImage();
     }
 }

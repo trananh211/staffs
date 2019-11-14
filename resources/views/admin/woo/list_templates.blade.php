@@ -23,7 +23,10 @@
                             </thead>
                             <tbody>
                             @if( sizeof($lists) > 0)
-                                <?php $i = 1; ?>
+                                <?php
+                                    $i = 1;
+                                    $deleted = [23,24];
+                                ?>
                             @foreach( $lists as $list)
                             <tr>
                                 <td>{{ $i++ }}</td>
@@ -32,12 +35,20 @@
                                     {!! ($list->website_id != '') ? '<span class="green">Scrap</span>' : '<span class="blue">Up</span>' !!}
                                 </td>
                                 <td>
-                                    {!! ($list->status == 23) ? '<span class="red">Deleting</span>' : '<span class="green">'.$list->status.'</span>'  !!}
+                                    @if (in_array($list->status, $deleted))
+                                        @if($list->status == 23)
+                                            <span class="deep-orange">Deleting</span>
+                                        @elseif ($list->status == 24)
+                                            <span class="red">Deleted</span>
+                                        @endif
+                                    @else
+                                        <span class="green"> {{ $list->status }}</span>
+                                    @endif
                                 </td>
                                 <td>{{ $list->template_id }}</td>
                                 <td>{{ $list->store_name }}</td>
                                 <td>{{ ($list->sup_name != null)? $list->sup_name : 'Chưa có sup' }}</td>
-                                <td>{{ ($list->base_price != null)? '$ '.$list->base_price : 'Chưa đàm phán giá' }}</td>
+                                <td>{{ ($list->base_price != null)? '$ '.$list->base_price : 'Chưa deal giá' }}</td>
                                 <td>
                                     <a class="waves-effect waves-light btn modal-trigger" href="#modal{{$list->id}}">Edit</a>
                                     <!-- Modal Structure -->
@@ -110,7 +121,7 @@
 
                                 </td>
                                 <td>
-                                    @if ($list->status != 230)
+                                    @if (! in_array($list->status, $deleted))
                                     <a onclick="return confirm('Bạn có chắc chắn muốn xóa toàn bộ sản phẩm của Template này?');"
                                        href="{{ url('woo-deleted-all-product/'.$list->id.'&'.(($list->website_id != '') ? 1 : 0 )) }}"
                                        class="waves-effect waves-light btn orange ">

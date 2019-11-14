@@ -1530,27 +1530,43 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 {
                     // Delete all product not create in tool
                     $deleted = \DB::table('woo_product_drivers')->where($where)->where('status', 0)->delete();
-                    $update = \DB::table('woo_product_drivers')->where($where)->where('status', 1)->update(['status' => 23]);
-                    if ($update) {
+                    $deleted = \DB::table('woo_folder_drivers')->where($where)->delete();
+                    $check_exist = \DB::table('woo_product_drivers')->where($where)->count();
+                    if ($check_exist > 0)
+                    {
+                        $update = \DB::table('woo_product_drivers')->where($where)->update(['status' => 23]);
+                        if ($update) {
+                            $alert = 'success';
+                            $message = 'Thành công. Tất cả sản phẩm thuộc template này sẽ được xóa vào thời gian tới.';
+                            \DB::table('woo_templates')->where('id', $woo_template_id)->update(['status' => 23]);
+                        } else {
+                            $message = 'Xảy ra lỗi. Không thể cập nhật sản phẩm đã up lên store vào danh sách phải xóa.';
+                        }
+                    } else {
                         $alert = 'success';
                         $message = 'Thành công. Tất cả sản phẩm thuộc template này sẽ được xóa vào thời gian tới.';
                         \DB::table('woo_templates')->where('id', $woo_template_id)->update(['status' => 23]);
-                    } else {
-                        $message = 'Xảy ra lỗi. Không thể cập nhật sản phẩm đã up lên store vào danh sách phải xóa.';
                     }
                 }
                 else if ($type == 1) // scrap website
                 {
-
                     // Delete all product not create in tool
                     $deleted = \DB::table('scrap_products')->where($where)->where('status', 0)->delete();
-                    $update = \DB::table('scrap_products')->where($where)->where('status', 1)->update(['status' => 23]);
-                    if ($update) {
+                    $check_exist = \DB::table('scrap_products')->where($where)->count();
+                    if ($check_exist > 0)
+                    {
+                        $update = \DB::table('scrap_products')->where($where)->where('status', 1)->update(['status' => 23]);
+                        if ($update) {
+                            $alert = 'success';
+                            $message = 'Thành công. Tất cả sản phẩm thuộc template này sẽ được xóa vào thời gian tới.';
+                            \DB::table('woo_templates')->where('id', $woo_template_id)->update(['status' => 23]);
+                        } else {
+                            $message = 'Xảy ra lỗi. Không thể cập nhật sản phẩm đã up lên store vào danh sách phải xóa.';
+                        }
+                    } else {
                         $alert = 'success';
                         $message = 'Thành công. Tất cả sản phẩm thuộc template này sẽ được xóa vào thời gian tới.';
                         \DB::table('woo_templates')->where('id', $woo_template_id)->update(['status' => 23]);
-                    } else {
-                        $message = 'Xảy ra lỗi. Không thể cập nhật sản phẩm đã up lên store vào danh sách phải xóa.';
                     }
                 }
             } else {

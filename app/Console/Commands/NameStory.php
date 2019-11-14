@@ -20,10 +20,6 @@ class NameStory extends Command
      */
     protected $description = 'Scrape all stores';
 
-    protected $website = [
-        '1' => 'https://namestories.com'
-    ];
-
     /**
      * Create a new command instance.
      *
@@ -91,7 +87,7 @@ class NameStory extends Command
     /*website namestories.com*/
     private function scanNamestories($website_id, $template_id, $store_id, $woo_template_id)
     {
-        $website = $this->website;
+        $website = website();
         $domain = 'https://namestories.com';
         $link = $domain . '/collections/all?page=';
         $page = 1;
