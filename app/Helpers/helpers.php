@@ -7,7 +7,7 @@ function logfile($str)
 {
 //    echo $str."<br>";
     $datetime = Carbon::now('Asia/Ho_Chi_Minh');
-    \Log::info($datetime.'==> '.$str);
+    \Log::info($datetime . '==> ' . $str);
 }
 
 function getMessage($message)
@@ -202,8 +202,8 @@ function showTracking($tracking_number, $status)
             $title = 'EXPIRED';
             break;
     }
-    $str = '<a href="https://t.17track.net/en#nums='.$tracking_number.'" target="_blank" style="color: #555;" class="center ' . $class . '" 
-    title="'.$title.'">' . $icon .'<span>'.$tracking_number . '</span></a>';
+    $str = '<a href="https://t.17track.net/en#nums=' . $tracking_number . '" target="_blank" style="color: #555;" class="center ' . $class . '" 
+    title="' . $title . '">' . $icon . '<span>' . $tracking_number . '</span></a>';
     return $str;
 }
 
@@ -227,16 +227,15 @@ function genThumb($file, $path, $width_new)
     $size = getimagesize($path);
     $width = $size[0];
     $height = $size[1];
-    $height_new = (int) $height/($width/$width_new);
-    $name = env('DIR_THUMB').'thumb_'.date("YmdHis").'_'.$file;
+    $height_new = (int)$height / ($width / $width_new);
+    $name = env('DIR_THUMB') . 'thumb_' . date("YmdHis") . '_' . $file;
     $smallthumbnailpath = public_path($name);
     $return = false;
-    if(\File::copy($path, $smallthumbnailpath)) {
+    if (\File::copy($path, $smallthumbnailpath)) {
         $img = Image::make($smallthumbnailpath)->resize($width_new, $height_new, function ($constraint) {
             $constraint->aspectRatio();
         });
-        if ($img->save($smallthumbnailpath))
-        {
+        if ($img->save($smallthumbnailpath)) {
             $return = $name;
         }
     } else {
@@ -304,8 +303,7 @@ function checkDirExist($name, $path, $parent_path)
     $name = trim($name);
     $return = false;
     $recursive = false; // Get subdirectories also?
-    if ($path == '')
-    {
+    if ($path == '') {
         $check_before = collect(Storage::cloud()->listContents($parent_path, $recursive))
             ->where('type', '=', 'dir')
             ->where('filename', '=', $name)
@@ -328,8 +326,7 @@ function getDirExist($name, $path, $parent_path)
     $name = trim($name);
     $return = false;
     $recursive = false; // Get subdirectories also?
-    if ($path == '')
-    {
+    if ($path == '') {
         $check_before = collect(Storage::cloud()->listContents($parent_path, $recursive))
             ->where('type', '=', 'dir')
             ->where('filename', '=', $name)
@@ -471,8 +468,7 @@ function checkFileExist($filename, $parent_path)
         ->where('type', '=', 'file')
         ->where('name', '=', $filename)
         ->first();
-    if ($check_before)
-    {
+    if ($check_before) {
         $return = true;
     }
     return $return;
@@ -581,6 +577,7 @@ function getIdeaDone()
 {
     return \DB::table('ideas')->where('status', env('STATUS_WORKING_CUSTOMER'))->count();
 }
+
 /*End Ham hien thi thong tin shop*/
 
 /*
@@ -588,8 +585,7 @@ function getIdeaDone()
 function makeFolder($path)
 {
     $result = true;
-    if (!File::exists($path))
-    {
+    if (!File::exists($path)) {
         umask(0);
         $result = File::makeDirectory($path, 0777, true);
     }
@@ -600,8 +596,8 @@ function makeFolder($path)
 function writeFileJson($path_file, $data)
 {
     // Write File
-    $newJsonString = json_encode($data, JSON_PRETTY_PRINT |JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
-    $result = File::put($path_file, stripslashes($newJsonString),'public');
+    $newJsonString = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $result = File::put($path_file, stripslashes($newJsonString), 'public');
     return $result;
 }
 
@@ -617,17 +613,15 @@ function readFileExcel($path_file)
 {
     $return = false;
     $dt = Excel::load($path_file)->get()->toArray();
-    if (sizeof($dt) > 0)
-    {
+    if (sizeof($dt) > 0) {
         $return = $dt;
     }
     return $return;
 }
 
-function createFileExcel($name_file, $data, $path ,$sheet_name = null)
+function createFileExcel($name_file, $data, $path, $sheet_name = null)
 {
-    if ($sheet_name == null)
-    {
+    if ($sheet_name == null) {
         $sheet_name = 'Sheet 1';
     }
     $check = Excel::create($name_file, function ($excel) use ($data, $sheet_name) {
@@ -635,10 +629,28 @@ function createFileExcel($name_file, $data, $path ,$sheet_name = null)
             $sheet->fromArray($data);
         });
     })->store('csv', $path, true);
-    if ($check)
-    {
+    if ($check) {
         return true;
     } else {
         return false;
     }
 }
+
+function website()
+{
+    $website = [
+        '1' => 'https://namestories.com',
+        '2' => 'https://www.etsy.com/shop/GiftedTurtlesUK?ref=l2-shop-info-avatar&listing_id=562544499&section_id=23904787&page',
+        '3' => 'https://www.etsy.com/shop/Printsinspired',
+    ];
+    return $website;
+}
+
+function categories()
+{
+    $categories = [
+        '2' => 'WallArt'
+    ];
+    return $categories;
+}
+

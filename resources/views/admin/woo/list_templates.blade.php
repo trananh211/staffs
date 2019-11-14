@@ -11,24 +11,44 @@
                             <tr>
                                 <th>#</th>
                                 <th data-field="id">Product Name</th>
+                                <th data-field="type">Type</th>
+                                <th data-field="status">Status</th>
                                 <th data-field="price">Product ID</th>
                                 <th data-field="name">Store Name</th>
                                 <th data-field="name">Supplier</th>
                                 <th data-field="name">Base Price</th>
                                 <th>Action</th>
+                                <th>Delete</th>
                             </tr>
                             </thead>
                             <tbody>
                             @if( sizeof($lists) > 0)
-                                <?php $i = 1; ?>
+                                <?php
+                                    $i = 1;
+                                    $deleted = [23,24];
+                                ?>
                             @foreach( $lists as $list)
                             <tr>
                                 <td>{{ $i++ }}</td>
                                 <td>{{ $list->product_name }}</td>
+                                <td>
+                                    {!! ($list->website_id != '') ? '<span class="green">Scrap</span>' : '<span class="blue">Up</span>' !!}
+                                </td>
+                                <td>
+                                    @if (in_array($list->status, $deleted))
+                                        @if($list->status == 23)
+                                            <span class="deep-orange">Deleting</span>
+                                        @elseif ($list->status == 24)
+                                            <span class="red">Deleted</span>
+                                        @endif
+                                    @else
+                                        <span class="green"> {{ $list->status }}</span>
+                                    @endif
+                                </td>
                                 <td>{{ $list->template_id }}</td>
                                 <td>{{ $list->store_name }}</td>
                                 <td>{{ ($list->sup_name != null)? $list->sup_name : 'Chưa có sup' }}</td>
-                                <td>{{ ($list->base_price != null)? '$ '.$list->base_price : 'Chưa đàm phán giá' }}</td>
+                                <td>{{ ($list->base_price != null)? '$ '.$list->base_price : 'Chưa deal giá' }}</td>
                                 <td>
                                     <a class="waves-effect waves-light btn modal-trigger" href="#modal{{$list->id}}">Edit</a>
                                     <!-- Modal Structure -->
@@ -95,15 +115,32 @@
                                     </div>
                                     <a onclick="return confirm('Bạn có chắc chắn muốn cập nhật template này?');"
                                        href="{{ url('woo-update-template/'.$list->id) }}"
-                                       class="waves-effect waves-light btn">
+                                       class="waves-effect waves-light btn green">
                                         Update
+                                    </a>
+
+                                </td>
+                                <td>
+                                    @if (! in_array($list->status, $deleted))
+                                    <a onclick="return confirm('Bạn có chắc chắn muốn xóa toàn bộ sản phẩm của Template này?');"
+                                       href="{{ url('woo-deleted-all-product/'.$list->id.'&'.(($list->website_id != '') ? 1 : 0 )) }}"
+                                       class="waves-effect waves-light btn orange ">
+                                        All Products
+                                    </a>
+                                    @else
+                                        <a href="#" disabled="disabled" class="waves-effect waves-light btn"> All Product</a>
+                                    @endif
+                                    <a onclick="return confirm('Bạn có chắc chắn muốn xóa template này?');"
+                                       href="{{ url('woo-deleted-all-template/'.$list->id) }}"
+                                       class="waves-effect waves-light btn red">
+                                        Template
                                     </a>
                                 </td>
                             </tr>
                             @endforeach
                                 @else
                                 <tr>
-                                    <td colspan="5">
+                                    <td colspan="6">
                                         Hiện tại đang không có template nào
                                     </td>
                                 </tr>

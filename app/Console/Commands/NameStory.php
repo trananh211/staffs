@@ -20,10 +20,6 @@ class NameStory extends Command
      */
     protected $description = 'Scrape all stores';
 
-    protected $website = [
-        '1' => 'https://namestories.com'
-    ];
-
     /**
      * Create a new command instance.
      *
@@ -42,25 +38,33 @@ class NameStory extends Command
     public function handle()
     {
         logfile('========================= [ Bắt đầu cào website ] ===========================');
-        $check = $this->checkWebsite();
-        //Nếu tồn tại website đang cần được scrap
-        if (is_array($check)) {
-            $website_id = $check[0]->website_id;
-            $template_id = $check[0]->template_id;
-            $store_id = $check[0]->store_id;
-            $woo_template_id = $check[0]->id;
-            switch ($website_id) {
-                case 1:
-                    $this->scanNamestories($website_id,$template_id, $store_id, $woo_template_id);
-                    break;
-                default:
-                    $str = "-- Không có website nào cần được cào.";
-                    logfile($str);
-                    echo $str;
+        try {
+            $check = $this->checkWebsite();
+            //Nếu tồn tại website đang cần được scrap
+            if (is_array($check)) {
+                $website_id = $check[0]->website_id;
+                $template_id = $check[0]->template_id;
+                $store_id = $check[0]->store_id;
+                $woo_template_id = $check[0]->id;
+                switch ($website_id) {
+                    case 1:
+                        $this->scanNamestories($website_id, $template_id, $store_id, $woo_template_id);
+                        break;
+                    case 2:
+                    case 3:
+                        $this->scanEsty($website_id, $template_id, $store_id, $woo_template_id);
+                        break;
+                    default:
+                        $str = "-- Không có website nào cần được cào.";
+                        logfile($str);
+                        echo $str;
+                }
+            } else {
+                $str = '-- Không tồn tại website nào cần được scrap dữ liệu.';
+                logfile($str);
             }
-        } else {
-            $str = '-- Khong ton tai website nào đang được scrap';
-            logfile($str);
+        } catch (\Exception $e) {
+            logfile($e->getMessage());
         }
         logfile('========================= [ Kết thúc cào website ] ===========================');
     }
@@ -83,7 +87,7 @@ class NameStory extends Command
     /*website namestories.com*/
     private function scanNamestories($website_id, $template_id, $store_id, $woo_template_id)
     {
-        $website = $this->website;
+        $website = website();
         $domain = 'https://namestories.com';
         $link = $domain . '/collections/all?page=';
         $page = 1;
@@ -102,21 +106,21 @@ class NameStory extends Command
             if ($products > 0) {
                 $crawler->filter('div.collection-grid div.grid__item')
                     ->each(function ($node) use (&$data, &$domain, &$website_id, &$template_id, &$store_id, &$website) {
-                    $link = $domain . trim($node->filter('p a')->attr('href'));
-                    $name = trim($node->filter('p')->text());
-                    $category_name = trim(explode("|", $name)[0]);
-                    $data[] = [
-                        'category_name' => preg_replace('/[^a-z\d]/i', '', sanitizer($category_name)),
-                        'link' => $link,
-                        'website_id' => $website_id,
-                        'website' => $website[$website_id],
-                        'template_id' => $template_id,
-                        'store_id' => $store_id,
-                        'status' => 0,
-                        'created_at' => date("Y-m-d H:i:s"),
-                        'updated_at' => date("Y-m-d H:i:s")
-                    ];
-                });
+                        $link = $domain . trim($node->filter('p a')->attr('href'));
+                        $name = trim($node->filter('p')->text());
+                        $category_name = trim(explode("|", $name)[0]);
+                        $data[] = [
+                            'category_name' => preg_replace('/[^a-z\d]/i', '', sanitizer($category_name)),
+                            'link' => $link,
+                            'website_id' => $website_id,
+                            'website' => $website[$website_id],
+                            'template_id' => $template_id,
+                            'store_id' => $store_id,
+                            'status' => 0,
+                            'created_at' => date("Y-m-d H:i:s"),
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
+                    });
             }
 
             //Phần cuối cùng. Không được chèn thêm ở đây nữa
@@ -126,37 +130,132 @@ class NameStory extends Command
             $page = $next_page;
             $number_link = $crawler->filter('.pagination-links a')->count();
         } while ($next_page > $curent_page);
-        if (sizeof($data) > 0)
-        {
+        if (sizeof($data) > 0) {
             $insert = \DB::table('scrap_products')->insert($data);
-            if ($insert){
-                \DB::table('woo_templates')->where('id',$woo_template_id)->update([
+            if ($insert) {
+                \DB::table('woo_templates')->where('id', $woo_template_id)->update([
                     'status' => 1,
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
-                logfile('Insert thành công dữ liệu '.sizeof($data).' link sản phẩm website namestories.com');
+                logfile('Insert thành công dữ liệu ' . sizeof($data) . ' link sản phẩm website namestories.com');
             }
         }
-//        $this->getProduct($data);
     }
-
-    private function getProduct($data)
-    {
-        $client = new \Goutte\Client();
-        $db = array();
-        foreach ($data as $key => $dt) {
-            $link = $dt['link'];
-            $response = $client->request('GET', $link);
-            $crawler = $response;
-            if ($crawler->filter('ul.product-single__thumbnails')->count() > 0) {
-                $crawler->filter('ul.product-single__thumbnails .grid__item')->each(function ($node) use (&$data, &$key) {
-                    $image = trim($node->filter('a')->attr('href'));
-                    $data[$key]['image'][] = $image;
-                });
-            }
-        }
-        print_r($data);
-    }
-
     /* End website namestories.com */
+
+    /*website esty store*/
+    private function scanEsty($website_id, $template_id, $store_id, $woo_template_id)
+    {
+        //Get categories from esty
+        $website = website();
+        $link = $website[$website_id];
+        $data = array();
+        $client = new \Goutte\Client();
+        $response = $client->request('GET', $link);
+        $crawler = $response;
+
+        // kiem tra xem co ton tai category nao ở shop hay không
+        $categories = ($crawler->filter('div.shop-home-wider-sections ul.list-nav > li')->count() > 0) ?
+            $crawler->filter('div.shop-home-wider-sections ul.list-nav > li')->count() : 0;
+        $ar_category = array();
+        if ($categories > 0) {
+            $crawler->filter('div.shop-home-wider-sections ul.list-nav > li')
+                ->each(function ($node) use (&$ar_category) {
+                    $link = trim($node->filter('a')->attr('href'));
+                    $name = trim($node->filter('a')->text());
+                    $name = preg_replace("/&#?[a-z0-9]+;/i", "", $name);
+                    $count = trim($node->filter('a span.badge')->text());
+                    $name = trim(rtrim(strip_tags($name), $count));
+                    $ar_category[$name] = $link;
+                });
+            if (sizeof($ar_category) > 0) {
+                logfile('-- Phát hiện ' . (sizeof($ar_category) - 1) . ' categories cần được cào.');
+                $i = 1;
+                foreach ($ar_category as $category_name => $link) {
+                    if (strtolower($category_name) === 'all') {
+                        continue;
+                    }
+                    logfile('--- ' . $i . " Category: " . $category_name);
+                    $dt = array();
+                    $url = 'https://www.etsy.com' . $link;
+                    $dt = $this->scanCollectionEsty($client, $url, $category_name, $website_id, $template_id, $store_id, $woo_template_id);
+                    $data = array_merge($data, $dt);
+                    $i++;
+                }
+            }
+        } else {
+            logfile('-- Không tồn tại categories nào ở shop ' . $link);
+        }
+
+        if (sizeof($data) > 0) {
+            $insert = \DB::table('scrap_products')->insert($data);
+            if ($insert) {
+                \DB::table('woo_templates')->where('id', $woo_template_id)->update([
+                    'status' => 1,
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+                logfile('-- Insert thành công dữ liệu ' . sizeof($data) . ' link sản phẩm website '.$link);
+            }
+        }
+    }
+
+    private function scanCollectionEsty($client, $url, $category_name, $website_id, $template_id, $store_id, $woo_template_id)
+    {
+        $page = 1;
+        $data = [];
+        do {
+            $str = '';
+            $str .= '---- Page- ' . $page;
+            $curent_page = $page;
+            $link_collection = $url . "&page=" . $curent_page;
+            $response = $client->request('GET', $link_collection);
+            $str .= $link_collection . " - ";
+            $crawler = $response;
+
+            // kiem tra xem co ton tai product nao ở page hiện tại hay không
+            $products = ($crawler->filter('ul.listing-cards li.v2-listing-card')->count() > 0) ?
+                $crawler->filter('ul.listing-cards li.v2-listing-card')->count() : 0;
+            if ($products > 0) {
+                $crawler->filter('ul.listing-cards li.block-grid-item')
+//                $crawler->filter('ul.listing-cards li.v2-listing-card')
+                    ->each(function ($node) use (&$data, &$category_name, &$website_id, &$template_id, &$store_id, &$url) {
+                        $link = trim($node->filter('a.listing-link')->attr('href'));
+//                        $name = trim($node->filter('div.v2-listing-card__info h2.text-body')->text());
+//                        $key = intval(preg_replace('/[^0-9.]/','',$link));
+                        preg_match_all('!\d+!', $link, $ar_number);
+                        $key = implode($ar_number[0]);
+                        $data[] = [
+                            'category_name' => preg_replace('/[^a-z\d]/i', '-', sanitizer($category_name)),
+                            'link' => $link,
+                            'website_id' => $website_id,
+                            'website' => $url,
+                            'template_id' => $template_id,
+                            'store_id' => $store_id,
+                            'status' => 0,
+                            'created_at' => date("Y-m-d H:i:s"),
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
+                    });
+                $str .= ' - Product ' . sizeof($data);
+                logfile($str);
+            } else {
+                logfile('---- Không có product nào ở trang này. Bỏ qua');
+            }
+            //Phần cuối cùng. Không được chèn thêm ở đây nữa
+            // kiểm tra xem đây có phải là 1 page hay không
+            $one_page = $crawler->filter('ul.wt-action-group')->count();
+            if ($one_page > 0) {
+                // kiểm tra xem đây có phải là trang cuối cùng hay không
+                $check = $crawler->filter('.wt-action-group__item-container:nth-last-child(1) > a.wt-is-disabled')->count();
+                if ($check == 0) {
+                    $next_page = $crawler->filter('.wt-action-group__item-container:nth-last-child(1) > a')->attr('data-page');
+                    $page = $next_page;
+                }
+            } else {
+                $next_page = 0;
+            }
+        } while ($next_page > $curent_page);
+        return $data;
+    }
+    /*End website esty store*/
 }
