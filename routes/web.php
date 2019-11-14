@@ -94,6 +94,7 @@ Route::middleware('auth')->group(function () {
     Route::post('js-check-variation-exist', 'WooController@ajaxCheckVariationExist');
     Route::get('scrap-create-template','WooController@viewFromCreateTemplate');
     Route::post('scrap-save-template','ApiController@scrapSaveTemplate');
+    Route::get('woo-deleted-all-template/{woo_template_id}','WooController@deleteAllTemplate');
     /*End QC + Admin*/
 
     /*Staff*/

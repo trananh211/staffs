@@ -320,7 +320,7 @@ class Working extends Model
                                         'updated_at' => date("Y-m-d H:i:s")
                                     ];
                                     $message .= getSuccessMessage('File ' . $f . ' tải lên thành công');
-                                    $img .= thumb_c('/'.$thumb, 50, $f);
+                                    $img .= thumb_c('/' . $thumb, 50, $f);
                                 } else {
                                     $message .= getErrorMessage('File ' . $f . ' không thể tải lên lúc này. Mời thử lại');
                                 }
@@ -1170,7 +1170,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             ->select('id', 'name', 'url', 'consumer_key', 'consumer_secret')
             ->get()->toArray();
         return view('/admin/scrap/view_create_template')
-            ->with(compact('data', 'stores','lst_web'));
+            ->with(compact('data', 'stores', 'lst_web', '$lists_template'));
     }
     /*End Scrap web*/
 
@@ -1458,6 +1458,62 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         return redirect('woo-supplier')->with($alert, $message);
     }
 
+    public function deleteAllTemplate($woo_template_id)
+    {
+        try {
+            $alert = 'error';
+            $exists = \DB::table('woo_templates')
+                ->select('template_id', 'store_id', 'template_path')
+                ->where('id', $woo_template_id)
+                ->first();
+            if ($exists == null) {
+                $message = 'Không tồn tại Template này trên hệ thống. Mời bạn thử lại.';
+            } else {
+                $files_local = \DB::table('woo_variations')
+                    ->select('id', 'variation_path')
+                    ->where([
+                        ['woo_template_id', '=', $woo_template_id],
+                        ['template_id', '=', $exists->template_id],
+                        ['store_id', '=', $exists->store_id]
+                    ])
+                    ->get()->toArray();
+                $action = true;
+                $variation_id = array();
+                foreach ($files_local as $file) {
+                    $file_path = $file->variation_path;
+                    if (\File::exists($file_path)) {
+                        if (!\File::delete($file_path)) {
+                            $action = false;
+                        }
+                    }
+                    $variation_id[] = $file->id;
+                }
+                $template_path = $exists->template_path;
+                if (\File::exists($template_path)) {
+                    if (! \File::delete($template_path) ) $action = false;
+                    if (! \File::deleteDirectory(dirname($template_path))) $action = false;
+                }
+                $result = \DB::table('woo_variations')->whereIn('id', $variation_id)->delete();
+                $r = \DB::table('woo_templates')->where('id', $woo_template_id)->delete();
+                if ($result && $r) {
+                    $alert = 'success';
+                    $message = 'Xóa trong database thành công.';
+                    if (!$action) {
+                        $message .= ' Nhưng không thể xóa hết file local. Mời bạn xóa tay';
+                    }
+                } else {
+                    $message = ' Xảy ra lỗi không thể xóa supplier. Mời bạn thử lại sau';
+                }
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+            logfile($e->getMessage());
+            echo $e->getMessage();
+        }
+        return redirect('woo-get-template')->with($alert, $message);
+    }
+
     public function ajaxPutConvertVariation($request)
     {
         try {
@@ -1484,9 +1540,8 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     if ($variation_change_id) {
                         $json_data = $rq['json_data'];
                         $tmp_variation_data = explode("\n", $json_data);
-                        if (sizeof($tmp_variation_data) > 0)
-                        {
-                            foreach ($tmp_variation_data as $variation_data){
+                        if (sizeof($tmp_variation_data) > 0) {
+                            foreach ($tmp_variation_data as $variation_data) {
                                 if (trim($variation_data) == '') {
                                     continue;
                                 }
