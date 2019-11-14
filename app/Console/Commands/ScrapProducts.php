@@ -285,7 +285,6 @@ class ScrapProducts extends Command
                     ->each(function ($node) use (&$data, &$key, &$images) {
                         $img = trim($node->filter('a')->attr('href'));
                         $images[] = 'https:' . $img;
-                        $data[$key]['images'][]['src'] = 'https:' . $img;
                     });
             }
             $variation_id[$dt['template_id']] = $dt['template_id'];

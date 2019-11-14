@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Http\Controllers\TrackingController;
+use App\Http\Controllers\ApiController;
 use Illuminate\Console\Command;
 
 class TestCommand extends Command
@@ -38,7 +39,7 @@ class TestCommand extends Command
      */
     public function handle()
     {
-        $controller = new TrackingController(); // make sure to import the controller
-        $controller->getInfoTracking();
+        $controller = new ApiController(); // make sure to import the controller
+        $controller->autoUploadImage();
     }
 }

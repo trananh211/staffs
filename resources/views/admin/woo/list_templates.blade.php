@@ -11,7 +11,8 @@
                             <tr>
                                 <th>#</th>
                                 <th data-field="id">Product Name</th>
-                                <th data-field="id">Type</th>
+                                <th data-field="type">Type</th>
+                                <th data-field="status">Status</th>
                                 <th data-field="price">Product ID</th>
                                 <th data-field="name">Store Name</th>
                                 <th data-field="name">Supplier</th>
@@ -28,7 +29,10 @@
                                 <td>{{ $i++ }}</td>
                                 <td>{{ $list->product_name }}</td>
                                 <td>
-                                    {!!  ($list->website_id != '') ? '<span class="green">Scrap</span>' : '<span class="blue">Up</span>' !!}
+                                    {!! ($list->website_id != '') ? '<span class="green">Scrap</span>' : '<span class="blue">Up</span>' !!}
+                                </td>
+                                <td>
+                                    {!! ($list->status == 23) ? '<span class="red">Deleting</span>' : '<span class="green">'.$list->status.'</span>'  !!}
                                 </td>
                                 <td>{{ $list->template_id }}</td>
                                 <td>{{ $list->store_name }}</td>
@@ -106,11 +110,15 @@
 
                                 </td>
                                 <td>
+                                    @if ($list->status != 230)
                                     <a onclick="return confirm('Bạn có chắc chắn muốn xóa toàn bộ sản phẩm của Template này?');"
-                                       href="{{ url('woo-deleted-all-product/'.$list->id) }}"
+                                       href="{{ url('woo-deleted-all-product/'.$list->id.'&'.(($list->website_id != '') ? 1 : 0 )) }}"
                                        class="waves-effect waves-light btn orange ">
                                         All Products
                                     </a>
+                                    @else
+                                        <a href="#" disabled="disabled" class="waves-effect waves-light btn"> All Product</a>
+                                    @endif
                                     <a onclick="return confirm('Bạn có chắc chắn muốn xóa template này?');"
                                        href="{{ url('woo-deleted-all-template/'.$list->id) }}"
                                        class="waves-effect waves-light btn red">

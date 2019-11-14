@@ -344,6 +344,12 @@ class WooController extends Controller
         return $work->deleteAllTemplate($template_id);
     }
 
+    public function deleteAllProductTemplate($woo_template_id, $type)
+    {
+        $work = new Working();
+        return $work->deleteAllProductTemplate($woo_template_id, $type);
+    }
+
     public function getListTemplate()
     {
         $lists = \DB::table('woo_templates as w_temp')
@@ -351,7 +357,7 @@ class WooController extends Controller
             ->leftjoin('suppliers as sup', 'w_temp.supplier_id', '=', 'sup.id')
             ->select(
                 'w_temp.id', 'w_temp.product_name', 'w_temp.supplier_id', 'w_temp.store_id', 'w_temp.template_id',
-                'w_temp.base_price', 'w_temp.variation_change_id', 'w_temp.website_id',
+                'w_temp.base_price', 'w_temp.variation_change_id', 'w_temp.website_id', 'w_temp.status',
                 'woo_infos.name as store_name',
                 'sup.name as sup_name'
             )

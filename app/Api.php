@@ -497,8 +497,7 @@ class Api extends Model
         try {
             $rq = $request->all();
             $template_id = $rq['id_product'];
-            if($scrap == 1)
-            {
+            if ($scrap == 1) {
                 $website_id = $rq['website_id'];
             } else {
                 $website_id = null;
@@ -572,9 +571,8 @@ class Api extends Model
                 }
             }
             $data = array();
-            if ($scrap != null)
-            {
-                return redirect('scrap-create-template')->with('success','Connect với template thành công');
+            if ($scrap != null) {
+                return redirect('scrap-create-template')->with('success', 'Connect với template thành công');
             } else {
                 return view("/admin/woo/save_path_template", compact('data', "template_data", 'rq'));
             }
@@ -709,11 +707,76 @@ class Api extends Model
                     logfile('-- [END] Hoàn tất tiến trình upload ảnh.');
                 } else {
                     logfile('-- [END] Đã hết ảnh để tải lên woocommerce. Kết thúc.');
+
                 }
             }
         } catch (\Exception $e) {
             logfile($e->getMessage());
             return $e->getMessage();
+        }
+        logfile('-- Chuyển sang xóa sản phẩm');
+        $this->deleteProductUploaded();
+    }
+
+    /*Xóa product*/
+    private function deleteProductUploaded()
+    {
+        echo "<pre>";
+        $temps = \DB::table('woo_templates')->select('id','template_id','store_id','website_id')->where('status',23)->first();
+        if ($temps != NULL)
+        {
+            $where = [
+                ['template_id', '=', $temps->template_id],
+                ['store_id', '=', $temps->store_id]
+            ];
+            $limit = 2;
+            if ($temps->website_id != NULL) // sản phẩm cần xóa ở bản scrap_product
+            {
+                $products = \DB::table('scrap_products')
+                    ->select('id','woo_product_id')
+                    ->where($where)
+                    ->limit($limit)
+                    ->get()->toArray();
+            } else { // sản phẩm cần xóa ở bảng woo_product_drivers
+                $products = \DB::table('woo_product_drivers')
+                    ->select('id','woo_product_id')
+                    ->where($where)
+                    ->limit($limit)
+                    ->get()->toArray();
+            }
+            $woo_infos = \DB::table('woo_infos as woo_info')
+                ->select('woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret')
+                ->where('id',$temps->store_id)->first();
+            if (sizeof($products) > 0)
+            {
+                $delete = array();
+                $update_deleted = array();
+                foreach ($products as $value)
+                {
+                    $update_deleted[] = $value->id;
+                    $delete[] = $value->woo_product_id;
+                }
+                $data['delete'] = $delete;
+                //Kết nối với woocommerce
+                $woocommerce = $this->getConnectStore($woo_infos->url, $woo_infos->consumer_key, $woo_infos->consumer_secret);
+                $result_delete = $woocommerce->post('products/batch', $data);
+                if ($result_delete)
+                {
+                    if ($temps->website_id != NULL) // sản phẩm cần xóa ở bản scrap_product
+                    {
+                        \DB::table('scrap_products')->whereIn('id',$update_deleted)->delete();
+                    } else { // sản phẩm cần xóa ở bảng woo_product_drivers
+                        \DB::table('woo_product_drivers')->whereIn('id',$update_deleted)->delete();
+                    }
+                    logfile('-- [Success] Đã xóa '.sizeof($delete).' sản phẩm thành công.');
+                } else {
+                    logfile('-- [Error] Không thể xóa sản phẩm thuộc template= '.$temps->template_id.' và store: '.$temps->store_id);
+                }
+            } else {
+                logfile('-- Đã hết sản phẩm để xóa.');
+            }
+        } else {
+            logfile('-- [End] Đã hết template để xóa.');
         }
     }
 

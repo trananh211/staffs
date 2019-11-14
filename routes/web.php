@@ -95,6 +95,7 @@ Route::middleware('auth')->group(function () {
     Route::get('scrap-create-template','WooController@viewFromCreateTemplate');
     Route::post('scrap-save-template','ApiController@scrapSaveTemplate');
     Route::get('woo-deleted-all-template/{woo_template_id}','WooController@deleteAllTemplate');
+    Route::get('woo-deleted-all-product/{woo_template_id}&{type}','WooController@deleteAllProductTemplate');
     /*End QC + Admin*/
 
     /*Staff*/

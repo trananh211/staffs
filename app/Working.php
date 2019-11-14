@@ -1514,6 +1514,58 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         return redirect('woo-get-template')->with($alert, $message);
     }
 
+    public function deleteAllProductTemplate($woo_template_id, $type)
+    {
+        try {
+            $alert = 'error';
+            $message = '';
+            $exists = \DB::table('woo_templates')
+                ->select('id', 'template_id', 'store_id')->where('id', $woo_template_id)->first();
+            if ($exists != NULL) {
+                $where = [
+                    ['template_id', '=', $exists->template_id],
+                    ['store_id', '=', $exists->store_id]
+                ];
+                if ($type == 0) //up driver
+                {
+                    // Delete all product not create in tool
+                    $deleted = \DB::table('woo_product_drivers')->where($where)->where('status', 0)->delete();
+                    $update = \DB::table('woo_product_drivers')->where($where)->where('status', 1)->update(['status' => 23]);
+                    if ($update) {
+                        $alert = 'success';
+                        $message = 'Thành công. Tất cả sản phẩm thuộc template này sẽ được xóa vào thời gian tới.';
+                        \DB::table('woo_templates')->where('id', $woo_template_id)->update(['status' => 23]);
+                    } else {
+                        $message = 'Xảy ra lỗi. Không thể cập nhật sản phẩm đã up lên store vào danh sách phải xóa.';
+                    }
+                }
+                else if ($type == 1) // scrap website
+                {
+
+                    // Delete all product not create in tool
+                    $deleted = \DB::table('scrap_products')->where($where)->where('status', 0)->delete();
+                    $update = \DB::table('scrap_products')->where($where)->where('status', 1)->update(['status' => 23]);
+                    if ($update) {
+                        $alert = 'success';
+                        $message = 'Thành công. Tất cả sản phẩm thuộc template này sẽ được xóa vào thời gian tới.';
+                        \DB::table('woo_templates')->where('id', $woo_template_id)->update(['status' => 23]);
+                    } else {
+                        $message = 'Xảy ra lỗi. Không thể cập nhật sản phẩm đã up lên store vào danh sách phải xóa.';
+                    }
+                }
+            } else {
+                $alert = 'error';
+                $message = ' Xảy ra lỗi không thể xóa sản phẩm. Mời bạn thử lại sau';
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+            logfile($e->getMessage());
+            echo $e->getMessage();
+        }
+        return redirect('woo-get-template')->with($alert, $message);
+    }
+
     public function ajaxPutConvertVariation($request)
     {
         try {
