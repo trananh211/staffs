@@ -707,21 +707,20 @@ class Api extends Model
                     logfile('-- [END] Hoàn tất tiến trình upload ảnh.');
                 } else {
                     logfile('-- [END] Đã hết ảnh để tải lên woocommerce. Kết thúc.');
-
+                    logfile('-- Chuyển sang xóa sản phẩm');
+                    $this->deleteProductUploaded();
                 }
             }
         } catch (\Exception $e) {
             logfile($e->getMessage());
             return $e->getMessage();
         }
-        logfile('-- Chuyển sang xóa sản phẩm');
-        $this->deleteProductUploaded();
+
     }
 
     /*Xóa product*/
     private function deleteProductUploaded()
     {
-        echo "<pre>";
         $temps = \DB::table('woo_templates')->select('id','template_id','store_id','website_id')->where('status',23)->first();
         if ($temps != NULL)
         {
@@ -729,7 +728,7 @@ class Api extends Model
                 ['template_id', '=', $temps->template_id],
                 ['store_id', '=', $temps->store_id]
             ];
-            $limit = 20;
+            $limit = 15;
             if ($temps->website_id != NULL) // sản phẩm cần xóa ở bản scrap_product
             {
                 $products = \DB::table('scrap_products')
