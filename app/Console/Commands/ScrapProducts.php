@@ -364,7 +364,6 @@ class ScrapProducts extends Command
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
             // tìm image và gán vào
-            $i = 0;
             $prd_image = array();
             $key_variation = $val['template_id'] . '_' . $val['store_id'];
             foreach ($variation_store[$key_variation] as $variation_path) {
@@ -379,9 +378,7 @@ class ScrapProducts extends Command
                         break;
                     }
                 }
-                if ($i < 2) {
-                    $prd_image[]['src'] = $link_image;
-                }
+                $prd_image[]['src'] = $link_image;
                 $variation_data = array(
                     'price' => $variation_json['price'],
                     'regular_price' => $variation_json['regular_price'],
@@ -396,12 +393,22 @@ class ScrapProducts extends Command
                 );
                 $re = $woocommerce->post('products/' . $woo_product_id . '/variations', $variation_data);
                 $str = ('-- Đang cập nhật variation ' . $color_slug . ' của ' . $woo_product_id);
+            }
+            $key_rand = array_rand($prd_image, 2);
+            $i = 0;
+            $update_img = array();
+            foreach ($prd_image as $v)
+            {
+                if (sizeof($update_img) >= 2) break;
+                if (in_array($i,$key_rand)){
+                    $update_img[] = $v;
+                }
                 $i++;
             }
             $tmp = array(
                 'id' => $woo_product_id,
                 'status' => 'publish',
-                'images' => $prd_image,
+                'images' => $update_img,
                 'date_created' => date("Y-m-d H:i:s", strtotime(" -3 days"))
             );
             $result = $woocommerce->put('products/' . $woo_product_id, $tmp);
