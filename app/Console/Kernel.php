@@ -38,7 +38,7 @@ class Kernel extends ConsoleKernel
         /*Upload file image lên thư mục fulfill*/
         $schedule->call('App\Http\Controllers\GoogleController@uploadFileDriver')->everyFiveMinutes()
             ->between('1:00', '23:00');
-        //$schedule->call('App\Http\Controllers\ApiController@checkPaymentAgain')->hourlyAt(17);
+//        $schedule->call('App\Http\Controllers\ApiController@checkPaymentAgain')->hourlyAt(17);
         /*Tracking API*/
 //        $schedule->call('App\Http\Controllers\TrackingController@getFileTracking')->hourlyAt(13);
 //        $schedule->call('App\Http\Controllers\TrackingController@getInfoTracking')->hourlyAt(33);
@@ -49,7 +49,7 @@ class Kernel extends ConsoleKernel
 
         /** Cao san pham*/
         $schedule->command('scan:website')->dailyAt('22:37');
-        $schedule->command('scrap:product')->everyFiveMinutes()->between('0:27', '6:37');
+        $schedule->command('scrap:product')->everyFiveMinutes()->between('0:27', '23:37');
     }
 
     /**
@@ -62,20 +62,5 @@ class Kernel extends ConsoleKernel
         $this->load(__DIR__.'/Commands');
 
         require base_path('routes/console.php');
-    }
-
-    public function everyTwoMinutes()
-    {
-        return $this->cron('*/2 * * * * *');
-    }
-
-    public function everyThreeMinutes()
-    {
-        return $this->cron('*/3 * * * * *');
-    }
-
-    public function everyFourMinutes()
-    {
-        return $this->cron('*/4 * * * * *');
     }
 }

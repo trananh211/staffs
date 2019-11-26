@@ -16,6 +16,11 @@
                         </thead>
                         <tbody>
                         <tr>
+                            <td>First</td>
+                            <td><a href="{{ url('/see-log/') }}">{{ url('/see-log/') }}</a></td>
+                            <td>See Log</td>
+                        </tr>
+                        <tr>
                             <td>1.1</td>
                             <td>{{ url('/api/new-order/') }} <br> Test Local:  {{ url('/api/test-new-order/1') }}</td>
                             <td>Get new order from Woocommerce Store</td>
@@ -88,12 +93,12 @@
                             <td><a href="{{ url('/api/paypal-id/') }}">{{ url('/api/paypal-id/') }}</a></td>
                             <td>Paypay ID</td>
                         </tr>
-
                         <tr>
-                            <td>End</td>
-                            <td><a href="{{ url('/see-log/') }}">{{ url('/see-log/') }}</a></td>
-                            <td>See Log</td>
+                            <td>8</td>
+                            <td><a href="{{ url('/deleted-categories/') }}">{{ url('/deleted-categories/') }}</a></td>
+                            <td>Xóa Categories trong woocomerce</td>
                         </tr>
+
                         </tbody>
                     </table>
                 </div>

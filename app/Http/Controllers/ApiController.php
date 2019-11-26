@@ -152,6 +152,12 @@ class ApiController extends Controller
         }
     }
 
+    public function deletedCategories()
+    {
+        $api = new Api();
+        return $api->deletedCategories();
+    }
+
     /*Scrap web*/
     public function scrapSaveTemplate(Request $request)
     {

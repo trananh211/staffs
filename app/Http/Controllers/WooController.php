@@ -350,6 +350,18 @@ class WooController extends Controller
         return $work->deleteAllProductTemplate($woo_template_id, $type);
     }
 
+    public function deletedCategories()
+    {
+        $work = new Working();
+        return $work->deletedCategories();
+    }
+
+    public function actionDeletedCategories(Request $request)
+    {
+        $work = new Working();
+        return $work->actionDeletedCategories($request);
+    }
+
     public function getListTemplate()
     {
         $lists = \DB::table('woo_templates as w_temp')

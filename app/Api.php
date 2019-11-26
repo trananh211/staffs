@@ -718,12 +718,59 @@ class Api extends Model
 
     }
 
+    /*Xóa categories*/
+    public function deletedCategories()
+    {
+        \DB::beginTransaction();
+        try {
+            $lists = \DB::table('woo_categories as woc')
+                ->join('woo_infos', 'woc.store_id', '=', 'woo_infos.id')
+                ->select(
+                    'woc.id', 'woc.woo_category_id', 'woc.store_id',
+                    'woo_infos.url', 'woo_infos.consumer_key', 'woo_infos.consumer_secret'
+                )
+                ->where('woc.status', 23)
+                ->limit(100)
+                ->get()->toArray();
+            logfile('-- Đang xóa ' . sizeof($lists) . ' categories');
+            if (sizeof($lists) > 0) {
+                $data = array();
+                foreach ($lists as $list) {
+                    $data[$list->store_id]['url'] = $list->url;
+                    $data[$list->store_id]['consumer_key'] = $list->consumer_key;
+                    $data[$list->store_id]['consumer_secret'] = $list->consumer_secret;
+                    $data[$list->store_id]['data'][] = $list->woo_category_id;
+                    $data[$list->store_id]['data_update'][] = $list->id;
+                }
+                foreach ($data as $db) {
+                    $deleted['delete'] = $db['data'];
+                    //Kết nối với woocommerce
+                    $woocommerce = $this->getConnectStore($db['url'], $db['consumer_key'], $db['consumer_secret']);
+                    $result_delete = $woocommerce->post('products/categories/batch', $deleted);
+                    if ($result_delete) {
+                        \DB::table('woo_categories')->whereIn('id', $db['data_update'])->update(['status' => 24]);
+                    }
+                }
+            } else {
+                $str = '-- Đã hết category để xóa.';
+                echo $str;
+                logfile($str);
+            }
+            $return = true;
+            $save = "Save to database successfully";
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $return = false;
+            $save = "[Error] Save to database error.";
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+    }
+
     /*Xóa product*/
     private function deleteProductUploaded()
     {
-        $temps = \DB::table('woo_templates')->select('id','template_id','store_id','website_id')->where('status',23)->first();
-        if ($temps != NULL)
-        {
+        $temps = \DB::table('woo_templates')->select('id', 'template_id', 'store_id', 'website_id')->where('status', 23)->first();
+        if ($temps != NULL) {
             $where = [
                 ['template_id', '=', $temps->template_id],
                 ['store_id', '=', $temps->store_id]
@@ -732,26 +779,24 @@ class Api extends Model
             if ($temps->website_id != NULL) // sản phẩm cần xóa ở bản scrap_product
             {
                 $products = \DB::table('scrap_products')
-                    ->select('id','woo_product_id')
+                    ->select('id', 'woo_product_id')
                     ->where($where)
                     ->limit($limit)
                     ->get()->toArray();
             } else { // sản phẩm cần xóa ở bảng woo_product_drivers
                 $products = \DB::table('woo_product_drivers')
-                    ->select('id','woo_product_id')
+                    ->select('id', 'woo_product_id')
                     ->where($where)
                     ->limit($limit)
                     ->get()->toArray();
             }
             $woo_infos = \DB::table('woo_infos as woo_info')
                 ->select('woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret')
-                ->where('id',$temps->store_id)->first();
-            if (sizeof($products) > 0)
-            {
+                ->where('id', $temps->store_id)->first();
+            if (sizeof($products) > 0) {
                 $delete = array();
                 $update_deleted = array();
-                foreach ($products as $value)
-                {
+                foreach ($products as $value) {
                     $update_deleted[] = $value->id;
                     $delete[] = $value->woo_product_id;
                 }
@@ -759,20 +804,19 @@ class Api extends Model
                 //Kết nối với woocommerce
                 $woocommerce = $this->getConnectStore($woo_infos->url, $woo_infos->consumer_key, $woo_infos->consumer_secret);
                 $result_delete = $woocommerce->post('products/batch', $data);
-                if ($result_delete)
-                {
+                if ($result_delete) {
                     if ($temps->website_id != NULL) // sản phẩm cần xóa ở bản scrap_product
                     {
-                        \DB::table('scrap_products')->whereIn('id',$update_deleted)->delete();
+                        \DB::table('scrap_products')->whereIn('id', $update_deleted)->delete();
                     } else { // sản phẩm cần xóa ở bảng woo_product_drivers
-                        \DB::table('woo_product_drivers')->whereIn('id',$update_deleted)->delete();
+                        \DB::table('woo_product_drivers')->whereIn('id', $update_deleted)->delete();
                     }
-                    logfile('-- [Success] Đã xóa '.sizeof($delete).' sản phẩm thành công.');
+                    logfile('-- [Success] Đã xóa ' . sizeof($delete) . ' sản phẩm thành công.');
                 } else {
-                    logfile('-- [Error] Không thể xóa sản phẩm thuộc template= '.$temps->template_id.' và store: '.$temps->store_id);
+                    logfile('-- [Error] Không thể xóa sản phẩm thuộc template= ' . $temps->template_id . ' và store: ' . $temps->store_id);
                 }
             } else {
-                \DB::table('woo_templates')->where('id',$temps->id)->update([ 'status' => 24 ]);
+                \DB::table('woo_templates')->where('id', $temps->id)->update(['status' => 24]);
                 logfile('-- Đã hết sản phẩm để xóa.');
             }
         } else {

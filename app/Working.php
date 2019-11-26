@@ -1672,6 +1672,34 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         return redirect('woo-list-convert-variation')->with($alert, $message);
     }
 
+    public function deletedCategories()
+    {
+        $data = infoShop();
+        $stores = \DB::table('woo_infos')->select('id','name')->get()->toArray();
+        return view('addon/deleted_categories', compact('stores',  'data'));
+    }
+
+    public function actionDeletedCategories($request)
+    {
+        try {
+            $rq = $request->all();
+            $store_id = $rq['store_id'];
+            \DB::table('woo_categories')
+                ->where('store_id', $store_id)
+                ->where('status', '<', 2)
+                ->update(['status' => 23]);
+            $alert = 'success';
+            $message = 'Lệnh xóa đã được kích hoạt thành công. Hệ thống sẽ xóa toàn bộ categories trong thời gian tới.';
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $alert = 'error';
+            logfile($e->getMessage());
+            $message = 'Lệnh xóa thất bại. Mời bạn thử lại' . $e->getMessage();
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return redirect('deleted-categories')->with($alert, $message);
+    }
+
     public function ajaxCheckVariationExist($request)
     {
         $uid = $this->checkAuth();
