@@ -5,9 +5,9 @@ use Illuminate\Support\Facades\Log;
 
 function logfile($str)
 {
-//    echo $str."<br>";
     $datetime = Carbon::now('Asia/Ho_Chi_Minh');
     \Log::info($datetime . '==> ' . $str);
+//    echo $str."\n";
 }
 
 function getMessage($message)
@@ -642,6 +642,8 @@ function website()
         '1' => 'https://namestories.com',
         '2' => 'https://www.etsy.com/shop/GiftedTurtlesUK?ref=l2-shop-info-avatar&listing_id=562544499&section_id=23904787&page',
         '3' => 'https://www.etsy.com/shop/Printsinspired',
+        '4' => 'https://percre.com/?s=low+top&post_type=product',
+        '5' => 'https://percre.com/?s=high+top&post_type=product'
     ];
     return $website;
 }
@@ -649,7 +651,10 @@ function website()
 function categories()
 {
     $categories = [
-        '2' => 'WallArt'
+        '2' => 'Wall Art',
+        '3' => 'Wall Art',
+        '4' => 'Shoes',
+        '5' => 'Shoes',
     ];
     return $categories;
 }
