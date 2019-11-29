@@ -730,7 +730,7 @@ class Api extends Model
                     'woo_infos.url', 'woo_infos.consumer_key', 'woo_infos.consumer_secret'
                 )
                 ->where('woc.status', 23)
-                ->limit(100)
+                ->limit(50)
                 ->get()->toArray();
             logfile('-- Đang xóa ' . sizeof($lists) . ' categories');
             if (sizeof($lists) > 0) {
