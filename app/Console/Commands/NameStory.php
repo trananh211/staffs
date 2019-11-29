@@ -54,10 +54,13 @@ class NameStory extends Command
                     case 3:
                         $this->scanEsty($website_id, $template_id, $store_id, $woo_template_id);
                         break;
+                    case 4:
+                    case 5:
+                        $this->scanPercre($website_id, $template_id, $store_id, $woo_template_id);
+                        break;
                     default:
                         $str = "-- Không có website nào cần được cào.";
                         logfile($str);
-                        echo $str;
                 }
             } else {
                 $str = '-- Không tồn tại website nào cần được scrap dữ liệu.';
@@ -142,6 +145,75 @@ class NameStory extends Command
         }
     }
     /* End website namestories.com */
+
+    /*website percre*/
+    private function scanPercre($website_id, $template_id, $store_id, $woo_template_id)
+    {
+        $website = website();
+        $domain = $website[$website_id];
+        $tmp_link = explode('https://percre.com/',$domain);
+        $link = 'https://percre.com/page/';
+        $page = 1;
+        $data = array();
+        do {
+            echo $page . '-page' . "\n";
+            $url = $link . $page .'/'.$tmp_link[1];
+            $curent_page = $page;
+            $client = new \Goutte\Client();
+            $response = $client->request('GET', $url);
+            $crawler = $response;
+
+            // kiem tra xem co ton tai product nao ở page hiện tại hay không
+            $products = ($crawler->filter('ul.products li.wvs-pro-product')->count() > 0) ?
+                $crawler->filter('ul.products li.wvs-pro-product')->count() : 0;
+            if ($products > 0) {
+                $crawler->filter('ul.products li.wvs-pro-product')
+                    ->each(function ($node) use (&$data, &$website_id, &$template_id, &$store_id, &$url) {
+                        $link = trim($node->filter('a')->attr('href'));
+                        $name = trim($node->filter('h2.woocommerce-loop-product__title')->text());
+                        //nếu tồn tại chữ shoes trong title thì mới cào. không thì bỏ qua
+                        if (strpos(strtolower($name),'shoes') !== false)
+                        {
+                            $category_name = 'Shoes';
+                            $data[] = [
+                                'category_name' => $category_name,
+                                'link' => $link,
+                                'website_id' => $website_id,
+                                'website' => $url,
+                                'template_id' => $template_id,
+                                'store_id' => $store_id,
+                                'status' => 0,
+                                'created_at' => date("Y-m-d H:i:s"),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                        }
+                    });
+            }
+
+            //Phần cuối cùng. Không được chèn thêm ở đây nữa
+            // kiểm tra xem đây có phải là trang cuối cùng hay không
+            $check = $crawler->filter('ul.page-numbers li:nth-last-child(1) a')->count();
+            if ($check != 0)
+            {
+                $next_page_link = $crawler->filter('ul.page-numbers li:nth-last-child(1) a')->attr('href');
+                $next_page = preg_replace("/[^0-9]/", '', $next_page_link);
+                $page = $next_page;
+            } else {
+                $next_page = 0;
+            }
+        } while ($next_page > $curent_page);
+        if (sizeof($data) > 0) {
+            $insert = \DB::table('scrap_products')->insert($data);
+            if ($insert) {
+                \DB::table('woo_templates')->where('id', $woo_template_id)->update([
+                    'status' => 1,
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+                logfile('Insert thành công dữ liệu ' . sizeof($data) . ' link sản phẩm website namestories.com');
+            }
+        }
+    }
+    /*End website percre*/
 
     /*website esty store*/
     private function scanEsty($website_id, $template_id, $store_id, $woo_template_id)
