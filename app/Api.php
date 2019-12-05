@@ -530,6 +530,7 @@ class Api extends Model
                 makeFolder(($path));
                 // Write File
                 $template_path = $path . 'temp_' . $template_id . '.json';
+                $template_data['meta_data'] = [];
                 $result = writeFileJson($template_path, $template_data);
                 chmod($template_path, 777);
                 // Nếu tạo file json thành công. Luu thông tin template vao database
