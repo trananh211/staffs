@@ -410,7 +410,7 @@ class NameStory extends Command
         $domain = $website[$website_id];
         $domain_origin = rtrim($domain, "/");
         $link = $domain.'?page=';
-        $page = 21;
+        $page = 1;
         $data = array();
         do {
             echo $page . '-page' . "\n";
