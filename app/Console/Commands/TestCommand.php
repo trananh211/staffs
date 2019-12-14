@@ -41,6 +41,6 @@ class TestCommand extends Command
     {
         $controller = new ApiController(); // make sure to import the controller
 //        $controller->autoUploadProduct();
-        $controller->deletedCategories();
+        $controller->autoUploadImage();
     }
 }

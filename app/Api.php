@@ -707,7 +707,14 @@ class Api extends Model
                     }
                     logfile('-- [END] Hoàn tất tiến trình upload ảnh.');
                 } else {
-                    logfile('-- [END] Đã hết ảnh để tải lên woocommerce. Kết thúc.');
+                    logfile('-- [END] Đã hết ảnh từ google driver để tải lên woocommerce. Kết thúc.');
+
+                }
+            } else {
+                logfile('-- Chuyển sang up ảnh scrap website');
+//                $result = $this->uploadScrapImage();
+                $result = true;
+                if ($result) {
                     logfile('-- Chuyển sang xóa sản phẩm');
                     $this->deleteProductUploaded();
                 }
@@ -716,7 +723,119 @@ class Api extends Model
             logfile($e->getMessage());
             return $e->getMessage();
         }
+    }
 
+    private function uploadScrapImage()
+    {
+        $limit = 1;
+        $check = \DB::table('scrap_products')
+            ->where('status', 1)
+            ->orderBy('id', 'ASC')
+            ->orderBy('store_id', 'ASC')
+            ->pluck('id', 'woo_product_id');
+        if (sizeof($check) > 0) {
+            $result = false;
+            $checks = \DB::table('woo_image_uploads as woo_up')
+                ->leftjoin('scrap_products as spd', 'spd.id', '=', 'woo_up.woo_scrap_product_id')
+                ->leftjoin('woo_infos as woo_info', 'spd.store_id', '=', 'woo_info.id')
+                ->select(
+                    'woo_up.id as woo_up_id', 'woo_up.woo_scrap_product_id', 'woo_up.url as woo_up_url', 'woo_up.store_id',
+                    'spd.woo_product_id',
+                    'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret'
+                )
+                ->whereIn('woo_up.woo_scrap_product_id', $check)
+                ->orderBy('woo_up.id', 'ASC')
+                ->get()->toArray();
+            if (sizeof($checks) > 0) {
+                $stores = array();
+                $tmp = array();
+                $tmp_woo_up_id = array();
+                foreach ($checks as $val) {
+                    $tmp[$val->woo_product_id][] = [
+                        'src' => $val->woo_up_url
+                    ];
+
+                    $tmp_woo_up_id[$val->woo_product_id][] = $val->woo_up_id;
+                    $stores[$val->store_id] = [
+                        'url' => $val->url,
+                        'consumer_key' => $val->consumer_key,
+                        'consumer_secret' => $val->consumer_secret,
+                        'images' => $tmp,
+                        'woo_up_id' => $tmp_woo_up_id
+                    ];
+                }
+                logfile("-- Đang tải " . sizeof($checks) . " images từ store :" . $val->url);
+                $product_update_data = array();
+                $product_image_uploaded = array();
+                $product_update_data_false = array();
+                $slug_data = array();
+                foreach ($stores as $store_id => $store) {
+                    $change_status_image = array();
+                    $up_id_data = $store['woo_up_id'];
+                    //Kết nối với woocommerce
+                    $woocommerce = $this->getConnectStore($store['url'], $store['consumer_key'], $store['consumer_secret']);
+                    $check_upload_false = true;
+                    $i = 0;
+                    foreach ($store['images'] as $product_id => $images) {
+                        if ($i >= $limit) {
+                            break;
+                        }
+                        $i++;
+                        $tmp = array(
+                            'id' => $product_id,
+                            'status' => 'publish',
+                            'images' => $images,
+                            'date_created' => date("Y-m-d H:i:s", strtotime(" -3 days"))
+                        );
+                        $result = $woocommerce->put('products/' . $product_id, $tmp);
+                        if ($result) {
+                            $myarray = (array)$result;
+                            $product_update_data[$store_id][] = $product_id;
+                            $product_image_uploaded = array_merge($product_image_uploaded, $store['woo_up_id'][$product_id]);
+                            logfile('--- Upload thành công: ' . sizeof($images) . ' của product_id: ' . $product_id);
+                        } else {
+                            $product_update_data_false[] = $product_id;
+                            logfile('--- [Error] Upload thất bại: ' . sizeof($images) . ' của product_id: ' . $product_id);
+                        }
+                    }
+                }
+
+                if (sizeof($product_image_uploaded) > 0) {
+                    \DB::table('woo_image_uploads')->whereIn('id', $product_image_uploaded)->update(['status' => 1]);
+                }
+
+                if (sizeof($product_update_data) > 0) {
+                    foreach ($product_update_data as $store_id => $list_product_id) {
+                        $check = \DB::table('scrap_products as spd')
+                            ->leftjoin('woo_image_uploads as woo_up', 'spd.id', '=', 'woo_up.woo_scrap_product_id')
+                            ->whereIn('spd.woo_product_id', $list_product_id)
+                            ->where('spd.store_id', $store_id)
+                            ->where('woo_up.status', 0)
+                            ->orderBy('woo_up.id', 'ASC')
+                            ->pluck('spd.id', 'spd.woo_product_id')
+                            ->toArray();
+                        foreach ($list_product_id as $key => $product_id) {
+                            if (array_key_exists($product_id, $check)) {
+                                unset($list_product_id[$key]);
+                            }
+                        }
+                        if (sizeof($list_product_id) > 0) {
+                            \DB::table('scrap_products')
+                                ->where('store_id', $store_id)
+                                ->whereIn('woo_product_id', $list_product_id)
+                                ->update(['status' => 3]);
+                        }
+                    }
+                }
+
+                logfile('-- [END] Hoàn tất tiến trình upload ảnh.');
+            } else {
+                logfile('-- [END] Đã hết ảnh scrap để tải lên. Kết thúc.');
+            }
+        } else {
+            $result = true;
+        }
+        return $result;
     }
 
     /*Xóa categories*/

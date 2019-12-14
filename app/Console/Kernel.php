@@ -48,8 +48,8 @@ class Kernel extends ConsoleKernel
         $schedule->call('App\Http\Controllers\ApiController@autoUploadImage')->everyMinute();
 
         /** Cao san pham*/
-        $schedule->command('scan:website')->dailyAt('22:37');
-        $schedule->command('scrap:product')->everyFiveMinutes()->between('0:27', '23:37');
+//        $schedule->command('scan:website')->dailyAt('22:37');
+//        $schedule->command('scrap:product')->everyFiveMinutes()->between('0:27', '23:37');
 
         /*Test ham*/
 //        $schedule->command('test:test')->everyMinute()->between('0:27', '23:37');

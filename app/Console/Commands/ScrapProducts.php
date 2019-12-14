@@ -31,8 +31,8 @@ class ScrapProducts extends Command
             [
                 'wp_api' => true,
                 'version' => 'wc/v3',
-                'query_string_auth' => true,
-                'verify_ssl' => false
+//                'query_string_auth' => true,
+//                'verify_ssl' => false
             ]
         );
         return $woocommerce;
@@ -99,22 +99,25 @@ class ScrapProducts extends Command
     private function checkProductNew()
     {
         $result = false;
+        $limit = 4;
         $products = \DB::table('scrap_products as spd')
             ->leftjoin('woo_categories as woo_cat', 'spd.woo_category_id', '=', 'woo_cat.id')
+            ->leftjoin('woo_tags as woo_tag', 'spd.woo_tag_id', '=', 'woo_tag.id')
             ->leftjoin('woo_infos as woo_info', 'spd.store_id', '=', 'woo_info.id')
             ->leftjoin('woo_templates as woo_temp', function ($join) {
                 $join->on('spd.template_id', '=', 'woo_temp.template_id');
                 $join->on('spd.store_id', '=', 'woo_temp.store_id');
             })
             ->select(
-                'spd.id', 'spd.website_id', 'spd.store_id', 'spd.website', 'spd.link', 'spd.category_name',
+                'spd.id', 'spd.website_id', 'spd.store_id', 'spd.website', 'spd.link', 'spd.category_name', 'spd.tag_name',
                 'woo_cat.woo_category_id',
+                'woo_tag.woo_tag_id',
                 'woo_temp.template_path', 'woo_temp.template_id',
                 'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret'
             )
             ->where('spd.status', 0)
             ->orderByRaw('spd.website_id ASC', 'spd.store_id ASC')
-            ->limit(4)
+            ->limit($limit)
             ->get()->toArray();
         if (sizeof($products) > 0) {
             $result = json_decode(json_encode($products), true);
@@ -158,7 +161,9 @@ class ScrapProducts extends Command
                 if (array_key_exists($key_compare, $compare_categories)) {
                     $scrap_product_update[$compare_categories[$key_compare]][] = $val->scrap_product_id;
                 } else { // nếu chưa tồn tại. lưu vào 1 mảng khác để truy vấn.
-                    $tmp[] = $val->category_name;
+                    if (!in_array($val->category_name, $tmp)) {
+                        $tmp[] = $val->category_name;
+                    }
                     $category_store_lst[$val->store_id] = [
                         'url' => $val->url,
                         'consumer_key' => $val->consumer_key,
@@ -229,11 +234,125 @@ class ScrapProducts extends Command
         return $result;
     }
 
+    // kiểm tra tag để lưu vào product
+    private function checkTag()
+    {
+        logfile('--[ Check Tag ] ---------------------------');
+        $lst_product_tag = \DB::table('scrap_products as spd')
+            ->join('woo_infos as woo_info', 'spd.store_id', '=', 'woo_info.id')
+            ->select(
+                'spd.id as scrap_product_id', 'spd.tag_name', 'spd.store_id',
+                'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret'
+            )
+            ->where([
+                ['woo_tag_id', '=', NULL],
+                ['tag_name', '<>', NULL]
+            ])
+            ->limit(99)
+            ->get()->toArray();
+        if (sizeof($lst_product_tag) > 0) {
+            $tag_store_lst = array();
+            $tmp = array();
+            $scrap_product_update = array();
+            // cập nhật tag_id vào woo_product_drivers
+            $tags = \DB::table('woo_tags')
+                ->select('id', 'store_id', 'slug')
+                ->get()->toArray();
+            // tạo mảng mới có key là store_id và name folder để so sánh
+            $compare_tag = array();
+            foreach ($tags as $tag) {
+                $key = $tag->store_id . '_' . $tag->slug;
+                $compare_tag[$key] = $tag->id;
+            }
+            foreach ($lst_product_tag as $val) {
+                $val->tag_name = strtolower($val->tag_name);
+                $key_compare = $val->store_id . '_' . $val->tag_name;
+                //nếu đã tồn tại
+                if (array_key_exists($key_compare, $compare_tag)) {
+                    $scrap_product_update[$compare_tag[$key_compare]][] = $val->scrap_product_id;
+                } else { // nếu chưa tồn tại. lưu vào 1 mảng khác để truy vấn.
+                    if (!in_array($val->tag_name, $tmp)) {
+                        $tmp[] = $val->tag_name;
+                    }
+                    $tag_store_lst[$val->store_id] = [
+                        'url' => $val->url,
+                        'consumer_key' => $val->consumer_key,
+                        'consumer_secret' => $val->consumer_secret,
+                        'tags' => $tmp
+                    ];
+                }
+            }
+            //nếu tồn tại sản phẩm chưa có tag
+            if (sizeof($tag_store_lst) > 0) {
+                $woo_tags_data = array();
+                foreach ($tag_store_lst as $store_id => $info) {
+                    $woocommerce = $this->getConnectStore($info['url'], $info['consumer_key'], $info['consumer_secret']);
+                    foreach ($info['tags'] as $tag_name) {
+                        $data = [
+                            'slug' => $tag_name,
+                        ];
+                        // kết nối tới woocommerce store để lấy thông tin
+                        $result = ($woocommerce->get('products/tags', $data));
+                        //nếu không thấy thông tin thì tạo mới
+                        if (sizeof($result) == 0) {
+                            $data = [
+                                'name' => $tag_name
+                            ];
+                            $i = ($woocommerce->post('products/tags', $data));
+                            $woo_tags_data[] = [
+                                'woo_tag_id' => $i->id,
+                                'name' => $i->name,
+                                'slug' => $i->slug,
+                                'store_id' => $store_id,
+                                'created_at' => date("Y-m-d H:i:s"),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                        } else {
+                            $woo_tags_data[] = [
+                                'woo_tag_id' => $result[0]->id,
+                                'name' => $result[0]->name,
+                                'slug' => $result[0]->slug,
+                                'store_id' => $store_id,
+                                'created_at' => date("Y-m-d H:i:s"),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                        }
+                    }
+                }
+                //them toan bo thong tin woo_tags mới get được về database
+                if (sizeof($woo_tags_data) > 0) {
+                    logfile('-- Tạo mới thông tin woo_tags : ' . sizeof($woo_tags_data) . ' news');
+                    \DB::table('woo_tags')->insert($woo_tags_data);
+                }
+            }
+
+            // Nếu tồn tại thông tin để update vào sản phẩm scrap_products
+            if (sizeof($scrap_product_update) > 0) {
+                logfile('-- Cập nhật thông tin tag vào scrap_products : ' . sizeof($scrap_product_update) . ' update.');
+                foreach ($scrap_product_update as $woo_tag_id => $list_id) {
+                    $data = [
+                        'woo_tag_id' => $woo_tag_id
+                    ];
+                    \DB::table('scrap_products')->whereIn('id', $list_id)->update($data);
+                }
+            }
+            $result = false;
+        } else {
+            $result = true;
+            logfile('-- Đã chuẩn bị đủ tag. Chuyển sang cập nhật tag vào từng product.');
+        }
+        return $result;
+    }
+
     private function preProduct($data)
     {
         $check = $this->checkCategory();
+        $check_tag = false;
         if ($check) {
-            $str = '-- Đã cập nhật xong categories vào toàn bộ product. Chuyển sang tạo mới sản phẩm.';
+            $check_tag = $this->checkTag();
+        }
+        if ($check_tag) {
+            $str = '-- Đã cập nhật xong categories và tags vào toàn bộ product. Chuyển sang tạo mới sản phẩm.';
             logfile($str);
             foreach ($data as $website_id => $dt) {
                 switch ($website_id) {
@@ -248,6 +367,13 @@ class ScrapProducts extends Command
                     case 5:
                         $this->getProductPercre($dt);
                         break;
+                    case 6:
+                    case 8:
+                        $this->getProductMerchKing($dt, array(1, 2, 4, 6));
+                        break;
+                    case 7:
+                        $this->getProductMerchKing($dt, array(1));
+                        break;
                     default:
                         $str = "-- Không có website nào cần được up sản phẩm.";
                         logfile($str);
@@ -255,7 +381,7 @@ class ScrapProducts extends Command
                 break;
             }
         } else {
-            $str = '-- Đang cập nhật categories vào scrap_products';
+            $str = '-- Đang cập nhật tag vào scrap_products';
             logfile($str);
         }
     }
@@ -399,10 +525,9 @@ class ScrapProducts extends Command
             $key_rand = array_rand($prd_image, 2);
             $i = 0;
             $update_img = array();
-            foreach ($prd_image as $v)
-            {
+            foreach ($prd_image as $v) {
                 if (sizeof($update_img) >= 2) break;
-                if (in_array($i,$key_rand)){
+                if (in_array($i, $key_rand)) {
                     $update_img[] = $v;
                 }
                 $i++;
@@ -566,90 +691,206 @@ class ScrapProducts extends Command
         }
         if (sizeof($data) > 0) {
             try {
-                $this->createProductPercre($data, $variation_id);
+                $this->createProduct($data, $variation_id);
             } catch (\Exception $e) {
                 logfile($e->getMessage());
             }
         }
     }
 
-    private function createProductPercre($data, $list_variation_id)
+    private function createProduct($data, $list_variation_id)
     {
-        $variations = \DB::table('woo_variations')
-            ->select('store_id', 'variation_path', 'template_id')
-            ->whereIn('template_id', $list_variation_id)
-            ->get()->toArray();
-        $variation_store = array();
-        foreach ($variations as $value) {
-            $variation_store[$value->template_id . '_' . $value->store_id][] = $value->variation_path;
-        }
-
-        foreach ($data as $key => $val) {
-            $prod_data = array();
-            // Tìm template
-            $template_json = readFileJson($val['template_path']);
-            // Chọn name
-            $woo_product_name = ucwords(trim($val['product_name'] . ' ' . $template_json['name']));
-
-            //chon image
-            $images = $val['images'];
-            // Kết thúc chọn name
-            logfile("-- Đang tạo sản phẩm mới : " . $woo_product_name);
-            $prod_data = $template_json;
-            $prod_data['name'] = $woo_product_name;
-            $prod_data['status'] = 'draft';
-            $prod_data['categories'] = [
-                ['id' => $val['woo_category_id']]
-            ];
-            $prod_data['description'] = html_entity_decode($val['description']);
-            unset($prod_data['variations']);
-            unset($prod_data['images']);
-            // End tìm template
-
-            //Kết nối với woocommerce
-            $woocommerce = $this->getConnectStore($val['url'], $val['consumer_key'], $val['consumer_secret']);
-            $save_product = ($woocommerce->post('products', $prod_data));
-            $woo_product_id = $save_product->id;
-            // Cap nhat product id vao woo_product_driver
-            \DB::table('scrap_products')->where('id', $val['id'])
-                ->update([
-                    'woo_product_id' => $woo_product_id,
-                    'woo_product_name' => $woo_product_name,
-                    'woo_slug' => $save_product->permalink,
-                    'status' => 1,
-                    'updated_at' => date("Y-m-d H:i:s")
-                ]);
-            $key_variation = $val['template_id'] . '_' . $val['store_id'];
-            foreach ($variation_store[$key_variation] as $variation_path) {
-                //đọc file json cua variation con
-                $variation_json = readFileJson($variation_path);
-                //lấy ra permalink có chứa slug color để so sánh
-                $variation_permalink = $variation_json['permalink'];
-                $variation_data = array(
-                    'price' => $variation_json['price'],
-                    'regular_price' => $variation_json['regular_price'],
-                    'sale_price' => $variation_json['sale_price'],
-                    'status' => $variation_json['status'],
-                    'attributes' => $variation_json['attributes'],
-                    'menu_order' => $variation_json['menu_order'],
-                    'meta_data' => $variation_json['meta_data'],
-                );
-                $re = $woocommerce->post('products/' . $woo_product_id . '/variations', $variation_data);
+        try {
+            $variations = \DB::table('woo_variations')
+                ->select('store_id', 'variation_path', 'template_id')
+                ->whereIn('template_id', $list_variation_id)
+                ->get()->toArray();
+            $variation_store = array();
+            foreach ($variations as $value) {
+                $variation_store[$value->template_id . '_' . $value->store_id][] = $value->variation_path;
             }
-            $update_img = $images;
-            $tmp = array(
-                'id' => $woo_product_id,
-                'status' => 'publish',
-                'images' => $update_img,
-                'date_created' => date("Y-m-d H:i:s", strtotime(" -3 days"))
-            );
-            $result = $woocommerce->put('products/' . $woo_product_id, $tmp);
-            if ($result) {
-                logfile('-- Đã tạo thành công sản phẩm ' . $woo_product_name);
-            } else {
-                logfile('-- Thất bại. Khôn tạo được sản phẩm ' . $woo_product_name);
+            $db_image = array();
+            foreach ($data as $key => $val) {
+                $prod_data = array();
+                // Tìm template
+                $template_json = readFileJson($val['template_path']);
+                // Chọn name
+                $woo_product_name = ucwords(trim($val['product_name'] . ' ' . $template_json['name']));
+
+                //chon image. Luu vao data base
+                $images = $val['images'];
+                $db_image[$val['id'].'_'.$val['store_id']] = $images;
+
+                // Kết thúc chọn name
+                logfile("-- Đang tạo sản phẩm mới : " . $woo_product_name);
+                $prod_data = $this->preProductData($template_json);
+//            $prod_data = $template_json;
+                $prod_data['name'] = $woo_product_name;
+                $prod_data['status'] = 'draft';
+                $prod_data['categories'] = [
+                    ['id' => $val['woo_category_id']]
+                ];
+                //them tag vao san pham
+                if ($val['woo_tag_id'] != '') {
+                    $prod_data['tags'][] = [
+                        'id' => $val['woo_tag_id'],
+                        'name' => $val['tag_name'],
+                        'slug' => $val['tag_name'],
+                    ];
+                }
+//            $prod_data['description'] = html_entity_decode($val['description']);
+//            unset($prod_data['variations']);
+//            unset($prod_data['images']);
+                // End tìm template
+
+                //Kết nối với woocommerce
+                $woocommerce = $this->getConnectStore($val['url'], $val['consumer_key'], $val['consumer_secret']);
+                $save_product = ($woocommerce->post('products', $prod_data));
+                $woo_product_id = $save_product->id;
+
+                // Cap nhat product id vao woo_product_driver
+                \DB::table('scrap_products')->where('id', $val['id'])
+                    ->update([
+                        'woo_product_id' => $woo_product_id,
+                        'woo_product_name' => $woo_product_name,
+                        'woo_slug' => $save_product->permalink,
+                        'status' => 1,
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                $key_variation = $val['template_id'] . '_' . $val['store_id'];
+                foreach ($variation_store[$key_variation] as $variation_path) {
+                    //đọc file json cua variation con
+                    $variation_json = readFileJson($variation_path);
+                    $variation_data = array(
+                        'price' => $variation_json['price'],
+                        'regular_price' => $variation_json['regular_price'],
+                        'sale_price' => $variation_json['sale_price'],
+                        'status' => $variation_json['status'],
+                        'attributes' => $variation_json['attributes'],
+                        'menu_order' => $variation_json['menu_order'],
+//                    'meta_data' => $variation_json['meta_data'],
+                    );
+                    $re = $woocommerce->post('products/' . $woo_product_id . '/variations', $variation_data);
+                }
+                $update_img = $images;
+                $tmp = array(
+                    'id' => $woo_product_id,
+                    'status' => 'publish',
+                    'images' => $update_img,
+                    'date_created' => date("Y-m-d H:i:s", strtotime(" -3 days"))
+                );
+                $result = $woocommerce->put('products/' . $woo_product_id, $tmp);
+                if ($result) {
+                    logfile('-- Đã tạo thành công sản phẩm ' . $woo_product_name);
+                } else {
+                    logfile('-- Thất bại. Khôn tạo được sản phẩm ' . $woo_product_name);
+                }
+            }
+            // gui image luu vao database
+//            $this->saveImagePath($db_image);
+        } catch (\Exception $e) {
+            logfile('--- Xảy ra lỗi ngoài ý muốn. ' . $e->getMessage());
+        }
+    }
+
+    /*End percre*/
+
+    private function preProductData($json)
+    {
+        $data = [
+            'name' => $json['name'],
+            'type' => $json['type'],
+            'description' => html_entity_decode($json['description']),
+            'price' => $json['price'],
+            'regular_price' => $json['regular_price'],
+            'on_sale' => $json['on_sale'],
+            'stock_status' => $json['stock_status'],
+            'reviews_allowed' => $json['reviews_allowed'],
+            'tags' => $json['tags'],
+            'attributes' => $json['attributes'],
+        ];
+        return $data;
+    }
+
+    private function saveImagePath($data)
+    {
+        if(sizeof($data) > 0)
+        {
+            $db = array();
+            foreach($data as $key => $value)
+            {
+                $tmp = explode('_',$key);
+                $scrap_product_id = $tmp[0];
+                $store_id = $tmp[1];
+                foreach ($value as $img)
+                {
+                    $db[] = [
+                        'path' => '',
+                        'url' => $img['src'],
+                        'woo_product_driver_id' => 0,
+                        'woo_scrap_product_id' => $scrap_product_id,
+                        'store_id' => $store_id,
+                        'status' => 0,
+                        'created_at' => date("Y-m-d H:i:s"),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ];
+                }
+            }
+            if (sizeof($db) > 0)
+            {
+                \DB::table('woo_image_uploads')->insert($db);
             }
         }
     }
-    /*End percre*/
+
+    /*Begin Merch King*/
+    private function getProductMerchKing($data, $array_image)
+    {
+        $client = new \Goutte\Client();
+        $db = array();
+        $variation_id = array();
+        foreach ($data as $key => $dt) {
+            $link = $dt['link'];
+            $tmp_http = parse_url($link);
+            $http = $tmp_http['scheme'];
+            $response = $client->request('GET', $link);
+            $crawler = $response;
+            //kiem tra xem co anh hay khong
+            if ($crawler->filter('h3.selected-campaign-mockup-title')->count() > 0) {
+                //get name
+                $product_name = ucwords(strtolower(trim($crawler->filter('h3.selected-campaign-mockup-title')->text())));
+                $data[$key]['product_name'] = trim(preg_replace('/[^a-z\d ]/i', '', $product_name));
+                // get description
+                $description = $crawler->filter('div.campaign-description .sizing-specs-desk')->text();
+                $description = trim(str_replace('Sizing Specs', '', $description));
+                $description = trim(str_replace('Size Chart', '', $description));
+                $data[$key]['description'] = htmlentities($description);
+                $i = 0;
+                //get image to variation color
+                $crawler->filter('div.thumb-outter .thumb-box')
+                    ->each(function ($node) use (&$data, &$key, &$i, &$product_name, &$array_image, &$http) {
+                        if (!in_array($i, $array_image)) {
+                            $tmp_img = $node->filter('img.shoe-preview')->attr('src');
+                            $size_img = explode('&height=',explode('&width=',$tmp_img)[1]);
+                            $width = ((int) $size_img[0])*7;
+                            $height = ((int) $size_img[1])*7;
+                            $image = $http.':' . explode('&width=', $tmp_img)[0] . '&width='.$width.'&height='.$height;
+//                            $image = 'http:' . explode('&width=', $tmp_img)[0];
+                            $data[$key]['images'][$i]['src'] = $image;
+                            $data[$key]['images'][$i]['name'] = $product_name . "_" . basename($image);
+                        }
+                        $i++;
+                    });
+            }
+            $variation_id[$dt['template_id']] = $dt['template_id'];
+        }
+        if (sizeof($data) > 0) {
+            try {
+                $this->createProduct($data, $variation_id);
+            } catch (\Exception $e) {
+                logfile($e->getMessage());
+            }
+        }
+    }
+    /*End Merch King*/
 }

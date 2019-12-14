@@ -15,7 +15,7 @@
                                     <select name="website_id">
                                         <option value="" disabled selected>Choose your option</option>
                                         @foreach($lst_web as $key => $web)
-                                            <option value="{{ $key }}">{{ $web }}</option>
+                                            <option value="{{ $key }}">{{ $key }} - {{ $web }}</option>
                                         @endforeach
                                     </select>
                                     <label>Web Select</label>
