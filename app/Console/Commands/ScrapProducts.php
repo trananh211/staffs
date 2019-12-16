@@ -95,11 +95,56 @@ class ScrapProducts extends Command
         logfile('========================= [ Kết thúc scrap products ] =========================');
     }
 
+    private function preProduct($data)
+    {
+        $check = $this->checkCategory();
+        $check_tag = false;
+        if ($check) {
+            $check_tag = $this->checkTag();
+        }
+        if ($check_tag) {
+            $str = '-- Đã cập nhật xong categories và tags vào toàn bộ product. Chuyển sang tạo mới sản phẩm.';
+            logfile($str);
+            foreach ($data as $website_id => $dt) {
+                switch ($website_id) {
+                    case 1:
+                        $this->getProductNamestories($dt);
+                        break;
+                    case 2:
+                    case 3:
+                        $this->getProductEsty($dt);
+                        break;
+                    case 4:
+                    case 5:
+                        $this->getProductPercre($dt);
+                        break;
+                    case 6:
+                    case 8:
+                        $this->getProductMerchKing($dt, array(1, 2, 4, 6));
+                        break;
+                    case 7:
+                        $this->getProductMerchKing($dt, array(1));
+                        break;
+                    case 9:
+                        $this->getProductMerchKing($dt, array(2,3,4));
+                        break;
+                    default:
+                        $str = "-- Không có website nào cần được up sản phẩm.";
+                        logfile($str);
+                }
+                break;
+            }
+        } else {
+            $str = '-- Đang cập nhật tag vào scrap_products';
+            logfile($str);
+        }
+    }
+
     // kiểm tra xem có sản phẩm mới chưa được up lên shop hay không
     private function checkProductNew()
     {
         $result = false;
-        $limit = 4;
+        $limit = 1;
         $products = \DB::table('scrap_products as spd')
             ->leftjoin('woo_categories as woo_cat', 'spd.woo_category_id', '=', 'woo_cat.id')
             ->leftjoin('woo_tags as woo_tag', 'spd.woo_tag_id', '=', 'woo_tag.id')
@@ -344,47 +389,7 @@ class ScrapProducts extends Command
         return $result;
     }
 
-    private function preProduct($data)
-    {
-        $check = $this->checkCategory();
-        $check_tag = false;
-        if ($check) {
-            $check_tag = $this->checkTag();
-        }
-        if ($check_tag) {
-            $str = '-- Đã cập nhật xong categories và tags vào toàn bộ product. Chuyển sang tạo mới sản phẩm.';
-            logfile($str);
-            foreach ($data as $website_id => $dt) {
-                switch ($website_id) {
-                    case 1:
-                        $this->getProductNamestories($dt);
-                        break;
-                    case 2:
-                    case 3:
-                        $this->getProductEsty($dt);
-                        break;
-                    case 4:
-                    case 5:
-                        $this->getProductPercre($dt);
-                        break;
-                    case 6:
-                    case 8:
-                        $this->getProductMerchKing($dt, array(1, 2, 4, 6));
-                        break;
-                    case 7:
-                        $this->getProductMerchKing($dt, array(1));
-                        break;
-                    default:
-                        $str = "-- Không có website nào cần được up sản phẩm.";
-                        logfile($str);
-                }
-                break;
-            }
-        } else {
-            $str = '-- Đang cập nhật tag vào scrap_products';
-            logfile($str);
-        }
-    }
+
 
     /* Begin website namestories.com */
     // chuẩn bị dữ liệu
@@ -700,14 +705,17 @@ class ScrapProducts extends Command
 
     private function createProduct($data, $list_variation_id)
     {
-        try {
+//        try {
             $variations = \DB::table('woo_variations')
                 ->select('store_id', 'variation_path', 'template_id')
                 ->whereIn('template_id', $list_variation_id)
                 ->get()->toArray();
             $variation_store = array();
-            foreach ($variations as $value) {
-                $variation_store[$value->template_id . '_' . $value->store_id][] = $value->variation_path;
+            if( sizeof($variations) > 0)
+            {
+                foreach ($variations as $value) {
+                    $variation_store[$value->template_id . '_' . $value->store_id][] = $value->variation_path;
+                }
             }
             $db_image = array();
             foreach ($data as $key => $val) {
@@ -758,19 +766,22 @@ class ScrapProducts extends Command
                         'updated_at' => date("Y-m-d H:i:s")
                     ]);
                 $key_variation = $val['template_id'] . '_' . $val['store_id'];
-                foreach ($variation_store[$key_variation] as $variation_path) {
-                    //đọc file json cua variation con
-                    $variation_json = readFileJson($variation_path);
-                    $variation_data = array(
-                        'price' => $variation_json['price'],
-                        'regular_price' => $variation_json['regular_price'],
-                        'sale_price' => $variation_json['sale_price'],
-                        'status' => $variation_json['status'],
-                        'attributes' => $variation_json['attributes'],
-                        'menu_order' => $variation_json['menu_order'],
+                if (sizeof($variation_store) > 0)
+                {
+                    foreach ($variation_store[$key_variation] as $variation_path) {
+                        //đọc file json cua variation con
+                        $variation_json = readFileJson($variation_path);
+                        $variation_data = array(
+                            'price' => $variation_json['price'],
+                            'regular_price' => $variation_json['regular_price'],
+                            'sale_price' => $variation_json['sale_price'],
+                            'status' => $variation_json['status'],
+                            'attributes' => $variation_json['attributes'],
+                            'menu_order' => $variation_json['menu_order'],
 //                    'meta_data' => $variation_json['meta_data'],
-                    );
-                    $re = $woocommerce->post('products/' . $woo_product_id . '/variations', $variation_data);
+                        );
+                        $re = $woocommerce->post('products/' . $woo_product_id . '/variations', $variation_data);
+                    }
                 }
                 $update_img = $images;
                 $tmp = array(
@@ -786,11 +797,11 @@ class ScrapProducts extends Command
                     logfile('-- Thất bại. Khôn tạo được sản phẩm ' . $woo_product_name);
                 }
             }
-            // gui image luu vao database
-//            $this->saveImagePath($db_image);
-        } catch (\Exception $e) {
-            logfile('--- Xảy ra lỗi ngoài ý muốn. ' . $e->getMessage());
-        }
+            /*// gui image luu vao database
+            $this->saveImagePath($db_image);*/
+//        } catch (\Exception $e) {
+//            logfile('--- Xảy ra lỗi ngoài ý muốn. ' . $e->getMessage());
+//        }
     }
 
     /*End percre*/
@@ -871,11 +882,18 @@ class ScrapProducts extends Command
                     ->each(function ($node) use (&$data, &$key, &$i, &$product_name, &$array_image, &$http) {
                         if (!in_array($i, $array_image)) {
                             $tmp_img = $node->filter('img.shoe-preview')->attr('src');
-                            $size_img = explode('&height=',explode('&width=',$tmp_img)[1]);
-                            $width = ((int) $size_img[0])*7;
-                            $height = ((int) $size_img[1])*7;
-                            $image = $http.':' . explode('&width=', $tmp_img)[0] . '&width='.$width.'&height='.$height;
-//                            $image = 'http:' . explode('&width=', $tmp_img)[0];
+                            $tmp = explode('&width=',$tmp_img);
+                            if (sizeof($tmp) > 1)
+                            {
+                                $size_img = explode('&height=',$tmp[1]);
+                                $width = ((int) $size_img[0])*7;
+                                $height = ((int) $size_img[1])*7;
+//                                $image = $http.':' . explode('&width=', $tmp_img)[0] . '&width='.$width.'&height='.$height;
+                                $image = $http.':' . explode('&width=', $tmp_img)[0] . '&width=600&height=600';
+//                                $image = 'http:' . explode('&width=', $tmp_img)[0];
+                            } else {
+                                $image = $tmp_img;
+                            }
                             $data[$key]['images'][$i]['src'] = $image;
                             $data[$key]['images'][$i]['name'] = $product_name . "_" . basename($image);
                         }

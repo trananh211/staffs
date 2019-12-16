@@ -67,6 +67,9 @@ class NameStory extends Command
                     case 8:
                         $this->scanMerchKing_Zolagifts($website_id, $template_id, $store_id, $woo_template_id,'15198');
                         break;
+                    case 9:
+                        $this->scanMerchKing_getTag($website_id, $template_id, $store_id, $woo_template_id);
+                        break;
                     default:
                         $str = "-- Không có website nào cần được cào.";
                         logfile($str);
@@ -449,6 +452,67 @@ class NameStory extends Command
                                 'updated_at' => date("Y-m-d H:i:s")
                             ];
                         }
+                    });
+            }
+
+            //Phần cuối cùng. Không được chèn thêm ở đây nữa
+            // kiểm tra xem đây có phải là trang cuối cùng hay không
+            $check = $crawler->filter('ul.pager li:nth-last-child(1) .disabled')->count();
+            if ($check == 0)
+            {
+                $next_page_link = $crawler->filter('ul.pager li:nth-last-child(1) a')->attr('href');
+                $next_page = preg_replace("/[^0-9]/", '', $next_page_link);
+                $page = $next_page;
+            } else {
+                $next_page = 0;
+            }
+        } while ($next_page > $curent_page);
+        // Lưu dữ liệu vào database
+        $this->saveTemplate($data, $woo_template_id, $domain);
+    }
+
+    private function scanMerchKing_getTag($website_id, $template_id, $store_id, $woo_template_id)
+    {
+        $website = website();
+        $domain = $website[$website_id];
+        $domain_origin = explode('/search', $domain)[0];
+        $link = $domain.'&page=';
+        $page = 1;
+        $data = array();
+        do {
+            echo $page . '-page' . "\n";
+            $url = $link . $page;
+            $curent_page = $page;
+
+            $client = new \Goutte\Client();
+            $response = $client->request('GET', $url);
+            $crawler = $response;
+
+            // kiem tra xem co ton tai product nao ở page hiện tại hay không
+            $products = ($crawler->filter('section.site-content div.container div.col-md-3')->count() > 0) ?
+                $crawler->filter('section.site-content div.container div.col-md-3')->count() : 0;
+            if ($products > 0) {
+                $crawler->filter('section.site-content div.container div.col-md-3')
+                    ->each(function ($node) use (&$data, &$website_id, &$template_id, &$store_id, &$url, &$domain_origin) {
+                        $link = $domain_origin . trim($node->filter('a')->attr('href'));
+                        $name = trim($node->filter('a')->text());
+                        $tag = explode(' ', strtolower($name))[0];
+                        $tag_name = preg_replace('/[^a-z\d]/i', '-', sanitizer($tag));
+                        $tag_name = rtrim($tag_name, '-');
+                        $category_name = 'Blanket';
+                        $data[] = [
+                            'category_name' => $category_name,
+                            'tag_name' => $tag_name,
+                            'link' => $link,
+                            'website_id' => $website_id,
+                            'website' => $url,
+                            'template_id' => $template_id,
+                            'store_id' => $store_id,
+                            'status' => 0,
+                            'created_at' => date("Y-m-d H:i:s"),
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
+
                     });
             }
 

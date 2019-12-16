@@ -10,6 +10,34 @@ function logfile($str)
 //    echo $datetime . '==> ' . $str."\n";
 }
 
+function website()
+{
+    $website = [
+        '1' => 'https://namestories.com',
+        '2' => 'https://www.etsy.com/shop/GiftedTurtlesUK?ref=l2-shop-info-avatar&listing_id=562544499&section_id=23904787&page',
+        '3' => 'https://www.etsy.com/shop/Printsinspired',
+        '4' => 'https://percre.com/?s=low+top&post_type=product',
+        '5' => 'https://percre.com/?s=high+top&post_type=product',
+        '6' => 'https://shoesnp.com/search?q=season%20boots',
+        '7' => 'https://zolagifts.com/',
+        '8' => 'https://zolagifts.com/',
+        '9' => 'http://icefrogshoe.com/search?q=blanket'
+    ];
+    return $website;
+}
+
+function categories()
+{
+    $categories = [
+        '2' => 'Wall Art',
+        '3' => 'Wall Art',
+        '4' => 'Shoes',
+        '5' => 'Shoes',
+        '6' => 'Boots'
+    ];
+    return $categories;
+}
+
 function getMessage($message)
 {
     return '<ul class="collection">' . $message . '</ul>';
@@ -635,31 +663,3 @@ function createFileExcel($name_file, $data, $path, $sheet_name = null)
         return false;
     }
 }
-
-function website()
-{
-    $website = [
-        '1' => 'https://namestories.com',
-        '2' => 'https://www.etsy.com/shop/GiftedTurtlesUK?ref=l2-shop-info-avatar&listing_id=562544499&section_id=23904787&page',
-        '3' => 'https://www.etsy.com/shop/Printsinspired',
-        '4' => 'https://percre.com/?s=low+top&post_type=product',
-        '5' => 'https://percre.com/?s=high+top&post_type=product',
-        '6' => 'https://shoesnp.com/search?q=season%20boots',
-        '7' => 'https://zolagifts.com/',
-        '8' => 'https://zolagifts.com/'
-    ];
-    return $website;
-}
-
-function categories()
-{
-    $categories = [
-        '2' => 'Wall Art',
-        '3' => 'Wall Art',
-        '4' => 'Shoes',
-        '5' => 'Shoes',
-        '6' => 'Boots'
-    ];
-    return $categories;
-}
-
