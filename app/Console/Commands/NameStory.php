@@ -360,7 +360,7 @@ class NameStory extends Command
         $domain = $link;
         $data = array();
         $client = new \Goutte\Client();
-        $page = 3;
+        $page = 1;
         do {
             $str = '';
             $str .= '---- Page- ' . $page;
