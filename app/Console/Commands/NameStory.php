@@ -70,6 +70,9 @@ class NameStory extends Command
                     case 9:
                         $this->scanMerchKing_getTag($website_id, $template_id, $store_id, $woo_template_id);
                         break;
+                    case 10:
+                        $this->scanEsty_collection($website_id, $template_id, $store_id, $woo_template_id,'Personalized');
+                        break;
                     default:
                         $str = "-- Không có website nào cần được cào.";
                         logfile($str);
@@ -348,6 +351,61 @@ class NameStory extends Command
         } while ($next_page > $curent_page);
         return $data;
     }
+
+    private function scanEsty_collection($website_id, $template_id, $store_id, $woo_template_id ,$category_name)
+    {
+        //Get categories from esty
+        $website = website();
+        $link = $website[$website_id];
+        $domain = $link;
+        $data = array();
+        $client = new \Goutte\Client();
+        $page = 3;
+        do {
+            $str = '';
+            $str .= '---- Page- ' . $page;
+            $curent_page = $page;
+            $url = $link . "&page=" . $curent_page;
+            $response = $client->request('GET', $url);
+            $crawler = $response;
+
+            // kiem tra xem co ton tai product nao ở page hiện tại hay không
+            $products = ($crawler->filter('ul.listing-cards li.v2-listing-card')->count() > 0) ?
+                $crawler->filter('ul.listing-cards li.v2-listing-card')->count() : 0;
+            if ($products > 0) {
+                $crawler->filter('ul.listing-cards li.block-grid-item')
+                    ->each(function ($node) use (&$data, &$website_id, &$template_id, &$store_id, &$url, &$category_name) {
+                        $link = trim($node->filter('a.listing-link')->attr('href'));
+                        $data[] = [
+                            'category_name' => preg_replace('/[^a-z\d]/i', '-', sanitizer($category_name)),
+                            'link' => $link,
+                            'website_id' => $website_id,
+                            'website' => $url,
+                            'template_id' => $template_id,
+                            'store_id' => $store_id,
+                            'status' => 0,
+                            'created_at' => date("Y-m-d H:i:s"),
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
+                    });
+            }
+            //Phần cuối cùng. Không được chèn thêm ở đây nữa
+            // kiểm tra xem đây có phải là 1 page hay không
+            $one_page = $crawler->filter('ul.wt-action-group')->count();
+            if ($one_page > 0) {
+                // kiểm tra xem đây có phải là trang cuối cùng hay không
+                $check = $crawler->filter('.wt-action-group__item-container:nth-last-child(1) > a.wt-is-disabled')->count();
+                if ($check == 0) {
+                    $next_page = $crawler->filter('.wt-action-group__item-container:nth-last-child(1) > a')->attr('data-page');
+                    $page = $next_page;
+                }
+            } else {
+                $next_page = 0;
+            }
+        } while ($next_page > $curent_page);
+        // Lưu dữ liệu vào database
+        $this->saveTemplate($data, $woo_template_id, $domain);
+    }
     /*End website esty store*/
 
     /*website merch king*/
@@ -499,7 +557,7 @@ class NameStory extends Command
                         $tag = explode(' ', strtolower($name))[0];
                         $tag_name = preg_replace('/[^a-z\d]/i', '-', sanitizer($tag));
                         $tag_name = rtrim($tag_name, '-');
-                        $category_name = 'Blanket';
+                        $category_name = 'Blankets';
                         $data[] = [
                             'category_name' => $category_name,
                             'tag_name' => $tag_name,

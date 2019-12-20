@@ -708,7 +708,8 @@ class Api extends Model
                     logfile('-- [END] Hoàn tất tiến trình upload ảnh.');
                 } else {
                     logfile('-- [END] Đã hết ảnh từ google driver để tải lên woocommerce. Kết thúc.');
-
+                    logfile('-- Chuyển sang xóa sản phẩm');
+                    $this->deleteProductUploaded();
                 }
             } else {
                 logfile('-- Chuyển sang up ảnh scrap website');

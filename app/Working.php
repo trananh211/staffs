@@ -1502,7 +1502,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                         $message .= ' Nhưng không thể xóa hết file local. Mời bạn xóa tay';
                     }
                 } else {
-                    $message = ' Xảy ra lỗi không thể xóa supplier. Mời bạn thử lại sau';
+                    $message = ' Xảy ra lỗi không thể xóa template. Database woo_variations va woo_templates .Mời bạn thử lại sau';
                 }
             }
             \DB::commit(); // if there was no errors, your query will be executed
