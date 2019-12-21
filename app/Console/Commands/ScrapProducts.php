@@ -131,6 +131,10 @@ class ScrapProducts extends Command
                     case 10:
                         $this->getProductEsty_LinkName($dt);
                         break;
+                    case 11:
+                    case 12:
+                        $this->getProductEsty_LinkName($dt,true);
+                        break;
                     default:
                         $str = "-- Không có website nào cần được up sản phẩm.";
                         logfile($str);
@@ -593,7 +597,8 @@ class ScrapProducts extends Command
         }
     }
 
-    private function getProductEsty_LinkName($data)
+    /*fixed : true : cố định giá và description theo template*/
+    private function getProductEsty_LinkName($data, $fixed = false)
     {
         $client = new \Goutte\Client();
         $db = array();
@@ -605,6 +610,7 @@ class ScrapProducts extends Command
             if ($crawler->filter('ul.list-unstyled')->count() > 0) {
                 //get name
                 $product_name_1 = trim($crawler->filter('div.listing-page-title-component h1')->text());
+                $data[$key]['des_more'] = $product_name_1;
                 $tmp = (explode("/",$link));
                 $tmp_name = explode("?",$tmp[sizeof($tmp) - 1]);
                 $product_name = ucwords(str_replace("-"," ",$tmp_name[0]));
@@ -643,14 +649,14 @@ class ScrapProducts extends Command
         }
         if (sizeof($data) > 0) {
             try {
-                $this->createProductEsty_LinkName($data, $variation_id);
+                $this->createProductEsty_LinkName($data, $variation_id, $fixed);
             } catch (\Exception $e) {
                 logfile($e->getMessage());
             }
         }
     }
 
-    private function createProductEsty_LinkName($data, $list_variation_id)
+    private function createProductEsty_LinkName($data, $list_variation_id, $fixed)
     {
         $variations = \DB::table('woo_variations')
             ->select('store_id', 'variation_path', 'template_id')
@@ -661,7 +667,6 @@ class ScrapProducts extends Command
             $variation_store[$value->template_id . '_' . $value->store_id][] = $value->variation_path;
         }
         foreach ($data as $key => $val) {
-            echo $val['id']."\n";
             $prod_data = array();
             // Tìm template
             $template_json = readFileJson($val['template_path']);
@@ -675,10 +680,18 @@ class ScrapProducts extends Command
             $prod_data['categories'] = [
                 ['id' => $val['woo_category_id']]
             ];
-            $prod_data['price'] = (string) $val['sale_price'];
-            $prod_data['regular_price'] = (string) $val['regular_price'];
-            $prod_data['sale_price'] = (string) $val['sale_price'];
-            $prod_data['description'] = ($val['description']);
+            if (!$fixed)
+            {
+                $prod_data['price'] = (string) $val['sale_price'];
+                $prod_data['regular_price'] = (string) $val['regular_price'];
+                $prod_data['sale_price'] = (string) $val['sale_price'];
+                $prod_data['description'] = $val['description'];
+            } else {
+                if (array_key_exists('des_more',$val)){
+                    echo $val['des_more']."\n";
+                    $prod_data['description'] = ($val['des_more']."\n".$prod_data['description']);
+                }
+            }
             // End tìm template
             //Kết nối với woocommerce
             $woocommerce = $this->getConnectStore($val['url'], $val['consumer_key'], $val['consumer_secret']);
@@ -724,6 +737,12 @@ class ScrapProducts extends Command
                 'date_created' => date("Y-m-d H:i:s", strtotime(" -1 days"))
             );
             $result = $woocommerce->put('products/' . $woo_product_id, $tmp);
+            if ($result)
+            {
+                logfile('--- Tạo thành công sản phẩm '.$woo_product_name);
+            } else {
+                logfile('--- Tạo thất bại sản phẩm '.$woo_product_name);
+            }
         }
     }
 

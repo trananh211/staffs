@@ -73,6 +73,10 @@ class NameStory extends Command
                     case 10:
                         $this->scanEsty_collection($website_id, $template_id, $store_id, $woo_template_id,'Personalized');
                         break;
+                    case 11:
+                    case 12:
+                        $this->scanEsty_collection($website_id, $template_id, $store_id, $woo_template_id,'Boots');
+                        break;
                     default:
                         $str = "-- Không có website nào cần được cào.";
                         logfile($str);
@@ -364,6 +368,7 @@ class NameStory extends Command
         do {
             $str = '';
             $str .= '---- Page- ' . $page;
+            echo $str;
             $curent_page = $page;
             $url = $link . "&page=" . $curent_page;
             $response = $client->request('GET', $url);

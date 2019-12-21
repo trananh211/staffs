@@ -7,7 +7,7 @@ function logfile($str)
 {
     $datetime = Carbon::now('Asia/Ho_Chi_Minh');
     \Log::info($datetime . '==> ' . $str);
-    //echo $datetime . '==> ' . $str."\n";
+//    echo $datetime . '==> ' . $str."\n";
 }
 
 function website()
@@ -22,7 +22,9 @@ function website()
         '7' => 'https://zolagifts.com/',
         '8' => 'https://zolagifts.com/',
         '9' => 'http://icefrogshoe.com/search?q=blanket',
-        '10' => 'https://www.etsy.com/shop/threaddomain?section_id=25643664'
+        '10' => 'https://www.etsy.com/shop/threaddomain?section_id=25643664',
+        '11' => 'https://www.etsy.com/shop/threaddomain?section_id=27228701',
+        '12' => 'https://www.etsy.com/shop/threaddomain?section_id=27212662'
     ];
     return $website;
 }
