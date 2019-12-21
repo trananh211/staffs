@@ -688,8 +688,8 @@ class ScrapProducts extends Command
                 $prod_data['description'] = $val['description'];
             } else {
                 if (array_key_exists('des_more',$val)){
-                    echo $val['des_more']."\n";
-                    $prod_data['description'] = ($val['des_more']."\n".$prod_data['description']);
+                    $str_more = "<span class='des_more'>".$val['des_more']."</span>";
+                    $prod_data['description'] = ($str_more."\n".$prod_data['description']);
                 }
             }
             // End tìm template
