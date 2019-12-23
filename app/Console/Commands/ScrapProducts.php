@@ -134,6 +134,7 @@ class ScrapProducts extends Command
                     case 11:
                     case 12:
                     case 13:
+                    case 14:
                         $this->getProductEsty_LinkName($dt,true);
                         break;
                     default:
@@ -208,7 +209,7 @@ class ScrapProducts extends Command
                 $compare_categories[$key] = $category->id;
             }
             foreach ($lst_product_category as $val) {
-                $val->category_name = strtolower($val->category_name);
+                $val->category_name = ($val->category_name);
                 $key_compare = $val->store_id . '_' . $val->category_name;
                 //nếu đã tồn tại
                 if (array_key_exists($key_compare, $compare_categories)) {
@@ -710,7 +711,7 @@ class ScrapProducts extends Command
                 ]);
             // tìm image và gán vào
             $key_variation = $val['template_id'] . '_' . $val['store_id'];
-            if (sizeof($variation_store) > 0)
+            if (sizeof($variation_store) > 0 && array_key_exists($key_variation, $variation_store))
             {
                 foreach ($variation_store[$key_variation] as $variation_path) {
                     //đọc file json cua variation con
@@ -923,7 +924,7 @@ class ScrapProducts extends Command
                         'updated_at' => date("Y-m-d H:i:s")
                     ]);
                 $key_variation = $val['template_id'] . '_' . $val['store_id'];
-                if (sizeof($variation_store) > 0)
+                if (sizeof($variation_store) > 0 && array_key_exists($key_variation, $variation_store))
                 {
                     foreach ($variation_store[$key_variation] as $variation_path) {
                         //đọc file json cua variation con

@@ -78,7 +78,8 @@ class NameStory extends Command
                         $this->scanEsty_collection($website_id, $template_id, $store_id, $woo_template_id,'Boots');
                         break;
                     case 13:
-                        $this->scanEsty_collection($website_id, $template_id, $store_id, $woo_template_id,'Blanket');
+                    case 14:
+                        $this->scanEsty_collection($website_id, $template_id, $store_id, $woo_template_id,'Hooded Blankets');
                         break;
                     default:
                         $str = "-- Không có website nào cần được cào.";
@@ -385,7 +386,7 @@ class NameStory extends Command
                     ->each(function ($node) use (&$data, &$website_id, &$template_id, &$store_id, &$url, &$category_name) {
                         $link = trim($node->filter('a.listing-link')->attr('href'));
                         $data[] = [
-                            'category_name' => preg_replace('/[^a-z\d]/i', '-', sanitizer($category_name)),
+                            'category_name' => preg_replace('/[^a-z\d]/i', ' ', sanitizer($category_name)),
                             'link' => $link,
                             'website_id' => $website_id,
                             'website' => $url,
