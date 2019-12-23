@@ -24,7 +24,8 @@ function website()
         '9' => 'http://icefrogshoe.com/search?q=blanket',
         '10' => 'https://www.etsy.com/shop/threaddomain?section_id=25643664',
         '11' => 'https://www.etsy.com/shop/threaddomain?section_id=27228701',
-        '12' => 'https://www.etsy.com/shop/threaddomain?section_id=27212662'
+        '12' => 'https://www.etsy.com/shop/threaddomain?section_id=27212662',
+        '13' => 'https://www.etsy.com/shop/threaddomain?section_id=25308779'
     ];
     return $website;
 }

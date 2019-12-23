@@ -133,6 +133,7 @@ class ScrapProducts extends Command
                         break;
                     case 11:
                     case 12:
+                    case 13:
                         $this->getProductEsty_LinkName($dt,true);
                         break;
                     default:

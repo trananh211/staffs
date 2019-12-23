@@ -77,6 +77,9 @@ class NameStory extends Command
                     case 12:
                         $this->scanEsty_collection($website_id, $template_id, $store_id, $woo_template_id,'Boots');
                         break;
+                    case 13:
+                        $this->scanEsty_collection($website_id, $template_id, $store_id, $woo_template_id,'Blanket');
+                        break;
                     default:
                         $str = "-- Không có website nào cần được cào.";
                         logfile($str);
