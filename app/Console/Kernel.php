@@ -49,7 +49,7 @@ class Kernel extends ConsoleKernel
 
         /** Cao san pham*/
         $schedule->command('scan:website')->dailyAt('22:37');
-        $schedule->command('scrap:product')->everyMinute()->between('0:27', '5:37');
+        $schedule->command('scrap:product')->everyMinute()->between('0:06', '23:54');
 
         /*Test ham*/
 //        $schedule->command('test:test')->everyMinute()->between('0:27', '23:37');

@@ -31,6 +31,14 @@ function website()
     return $website;
 }
 
+function dynamic_website()
+{
+    $website = [
+        '1' => 'http://icefrogshoe.com/search?q=blanket'
+    ];
+    return $website;
+}
+
 function categories()
 {
     $categories = [

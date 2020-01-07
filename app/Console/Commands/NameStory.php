@@ -566,7 +566,7 @@ class NameStory extends Command
                         $tag = explode(' ', strtolower($name))[0];
                         $tag_name = preg_replace('/[^a-z\d]/i', '-', sanitizer($tag));
                         $tag_name = rtrim($tag_name, '-');
-                        $category_name = 'Blankets';
+                        $category_name = 'Fleece Blanket';
                         $data[] = [
                             'category_name' => $category_name,
                             'tag_name' => $tag_name,
