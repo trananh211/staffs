@@ -81,6 +81,12 @@ class NameStory extends Command
                     case 14:
                         $this->scanEsty_collection($website_id, $template_id, $store_id, $woo_template_id,'Hooded Blankets');
                         break;
+                    case 15:
+                        $this->scanCreationsLaunch_getTag($website_id, $template_id, $store_id, $woo_template_id,'High Top');
+                        break;
+                    case 16:
+                        $this->scanCreationsLaunch_getTag($website_id, $template_id, $store_id, $woo_template_id,'Low Top');
+                        break;
                     default:
                         $str = "-- Không có website nào cần được cào.";
                         logfile($str);
@@ -122,6 +128,12 @@ class NameStory extends Command
                 ]);
                 logfile('Insert thành công dữ liệu ' . sizeof($data) . ' link sản phẩm website '.$domain);
             }
+        } else {
+            \DB::table('woo_templates')->where('id', $woo_template_id)->update([
+                'status' => 1,
+                'updated_at' => date("Y-m-d H:i:s")
+            ]);
+            logfile('Không có dữ liệu cào từ website '.$domain);
         }
     }
 
@@ -589,6 +601,66 @@ class NameStory extends Command
             if ($check == 0)
             {
                 $next_page_link = $crawler->filter('ul.pager li:nth-last-child(1) a')->attr('href');
+                $next_page = preg_replace("/[^0-9]/", '', $next_page_link);
+                $page = $next_page;
+            } else {
+                $next_page = 0;
+            }
+        } while ($next_page > $curent_page);
+        // Lưu dữ liệu vào database
+        $this->saveTemplate($data, $woo_template_id, $domain);
+    }
+
+    private function scanCreationsLaunch_getTag($website_id, $template_id, $store_id, $woo_template_id, $category_name)
+    {
+        $website = website();
+        $domain = $website[$website_id];
+        $domain_origin = explode('/search', $domain)[0];
+        $link = $domain.'&page=';
+        $page = 1;
+        $data = array();
+        do {
+            echo $page . '-page' . "\n";
+            $url = $link . $page;
+            $curent_page = $page;
+            $client = new \Goutte\Client();
+            $response = $client->request('GET', $url);
+            $crawler = $response;
+
+            // kiem tra xem co ton tai product nao ở page hiện tại hay không
+            $products = ($crawler->filter('ul.list-view-items li.list-view-item ')->count() > 0) ?
+                $crawler->filter('ul.list-view-items li.list-view-item ')->count() : 0;
+            if ($products > 0) {
+                $crawler->filter('ul.list-view-items li.list-view-item')
+                    ->each(function ($node) use (&$data, &$website_id, &$template_id, &$store_id, &$url, &$domain_origin, &$category_name) {
+                        $category_name = (strlen($category_name) > 0) ? $category_name : 'Shoes' ;
+                        $name = trim($node->filter('span.product-card__title')->text());
+                        if (strpos(strtolower($name), strtolower($category_name)) !== false) {
+                            $link = $domain_origin . trim($node->filter('a')->attr('href'));
+                            $tag = explode(' ', strtolower($name))[0];
+                            $tag_name = preg_replace('/[^a-z\d]/i', '-', sanitizer($tag));
+
+                            $data[] = [
+                                'category_name' => $category_name,
+                                'tag_name' => $tag_name,
+                                'link' => $link,
+                                'website_id' => $website_id,
+                                'website' => $url,
+                                'template_id' => $template_id,
+                                'store_id' => $store_id,
+                                'status' => 0,
+                                'created_at' => date("Y-m-d H:i:s"),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                        }
+                    });
+            }
+            //Phần cuối cùng. Không được chèn thêm ở đây nữa
+            // kiểm tra xem đây có phải là trang cuối cùng hay không
+            $check = $crawler->filter('.pagination li:nth-last-child(1) a')->count();
+            if ($check > 0)
+            {
+                $next_page_link = $crawler->filter('.pagination li:nth-last-child(1) a')->attr('href');
                 $next_page = preg_replace("/[^0-9]/", '', $next_page_link);
                 $page = $next_page;
             } else {

@@ -26,7 +26,9 @@ function website()
         '11' => 'https://www.etsy.com/shop/threaddomain?section_id=27228701',
         '12' => 'https://www.etsy.com/shop/threaddomain?section_id=27212662',
         '13' => 'https://www.etsy.com/shop/threaddomain?section_id=25308779',
-        '14' => 'https://www.etsy.com/shop/MyDivaBabyAU?section_id=24442401'
+        '14' => 'https://www.etsy.com/shop/MyDivaBabyAU?section_id=24442401',
+        '15' => 'https://creationslaunch.com/search?q=high+top&type=product',
+        '16' => 'https://creationslaunch.com/search?q=low+top&type=product'
     ];
     return $website;
 }

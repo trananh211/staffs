@@ -137,6 +137,10 @@ class ScrapProducts extends Command
                     case 14:
                         $this->getProductEsty_LinkName($dt,true);
                         break;
+                    case 15:
+                    case 16:
+                        $this->getProductCreationsLaunch_LinkName($dt,array(0,1,2,3) ,true);
+                        break;
                     default:
                         $str = "-- Không có website nào cần được up sản phẩm.";
                         logfile($str);
@@ -200,12 +204,12 @@ class ScrapProducts extends Command
             $scrap_product_update = array();
             // cập nhật category_id vào woo_product_drivers
             $categories = \DB::table('woo_categories')
-                ->select('id', 'store_id', 'slug')
+                ->select('id', 'store_id', 'name')
                 ->get()->toArray();
             // tạo mảng mới có key là store_id và name folder để so sánh
             $compare_categories = array();
             foreach ($categories as $category) {
-                $key = $category->store_id . '_' . $category->slug;
+                $key = $category->store_id . '_' . $category->name;
                 $compare_categories[$key] = $category->id;
             }
             foreach ($lst_product_category as $val) {
@@ -302,7 +306,7 @@ class ScrapProducts extends Command
                 ['woo_tag_id', '=', NULL],
                 ['tag_name', '<>', NULL]
             ])
-            ->limit(99)
+            ->limit(30)
             ->get()->toArray();
         if (sizeof($lst_product_tag) > 0) {
             $tag_store_lst = array();
@@ -652,6 +656,48 @@ class ScrapProducts extends Command
         if (sizeof($data) > 0) {
             try {
                 $this->createProductEsty_LinkName($data, $variation_id, $fixed);
+            } catch (\Exception $e) {
+                logfile($e->getMessage());
+            }
+        }
+    }
+
+    /*fixed : true : cố định giá và description theo template*/
+    private function getProductCreationsLaunch_LinkName($data, $array_image, $fixed = false)
+    {
+        $client = new \Goutte\Client();
+        $db = array();
+        $variation_id = array();
+        foreach ($data as $key => $dt) {
+            $link = $dt['link'];
+            $tmp_http = parse_url($link);
+            $http = $tmp_http['scheme'];
+            $response = $client->request('GET', $link);
+            $crawler = $response;
+            //kiem tra xem co anh hay khong
+            if ($crawler->filter('h1.product-single__title')->count() > 0) {
+                //get name
+                $product_name = trim($crawler->filter('h1.product-single__title')->text());
+                $data[$key]['product_name'] = trim(preg_replace('/[^a-z\d ]/i', '', $product_name));
+                // get description
+                $data[$key]['description'] = '';
+                $i = 0;
+                //get image to variation color
+                $crawler->filter('ul.product-single__thumbnails li.product-single__thumbnails-item')
+                    ->each(function ($node) use (&$data, &$key, &$i, &$product_name, &$http, &$array_image) {
+                        if (in_array($i, $array_image)) {
+                            $image = $http.":".$node->filter('a')->attr('href');
+                            $data[$key]['images'][$i]['src'] = $image;
+                            $data[$key]['images'][$i]['name'] = $product_name . "_" . basename($image);
+                        }
+                        $i++;
+                    });
+            }
+            $variation_id[$dt['template_id']] = $dt['template_id'];
+        }
+        if (sizeof($data) > 0) {
+            try {
+                $this->createProduct($data, $variation_id);
             } catch (\Exception $e) {
                 logfile($e->getMessage());
             }
