@@ -433,4 +433,62 @@ $(document).ready(function () {
     }
 
     /*End Woocommerce Product Create Automatic*/
+
+    /*Keyword*/
+    $(".js-btn-show-right").click(function(){
+        var url = $('#js-keyword-category').attr('url');
+        var cat_name = $(this).attr('data-catname');
+        var cat_id = $(this).attr('data-catid');
+        var dt = {'cat_name': cat_name, 'cat_id': cat_id};
+        $.ajax({
+            method: "POST",
+            url: url,
+            data: dt,
+            dataType: 'JSON',
+            // dataType: 'html',
+            success: function (data) {
+                Materialize.toast(data.message, 5000);
+                // window.location.reload();
+                // console.log('success');
+                // console.log(data);
+                if (data.result == 'success') {
+                    showDataKeyword(data)
+                    console.log(data);
+                }
+            },
+            error: function (error) {
+                // window.location.reload();
+                console.log('error');
+                console.log(error);
+                Materialize.toast("Xảy ra lỗi. Mời bạn tải lại trang", 5000);
+            }
+        });
+    });
+
+    function showDataKeyword(data)
+    {
+        $('#js-category-title').html(data.cat_name);
+        $('#cat_id').val(data.cat_id);
+        $('#lst_keyword').val(data.list_keyword);
+        $('.js-show').removeClass('blue lighten-5');
+        $('.js-show-'+data.cat_id).addClass('blue lighten-5');
+        showRight();
+    }
+
+    function showRight() {
+        //show righ
+        $('.js-view-right').removeClass('s12').addClass('s6');
+        $('.js-right-colum').removeClass('hidden').addClass('s6');
+    }
+
+    function hideRight()
+    {
+        $('.js-view-right').removeClass('s6').addClass('s12');
+        $('.js-right-colum').removeClass('s6').addClass('hidden');
+    }
+
+    $('.btn-right-close').on('click', function () {
+        hideRight();
+    });
+    /*End Keyword*/
 });

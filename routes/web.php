@@ -98,6 +98,13 @@ Route::middleware('auth')->group(function () {
     Route::post('scrap-save-template','ApiController@scrapSaveTemplate');
     Route::get('woo-deleted-all-template/{woo_template_id}','WooController@deleteAllTemplate');
     Route::get('woo-deleted-all-product/{woo_template_id}&{type}','WooController@deleteAllProductTemplate');
+
+    //lấy link về để cào lấy keyword
+    Route::get('list-categories','WooController@listCategories');
+    Route::get('keyword-category-edit/{id}','WooController@editKeywordCategory');
+    Route::post('ajax-get-all-keyword-category','WooController@showKeywordCategory');
+    Route::post('add-list-keyword','WooController@addListKeyword');
+    Route::get('get-store','WooController@getStore');
     /*End QC + Admin*/
 
     /*Staff*/

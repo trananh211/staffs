@@ -473,13 +473,25 @@
                     </div>
                 </li>
                 <li class="no-padding">
-                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">work</i>
+                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">search</i>
                         Web Scraper
                         <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
                     </a>
                     <div class="collapsible-body">
                         <ul>
                             <li><a href="{{ url('scrap-create-template') }}">Connect Template</a></li>
+                        </ul>
+                    </div>
+                </li>
+                <li class="no-padding">
+                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">vpn_key</i>
+                        Keyword
+                        <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
+                    </a>
+                    <div class="collapsible-body">
+                        <ul>
+                            <li><a href="{{ url('list-categories') }}">List Categories</a></li>
+                            <li><a href="{{ url('get-store') }}">Feed Results </a></li>
                         </ul>
                     </div>
                 </li>

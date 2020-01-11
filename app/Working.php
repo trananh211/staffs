@@ -1490,8 +1490,8 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 }
                 $template_path = $exists->template_path;
                 if (\File::exists($template_path)) {
-                    if (! \File::delete($template_path) ) $action = false;
-                    if (! \File::deleteDirectory(dirname($template_path))) $action = false;
+                    if (!\File::delete($template_path)) $action = false;
+                    if (!\File::deleteDirectory(dirname($template_path))) $action = false;
                 }
                 $result = \DB::table('woo_variations')->whereIn('id', $variation_id)->delete();
                 $r = \DB::table('woo_templates')->where('id', $woo_template_id)->delete();
@@ -1532,8 +1532,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     $deleted = \DB::table('woo_product_drivers')->where($where)->where('status', 0)->delete();
                     $deleted = \DB::table('woo_folder_drivers')->where($where)->delete();
                     $check_exist = \DB::table('woo_product_drivers')->where($where)->count();
-                    if ($check_exist > 0)
-                    {
+                    if ($check_exist > 0) {
                         $update = \DB::table('woo_product_drivers')->where($where)->update(['status' => 23]);
                         if ($update) {
                             $alert = 'success';
@@ -1547,14 +1546,12 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                         $message = 'Thành công. Tất cả sản phẩm thuộc template này sẽ được xóa vào thời gian tới.';
                         \DB::table('woo_templates')->where('id', $woo_template_id)->update(['status' => 23]);
                     }
-                }
-                else if ($type == 1) // scrap website
+                } else if ($type == 1) // scrap website
                 {
                     // Delete all product not create in tool
                     $deleted = \DB::table('scrap_products')->where($where)->where('status', 0)->delete();
                     $check_exist = \DB::table('scrap_products')->where($where)->count();
-                    if ($check_exist > 0)
-                    {
+                    if ($check_exist > 0) {
                         $update = \DB::table('scrap_products')->where($where)->where('status', 1)->update(['status' => 23]);
                         if ($update) {
                             $alert = 'success';
@@ -1675,8 +1672,8 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     public function deletedCategories()
     {
         $data = infoShop();
-        $stores = \DB::table('woo_infos')->select('id','name')->get()->toArray();
-        return view('addon/deleted_categories', compact('stores',  'data'));
+        $stores = \DB::table('woo_infos')->select('id', 'name')->get()->toArray();
+        return view('addon/deleted_categories', compact('stores', 'data'));
     }
 
     public function actionDeletedCategories($request)
@@ -1722,6 +1719,115 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 'result' => $alert
             ]);
         }
+    }
+
+    /*Keyword Categories*/
+    public function editKeywordCategory($woo_category_id)
+    {
+        $data = array();
+        $category = \DB::table('woo_categories as wot')
+            ->leftjoin('ads_keywords as k_word', 'wot.id', '=', 'k_word.woo_category_id')
+            ->select(
+                'wot.id', 'wot.woo_category_id', 'wot.name as category_name',
+                'k_word.keyword'
+            )
+            ->where('wot.id', $woo_category_id)
+            ->get()->toArray();
+        $cat = array();
+        $info = array();
+        foreach ($category as $item) {
+            if (sizeof($info) == 0) {
+                $info = [
+                    'category_name' => $item->category_name,
+                    'id' => $item->id
+                ];
+                $cat['info'] = $info;
+            }
+            $cat['keyword'][] = $item->keyword;
+        }
+        return view('keyword/lst_keywords')->with(compact('data', 'cat'));
+    }
+
+    public function listCategories()
+    {
+        $data = array();
+        $categories = \DB::table('woo_categories as wot')
+            ->join('woo_infos', 'wot.store_id', '=', 'woo_infos.id')
+            ->select(
+                'wot.id', 'wot.woo_category_id', 'wot.name as category_name',
+                'woo_infos.name as store_name'
+            )
+            ->where('wot.status', 0)
+            ->get()->toArray();
+        return view('/keyword/list_categories', compact('data', 'categories'));
+    }
+
+    public function showKeywordCategory($request)
+    {
+        $uid = $this->checkAuth();
+        if ($uid) {
+            $rq = $request->all();
+            $cat_id = $rq['cat_id'];
+            $cat_name = $rq['cat_name'];
+            $keywords = \DB::table('ads_keywords')->where('woo_category_id', $cat_id)->pluck('keyword')->toArray();
+            if (sizeof($keywords) > 0) {
+                $list_keyword = implode(",", $keywords);
+                $str = 'Đã tải xong từ khóa của category : <b>' . $cat_name . '</b>';
+            } else {
+                $list_keyword = '';
+                $str = 'Category <b>' . $cat_name . '</b> chưa được nạp từ khóa. Mời bạn nạp ngay.';
+            }
+            $alert = 'success';
+            $message = '<small class="green-text">' . $str . '</small>';
+        } else {
+            $alert = 'error';
+            $message = '<small class="red-text"> Đã hết phiên. Mời bạn đăng nhập và thử lại.</span>';
+        }
+        return response()->json([
+            'message' => $message,
+            'result' => $alert,
+            'cat_id' => $cat_id,
+            'cat_name' => $cat_name,
+            'list_keyword' => $list_keyword
+        ]);
+    }
+
+    public function addListKeyword($request)
+    {
+        try {
+            $rq = $request->all();
+            $woo_category_id = $rq['id'];
+            $lst_keyword = explode(",", $rq['lst_keyword']);
+            $data = array();
+            foreach ($lst_keyword as $keyword) {
+                $data[] = [
+                    'woo_category_id' => $woo_category_id,
+                    'keyword' => $keyword,
+                    'status' => 0,
+                    'created_at' => date("Y-m-d H:i:s"),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ];
+            }
+            //xóa hết keyword cũ
+            $result = \DB::table('ads_keywords')->where('woo_category_id', $woo_category_id)->delete();
+            \DB::table('ads_keywords')->insert($data);
+            $alert = 'success';
+            $message = 'Đã thêm từ khóa thành công.';
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $alert = 'error';
+            logfile($e->getMessage());
+            $message = 'Thêm từ khóa thất bại. Mời bạn thử lại' . $e->getMessage();
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return redirect('list-categories')->with($alert, $message);
+    }
+
+    public function getStore()
+    {
+        $data = array();
+        $stores = \DB::table('woo_infos')->select('*')->get()->toArray();
+        return view('keyword/list_store',compact('data','stores'));
     }
     /*End Admin + QC*/
 }

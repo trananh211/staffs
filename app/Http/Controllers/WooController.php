@@ -424,5 +424,35 @@ class WooController extends Controller
     }
     /*End Tạo sản phẩm */
 
+    /*lay link de get keyword*/
+    public function listCategories()
+    {
+        $work = new Working();
+        return $work->listCategories();
+    }
+
+    public function editKeywordCategory($woo_category_id)
+    {
+        $work = new Working();
+        return $work->editKeywordCategory($woo_category_id);
+    }
+
+    public function showKeywordCategory(Request $request)
+    {
+        $work = new Working();
+        return $work->showKeywordCategory($request);
+    }
+
+    public function addListKeyword(Request $request)
+    {
+        $work = new Working();
+        return $work->addListKeyword($request);
+    }
+
+    public function getStore()
+    {
+        $work = new Working();
+        return $work->getStore();
+    }
     /*End Admin + QC*/
 }
