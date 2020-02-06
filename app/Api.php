@@ -1207,5 +1207,241 @@ class Api extends Model
         $result = true;
         return $result;
     }
+
+    // Google Feed
+    public function getCategoryChecking()
+    {
+        $re = true;
+        $check_running = \DB::table('check_categories')->select('id')->where('status', 1)->first();
+        $count_category = \DB::table('check_categories')->select('id')->count();
+        if ($check_running == NULL && $count_category > 0) {
+            $category = \DB::table('check_categories')
+                ->select('id', 'category_id', 'store_id')->where('status', 0)->orderBy('created_at', 'ASC')->first();
+            $category = json_decode(json_encode($category ,true),true);
+            if ($category != NULL && sizeof($category) > 0) {
+                $check_categories_id = $category['id'];
+                // cap nhat trang thai check categories
+                \DB::table('check_categories')->where('id',$check_categories_id)->update(['status' => 1]);
+                $category_id = $category['category_id'];
+                $store_id = $category['store_id'];
+                $select = ['id', 'category_name', 'tag_name', 'store_id', 'woo_product_id', 'woo_product_name', 'woo_slug'];
+                //lay danh sach feed chưa xong ra để xóa những product chưa cập nhật xong
+                $lst_feeds = \DB::table('feed_products')->select($select)
+                    ->where('category_id', $category_id)
+                    ->where('store_id', $store_id)
+                    ->get()->toArray();
+                // lay toan bo product scrap ra de so sanh loai tru
+                $lst_products = \DB::table('scrap_products')
+                    ->select($select)
+                    ->where('woo_category_id', $category_id)
+                    ->where('store_id', $store_id)
+                    ->get()->toArray();
+                $ar_feeds = array();
+                $lst_delete = array();
+                foreach ($lst_feeds as $f) {
+                    $ar_feeds[$f->woo_product_id] = [
+                        'category_id' => $category_id,
+                        'category_name' => $f->category_name,
+                        'tag_name' => $f->tag_name,
+                        'store_id' => $f->store_id,
+                        'woo_product_id' => $f->woo_product_id,
+                        'woo_product_name' => $f->woo_product_name,
+                        'woo_slug' => $f->woo_slug
+                    ];
+                    $lst_delete[$f->woo_product_id] = $f->id;
+                }
+                // bắt đầu so sánh feed và scrap product
+                $delete_feed_product = array();
+                $insert_feed_data = array();
+                $update_feed_check_again = array();
+                foreach ($lst_products as $product) {
+                    $tmp_data = [
+                        'woo_product_name' => $product->woo_product_name,
+                        'woo_slug' => $product->woo_slug,
+                        'category_id' => $category_id,
+                        'woo_product_id' => $product->woo_product_id,
+                        'store_id' => $product->store_id,
+                        'category_name' => $product->category_name,
+                        'tag_name' => $product->tag_name,
+                        'scrap_product_id' => $product->id,
+                        'created_at' => date("Y-m-d H:i:s"),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ];
+                    // nếu đã tồn tại rồi thì kiểm tra dữ liệu có trùng hay không. Nếu không trùng xóa đi và thêm mới.
+                    if (array_key_exists($product->woo_product_id, $ar_feeds)) {
+                        $tmp = [
+                            'category_id' => $category_id,
+                            'category_name' => $product->category_name,
+                            'tag_name' => $product->tag_name,
+                            'store_id' => $product->store_id,
+                            'woo_product_id' => $product->woo_product_id,
+                            'woo_product_name' => $product->woo_product_name,
+                            'woo_slug' => $product->woo_slug
+                        ];
+                        $result = array_diff($tmp, $ar_feeds[$product->woo_product_id]);
+                        if (!empty($result)) {
+                            $delete_feed_product[] = $lst_delete[$product->woo_product_id];
+                            $insert_feed_data[] = $tmp_data;
+                        } else {
+                            $update_feed_check_again[] = $lst_delete[$product->woo_product_id];
+                        }
+                    } else {
+                        $insert_feed_data[] = $tmp_data;
+                    }
+                }
+                // nếu tồn tại 2 giá trị feed và scrap product khác nhau. xóa đi và insert lại
+                if (sizeof($delete_feed_product) > 0) {
+                    \DB::table('feed_products')->whereIn('id', $delete_feed_product)->delete();
+                    logfile('-- Xóa sản phẩm trên feed thông tin đã cũ.');
+                }
+
+                // nếu tồn tại giá trị cần insert thì tạo mới 1 loạt sản phẩm trong feed theo info của scrap product.
+                if (sizeof($insert_feed_data) > 0) {
+                    \DB::table('feed_products')->insert($insert_feed_data);
+                    logfile('-- Thêm dữ liệu đã được cập nhật từ scrap product');
+                }
+
+                // nếu giá trị được so sánh giống hoàn toàn với dữ liệu cũ. cập nhật lại để check
+                if (sizeof($update_feed_check_again) > 0)
+                {
+                    \DB::table('feed_products')->whereIn('id',$update_feed_check_again)->update([
+                        'status' => 0,
+                        'check' => 0,
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                }
+
+                \DB::table('check_categories')->where('id',$check_categories_id)->update(['status' => 2]);
+                $re = false;
+            } else {
+                logfile('-- Category đã được cập nhật thông tin mới nhất.');
+            }
+        } else {
+            if ($check_running)
+            {
+                logfile('-- Đang cập nhật check category id : ' . $check_running->id);
+            } else {
+                logfile('-- Không có category để check');
+            }
+        }
+        return $re;
+    }
+
+    public function reCheckProductInfo()
+    {
+        $re = true;
+        logfile('-- Đang check feed product');
+        $limit = 10;
+        $products = \DB::table('feed_products')
+            ->select('id', 'woo_product_name', 'woo_slug', 'woo_image', 'woo_product_id', 'category_name', 'store_id',
+                'scrap_product_id')
+            ->where('check', 0)->limit($limit)->get()->toArray();
+        $stores = \DB::table('woo_infos')->select('id', 'url', 'consumer_key', 'consumer_secret')->get()->toArray();
+        $categories = \DB::table('woo_categories')->select('id', 'woo_category_id', 'name', 'store_id')->get()->toArray();
+        if (sizeof($products) > 0) {
+            // lấy toàn bộ danh sách category để phân loại store sau đó so sánh categories
+            $ar_categories = array();
+            foreach ($categories as $category) {
+                $ar_categories[$category->store_id][$category->name] = [
+                    'category_id' => $category->id,
+                    'category_name' => $category->name,
+                    'woo_category_id' => $category->woo_category_id,
+                ];
+            }
+            // lấy thông tin đăng nhập vào API của tất cả store
+            $ar_stores = array();
+            foreach ($stores as $store) {
+                $ar_stores[$store->id] = json_decode(json_encode($store, true), true);
+            }
+            $check_data = array();
+            foreach ($products as $product) {
+                if (array_key_exists($product->store_id, $ar_stores)) {
+                    $check_data[$product->store_id]['woo'] = $ar_stores[$product->store_id];
+                    $check_data[$product->store_id]['feed'][] = json_decode(json_encode($product, true), true);
+                }
+            }
+            $lst_feed_id = array();
+            $data_update_feed = array();
+            $lst_scrap_id = array();
+            $data_update_scrap = array();
+            // ket noi toi store woo de kiem tra thong tin san pham
+            foreach ($check_data as $store_id => $v) {
+                $woo_info = $v['woo'];
+                $woocommerce = $this->getConnectStore($woo_info['url'], $woo_info['consumer_key'], $woo_info['consumer_secret']);
+                foreach ($v['feed'] as $feed) {
+//                print_r($feed);
+                    // tạo ra array của sản phẩm trong database
+                    $array_old = [
+                        'woo_product_name' => trim($feed['woo_product_name']),
+                        'woo_slug' => trim($feed['woo_slug']),
+                        'woo_image' => trim($feed['woo_image']),
+                        'woo_product_id' => trim($feed['woo_product_id']),
+                        'category_name' => trim($feed['category_name'])
+                    ];
+//                print_r($array_old);
+                    $result = ($woocommerce->get('products/' . $feed['woo_product_id']));
+                    // tạo ra array của info sản phẩm cần so sánh
+                    $array_new = [
+                        'woo_product_name' => trim($result->name),
+                        'woo_slug' => trim($result->permalink),
+                        'woo_image' => trim($result->images[0]->src),
+                        'woo_product_id' => trim($result->id),
+                        'category_name' => trim($result->categories[0]->name)
+                    ];
+//                print_r($result);
+                    $result_diff = array_diff($array_new, $array_old);
+                    // neu 2 array khac nhau
+                    if (sizeof($result_diff) > 0) {
+                        $data_update_feed[$feed['id']] = [
+                            'woo_product_name' => $result->name,
+                            'woo_slug' => $result->permalink,
+                            'woo_image' => $result->images[0]->src,
+                            'woo_product_id' => $result->id,
+                            'category_name' => $result->categories[0]->name,
+                            'status' => 1,
+                            'check' => 1,
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
+                        $data_update_scrap[$feed['scrap_product_id']] = [
+                            'woo_product_name' => $result->name,
+                            'woo_slug' => $result->permalink,
+                            'woo_product_id' => $result->id,
+                            'category_name' => $result->categories[0]->name,
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
+                        logfile(' --- Đang check feed id: ' . $feed['id'] . ' : Thong tin khac nhau');
+                    } else {
+                        logfile(' --- Đang check feed id: ' . $feed['id'] . ' : Thong tin giong nhau');
+                        $lst_feed_id[] = $feed['id'];
+                    }
+                }
+            }
+
+            if (sizeof($lst_feed_id) > 0) {
+                \DB::table('feed_products')->whereIn('id', $lst_feed_id)->update([
+                    'status' => 1,
+                    'check' => 1,
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+            }
+            if (sizeof($data_update_feed) > 0) {
+                foreach ($data_update_feed as $feed_id => $data) {
+                    \DB::table('feed_products')->where('id', $feed_id)->update($data);
+                }
+            }
+
+            if (sizeof($data_update_scrap) > 0) {
+                foreach ($data_update_scrap as $scrap_id => $data) {
+                    \DB::table('scrap_products')->where('id', $scrap_id)->update($data);
+                }
+            }
+            $re = false;
+        } else {
+            logfile('-- [DONE] Đã check xong toàn bộ feed product');
+        }
+        return $re;
+    }
+
+    // End Google feed
     /*End WooCommerce API*/
 }

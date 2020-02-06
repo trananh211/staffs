@@ -490,5 +490,14 @@ $(document).ready(function () {
     $('.btn-right-close').on('click', function () {
         hideRight();
     });
+
+    //make category feed
+    $('#js-store-feed').change(function () {
+       var store_id = $(this).val();
+       $('#js-category-feed .js-store').hide();
+       $('#js-category-feed .js-store-'+store_id).show();
+        $('#js-category-feed').val('all');
+    });
+
     /*End Keyword*/
 });

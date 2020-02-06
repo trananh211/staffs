@@ -184,5 +184,22 @@ class ApiController extends Controller
         return $api->autoUploadImage();
     }
     /*End Product automatic create*/
+
+    // Googl Feed
+    /*Check Product of category info*/
+    public function getCategoryChecking()
+    {
+        $api = new Api();
+        return $api->getCategoryChecking();
+    }
+
+    public function reCheckProductInfo()
+    {
+        $api = new Api();
+        return $api->reCheckProductInfo();
+    }
+    /*End Check Product of category info*/
+
+    // End Google Feed
 }
 

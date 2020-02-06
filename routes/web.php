@@ -105,6 +105,7 @@ Route::middleware('auth')->group(function () {
     Route::post('ajax-get-all-keyword-category','WooController@showKeywordCategory');
     Route::post('add-list-keyword','WooController@addListKeyword');
     Route::get('get-store','WooController@getStore');
+    Route::post('process-feed-store','WooController@processFeedStore');
     /*End QC + Admin*/
 
     /*Staff*/

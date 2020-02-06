@@ -1826,8 +1826,124 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     public function getStore()
     {
         $data = array();
-        $stores = \DB::table('woo_infos')->select('*')->get()->toArray();
-        return view('keyword/list_store',compact('data','stores'));
+        $stores = \DB::table('woo_infos')->select('id', 'name')->get()->toArray();
+        $categories = \DB::table('woo_categories')
+            ->select('id', 'name','store_id')
+            ->where('status',0)
+            ->orderBy('name','ASC')
+            ->get()->toArray();
+        $stores = json_decode(json_encode($stores), true);
+        $categories = json_decode(json_encode($categories), true);
+
+        //list category dang duoc yeu cau cap nhat
+        $lst_requests = \DB::table('check_categories as c_cate')
+            ->join('woo_categories', 'c_cate.category_id', '=', 'woo_categories.id')
+            ->join('woo_infos', 'c_cate.store_id', '=', 'woo_infos.id')
+            ->select(
+                'c_cate.id as check_category_id', 'c_cate.status','c_cate.created_at', 'c_cate.woo_category_id',
+                'c_cate.store_id',
+                'woo_categories.name as category_name',
+                'woo_infos.name as store_name'
+            )
+            ->orderBy('c_cate.id','DESC')
+            ->get()->toArray();
+        //lay danh sach feed dang check lại
+        $feeds_all = \DB::table('feed_products')->select('id','store_id','category_name','status')->get()->toArray();
+        $feeds = array();
+        foreach ($feeds_all as $item)
+        {
+            $feeds[$item->store_id][$item->category_name]['all'][] = $item->id;
+            if ($item->status == 1)
+            {
+                $feeds[$item->store_id][$item->category_name]['done'][] = $item->id;
+            }
+        }
+        return view('keyword/list_store',compact('data','stores', 'categories','lst_requests','feeds'));
+    }
+
+    public function processFeedStore($request)
+    {
+//        try {
+            echo "<pre>";
+            $rq = $request->all();
+            $store_id = $rq['store_id'];
+            $lst_category = $rq['lst_category'];
+        switch ($request->input('action')) {
+            case 'feed':
+                // Save model
+                echo 'feed';
+                break;
+
+            case 'check_again':
+                $result = $this->checkAgainProduct($store_id, $lst_category);
+                // Redirect to advanced edit
+                break;
+        }
+            $alert = $result[0];
+            $message = $result[1];
+//            \DB::commit(); // if there was no errors, your query will be executed
+//        } catch (\Exception $e) {
+//            $alert = 'error';
+//            logfile($e->getMessage());
+//            $message = 'Thêm từ khóa thất bại. Mời bạn thử lại' . $e->getMessage();
+//            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+//        }
+        return redirect('get-store')->with($alert, $message);
+    }
+
+    private function checkAgainProduct($store_id, $category_id)
+    {
+        $alert = 'success';
+        $message = '';
+        if ($category_id == 'all')
+        {
+            $where = [
+                ['store_id', '=', $store_id],
+                ['status', '=', 0],
+            ];
+        } else {
+            $where = [
+                ['id', '=', $category_id]
+            ];
+        }
+        $checking = \DB::table('check_categories')->where('status',0)->pluck('category_id')->toArray();
+        $lists = \DB::table('woo_categories')
+            ->select('id', 'woo_category_id', 'name')
+            ->where($where)->get()->toArray();
+        if (sizeof($lists) > 0)
+        {
+            $data = array();
+            $str = '';
+            foreach ($lists as $value)
+            {
+                if (!in_array($value->id,$checking))
+                {
+                    $data[] = [
+                        'category_id' => $value->id,
+                        'woo_category_id' => $value->woo_category_id,
+                        'store_id' => $store_id,
+                        'created_at' => date("Y-m-d H:i:s"),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ];
+                } else {
+                    $str .= $value->name.", ";
+                }
+            }
+            if (sizeof($data) > 0)
+            {
+                $insert = \DB::table('check_categories')->insert($data);
+                if (strlen($str) > 0)
+                {
+                    $message = 'Category: '. rtrim(trim($str),',').' đang được kiểm tra. Tất cả category còn lại sẽ được kiểm tra lại.';
+                } else {
+                    $message = 'Yêu cầu kiểm tra của bạn đã được thực hiện.';
+                }
+
+            } else {
+                $message = 'Tất cả category bạn chọn đều đang trong quá trình kiểm tra lại. Không cần thực hiện hành động này nữa';
+            }
+        }
+        return array($alert, $message);
     }
     /*End Admin + QC*/
 }

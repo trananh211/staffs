@@ -449,6 +449,12 @@ class WooController extends Controller
         return $work->addListKeyword($request);
     }
 
+    public function processFeedStore(Request $request)
+    {
+        $work = new Working();
+        return $work->processFeedStore($request);
+    }
+
     public function getStore()
     {
         $work = new Working();
