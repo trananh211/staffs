@@ -1871,7 +1871,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         switch ($request->input('action')) {
             case 'feed':
                 // Save model
-                echo 'feed';
+                $result = $this->makeFileFeed($store_id, $lst_category);
                 break;
 
             case 'check_again':
@@ -1889,6 +1889,92 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
 //            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
 //        }
         return redirect('get-store')->with($alert, $message);
+    }
+
+    private function makeFileFeed($store_id, $category_id)
+    {
+        echo "<pre>";
+        $alert = 'success';
+        echo $store_id.' -- '.$category_id."<br>";
+        if ($category_id == 'all')
+        {
+            $where = [
+                ['store_id', '=', $store_id],
+                ['status', '=', 1],
+            ];
+        } else {
+            $where = [
+                ['category_id', '=', $category_id]
+            ];
+        }
+
+        $feeds = \DB::table('feed_products')->select('*')->where($where)
+            ->orderBy('id','ASC')
+            ->orderBy('category_id','ASC')
+            ->get()->toArray();
+        if (sizeof($feeds) > 0)
+        {
+            $lst_stores = array();
+            $stores = \DB::table('woo_infos')->select('*')->get()->toArray();
+            foreach ($stores as $store)
+            {
+                $lst_stores[$store->id] = $store->name;
+            }
+            // loc het tu khoa cua category vao 1 nhom array theo key
+            $categories = array();
+            $lst_categories = \DB::table('ads_keywords')->select('*')->get()->toArray();
+            foreach ($lst_categories as $category)
+            {
+                $categories[$category->woo_category_id][] = $category->keyword;
+            }
+            // so sánh nếu trùng category thì nhét từ khóa vào feed
+            $lst_feeds = array();
+            $ar_tmp_category = array();
+            $i = 0;
+            foreach ($feeds as $feed)
+            {
+                // thêm từ khóa ra sale vào feed title
+                $title = '';
+                if (array_key_exists($feed->category_id, $categories))
+                {
+                    $ar_tmp_category[$feed->category_id][$i] = $i;
+                    if (sizeof($ar_tmp_category[$feed->category_id]) == sizeof($categories[$feed->category_id]))
+                    {
+                        $ar_tmp_category = array();
+                        $i = 0;
+                    }
+                    $title = ucwords($categories[$feed->category_id][$i]);
+                    $i++;
+                }
+                $lst_feeds[$feed->id] = [
+                    'id' => $feed->woo_product_id,
+                    'title' => $title.' '.$feed->woo_product_name,
+                    'description' => '',
+                    'link' => $feed->woo_slug,
+                    'image_link' => $feed->woo_image,
+                    'availability' => 'in stock',
+                    'price' => '',
+                    'sale_price' => '',
+                    'google_product_category' => '',
+                    'brand' => $lst_stores[$feed->store_id],
+                    'gtin' => '',
+                    'mpn' => 'yes',
+                    'identifier_exists' => 'false',
+                    'condition' => 'New',
+                    'color' => '',
+                    'size' => '',
+                    'age_group' => 'Adult',
+                    'gender' => 'Unisex',
+                    'product_type' => $feed->category_name,
+                    'custom_label_0' => $feed->category_name
+                ];
+            }
+            print_r($lst_feeds);
+        } else {
+            $alert = 'error';
+            $message = 'Category này chưa được tạo feed. Mời bạn chọn nút "check product" trước';
+        }
+        die();
     }
 
     private function checkAgainProduct($store_id, $category_id)
