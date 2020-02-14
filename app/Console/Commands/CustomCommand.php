@@ -94,6 +94,7 @@ class CustomCommand extends Command
     {
         $api_controller = new ApiController(); // make sure to import the controller
         $check = true;
+        $check = $api_controller->getCategoryChecking();
         if ($check) {
             $check2 = $api_controller->reCheckProductInfo();
         }

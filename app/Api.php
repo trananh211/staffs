@@ -1334,7 +1334,7 @@ class Api extends Model
         $limit = 10;
         $products = \DB::table('feed_products')
             ->select('id', 'woo_product_name', 'woo_slug', 'woo_image', 'woo_product_id', 'category_name', 'store_id',
-                'scrap_product_id')
+                'scrap_product_id','description')
             ->where('check', 0)->limit($limit)->get()->toArray();
         $stores = \DB::table('woo_infos')->select('id', 'url', 'consumer_key', 'consumer_secret')->get()->toArray();
         $categories = \DB::table('woo_categories')->select('id', 'woo_category_id', 'name', 'store_id')->get()->toArray();
@@ -1395,6 +1395,7 @@ class Api extends Model
                         $data_update_feed[$feed['id']] = [
                             'woo_product_name' => $result->name,
                             'woo_slug' => $result->permalink,
+                            'description' => strip_tags($result->description),
                             'woo_image' => $result->images[0]->src,
                             'woo_product_id' => $result->id,
                             'category_name' => $result->categories[0]->name,
@@ -1412,7 +1413,16 @@ class Api extends Model
                         logfile(' --- Đang check feed id: ' . $feed['id'] . ' : Thong tin khac nhau');
                     } else {
                         logfile(' --- Đang check feed id: ' . $feed['id'] . ' : Thong tin giong nhau');
-                        $lst_feed_id[] = $feed['id'];
+                        // kiểm tra xem nếu description rỗng thì thêm mới
+                        if ($feed['description'] == '')
+                        {
+                            $data_update_feed[$feed['id']] = [
+                                'description' => strip_tags($result->description),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                        } else {
+                            $lst_feed_id[] = $feed['id'];
+                        }
                     }
                 }
             }

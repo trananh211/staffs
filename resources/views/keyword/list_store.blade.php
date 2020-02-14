@@ -55,7 +55,62 @@
                 </div>
             </div>
         </div>
-
+        @if (sizeof($google_feeds) > 0)
+            <div class="col s12">
+                <div class="page-title">Google Feeds</div>
+            </div>
+            <div class="row">
+                <div class="col s12 m12 l12">
+                    <div class="card invoices-card">
+                        <div class="card-content">
+                            <table id="list-order" class="display responsive-table datatable-example">
+                                <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Store</th>
+                                    <th>Time</th>
+                                    <th>Action</th>
+                                </tr>
+                                </thead>
+                                <tfoot>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Store</th>
+                                    <th>Time</th>
+                                    <th>Action</th>
+                                </tr>
+                                </tfoot>
+                                <tbody>
+                                @foreach($google_feeds as $key => $value)
+                                    <tr>
+                                        <td>{{ $key+1 }}</td>
+                                        <td>{{ $value->file_name }}</td>
+                                        <td>{{ $value->category_name }}</td>
+                                        <td>{{ $value->store_name }}</td>
+                                        <td>
+                                            {!! compareTime($value->created_at, date("Y-m-d H:i:s")) !!}
+                                        </td>
+                                        <td>
+                                            <a href="{{ url('feed-get-file/'.$value->id) }}"
+                                               class="waves-effect waves-light btn">Get File</a >
+                                            |
+                                            <a onclick="return confirm('Bạn có chắc chắn muốn xóa file này?');"
+                                               href="{{ url('feed-delete-file/'.$value->id) }}"
+                                               class="waves-effect waves-light btn red">Delete</a >
+                                        </td>
+                                    </tr>
+                                @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
         @if (sizeof($lst_requests) > 0)
             <div class="col s12">
                 <div class="page-title">Category Re Check</div>
@@ -121,9 +176,6 @@
                     </div>
                 </div>
             </div>
-            <pre>
-                <?php print_r($lst_requests); ?>
-            </pre>
         @endif
 
     </div>

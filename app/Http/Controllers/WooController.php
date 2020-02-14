@@ -455,10 +455,26 @@ class WooController extends Controller
         return $work->processFeedStore($request);
     }
 
-    public function getStore()
+    public function getStoreFeed()
     {
         $work = new Working();
-        return $work->getStore();
+        return $work->getStoreFeed();
     }
+
+    // xóa file google feed
+    public function feedDeleteFile($google_feed_id)
+    {
+        $work = new Working();
+        return $work->feedDeleteFile($google_feed_id);
+    }
+
+    //download file google feed
+    public function feedGetFile($google_feed_id)
+    {
+        $work = new Working();
+        return $work->feedGetFile($google_feed_id);
+    }
+
+
     /*End Admin + QC*/
 }

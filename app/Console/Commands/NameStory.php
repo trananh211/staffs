@@ -550,8 +550,21 @@ class NameStory extends Command
         $this->saveTemplate($data, $woo_template_id, $domain);
     }
 
+    private function checkProductExist($template_id, $store_id)
+    {
+        $products = \DB::table('scrap_products')
+            ->where('template_id',$template_id)
+            ->where('store_id',$store_id)
+            ->pluck('link')
+            ->toArray();
+        return $products;
+    }
+
     private function scanMerchKing_getTag($website_id, $template_id, $store_id, $woo_template_id)
     {
+        echo "<pre>";
+        // so sanh product cu. trung thi se k lay nua
+        $products_old = $this->checkProductExist($template_id, $store_id);
         $website = website();
         $domain = $website[$website_id];
         $domain_origin = explode('/search', $domain)[0];
@@ -572,26 +585,29 @@ class NameStory extends Command
                 $crawler->filter('section.site-content div.container div.col-md-3')->count() : 0;
             if ($products > 0) {
                 $crawler->filter('section.site-content div.container div.col-md-3')
-                    ->each(function ($node) use (&$data, &$website_id, &$template_id, &$store_id, &$url, &$domain_origin) {
+                    ->each(function ($node) use (&$data, &$website_id, &$template_id, &$store_id, &$url, &$domain_origin,
+                        &$products_old) {
                         $link = $domain_origin . trim($node->filter('a')->attr('href'));
-                        $name = trim($node->filter('a')->text());
-                        $tag = explode(' ', strtolower($name))[0];
-                        $tag_name = preg_replace('/[^a-z\d]/i', '-', sanitizer($tag));
-                        $tag_name = rtrim($tag_name, '-');
-                        $category_name = 'Fleece Blanket';
-                        $data[] = [
-                            'category_name' => $category_name,
-                            'tag_name' => $tag_name,
-                            'link' => $link,
-                            'website_id' => $website_id,
-                            'website' => $url,
-                            'template_id' => $template_id,
-                            'store_id' => $store_id,
-                            'status' => 0,
-                            'created_at' => date("Y-m-d H:i:s"),
-                            'updated_at' => date("Y-m-d H:i:s")
-                        ];
-
+                        if (!in_array($link, $products_old))
+                        {
+                            $name = trim($node->filter('a')->text());
+                            $tag = explode(' ', strtolower($name))[0];
+                            $tag_name = preg_replace('/[^a-z\d]/i', '-', sanitizer($tag));
+                            $tag_name = rtrim($tag_name, '-');
+                            $category_name = 'Fleece Blanket';
+                            $data[] = [
+                                'category_name' => $category_name,
+                                'tag_name' => $tag_name,
+                                'link' => $link,
+                                'website_id' => $website_id,
+                                'website' => $url,
+                                'template_id' => $template_id,
+                                'store_id' => $store_id,
+                                'status' => 0,
+                                'created_at' => date("Y-m-d H:i:s"),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                        }
                     });
             }
 
