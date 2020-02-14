@@ -1823,7 +1823,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         return redirect('list-categories')->with($alert, $message);
     }
 
-    public function getStore()
+    public function getStoreFeed()
     {
         $data = array();
         $stores = \DB::table('woo_infos')->select('id', 'name')->get()->toArray();
@@ -1858,13 +1858,16 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 $feeds[$item->store_id][$item->category_name]['done'][] = $item->id;
             }
         }
-        return view('keyword/list_store',compact('data','stores', 'categories','lst_requests','feeds'));
+
+        //lấy danh sách tạo google feed
+        $google_feeds = \DB::table('google_feeds')->select('*')->orderBy('id','DESC')->get()->toArray();
+        return view('keyword/list_store',compact('data','stores', 'categories','lst_requests','feeds',
+            'google_feeds'));
     }
 
     public function processFeedStore($request)
     {
-//        try {
-            echo "<pre>";
+        try {
             $rq = $request->all();
             $store_id = $rq['store_id'];
             $lst_category = $rq['lst_category'];
@@ -1881,31 +1884,35 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         }
             $alert = $result[0];
             $message = $result[1];
-//            \DB::commit(); // if there was no errors, your query will be executed
-//        } catch (\Exception $e) {
-//            $alert = 'error';
-//            logfile($e->getMessage());
-//            $message = 'Thêm từ khóa thất bại. Mời bạn thử lại' . $e->getMessage();
-//            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
-//        }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $alert = 'error';
+            logfile($e->getMessage());
+            $message = 'Thêm từ khóa thất bại. Mời bạn thử lại' . $e->getMessage();
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
         return redirect('get-store')->with($alert, $message);
     }
 
     private function makeFileFeed($store_id, $category_id)
     {
-        echo "<pre>";
-        $alert = 'success';
-        echo $store_id.' -- '.$category_id."<br>";
+        $alert = 'error';
+        $category_name = '';
+        $stores = \DB::table('woo_infos')->select('name')->where('id',$store_id)->first();
+        $store_name = $stores->name;
         if ($category_id == 'all')
         {
             $where = [
                 ['store_id', '=', $store_id],
                 ['status', '=', 1],
             ];
+            $category_name = 'All';
         } else {
             $where = [
                 ['category_id', '=', $category_id]
             ];
+            $cat = \DB::table('woo_categories')->select('name')->where('id',$category_id)->first();
+            $category_name = $cat->name;
         }
 
         $feeds = \DB::table('feed_products')->select('*')->where($where)
@@ -1949,7 +1956,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 $lst_feeds[$feed->id] = [
                     'id' => $feed->woo_product_id,
                     'title' => $title.' '.$feed->woo_product_name,
-                    'description' => '',
+                    'description' => $feed->description,
                     'link' => $feed->woo_slug,
                     'image_link' => $feed->woo_image,
                     'availability' => 'in stock',
@@ -1969,12 +1976,37 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     'custom_label_0' => $feed->category_name
                 ];
             }
-            print_r($lst_feeds);
+            $name_file = 'feeds_'.date("mdYHis");
+            $check = createFileExcel($name_file, $lst_feeds, storage_path('feed'), 'google_feed');
+            if ($check)
+            {
+                $path = storage_path('feed/'.$name_file.'.csv');
+                $data = [
+                    'file_name' => $name_file.'.csv',
+                    'store_name' => $store_name,
+                    'category_name' => $category_name,
+                    'path' => $path,
+                    'created_at' => date("Y-m-d H:i:s"),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ];
+                $result = \DB::table('google_feeds')->insert($data);
+                if ($result)
+                {
+                    $alert = 'success';
+                    $message = 'Tạo thành công feed google.';
+                } else {
+                    $message = 'Tạo được file CSV nhưng không thể lưu vào database. Xóa CSV và tạo lại.';
+                    if (\File::exists($path)) {
+                        \File::delete($path);
+                    }
+                }
+            } else {
+                $message = 'Không thể tạo được file CSV. Mời bạn thử lại';
+            }
         } else {
-            $alert = 'error';
             $message = 'Category này chưa được tạo feed. Mời bạn chọn nút "check product" trước';
         }
-        die();
+        return array($alert, $message);
     }
 
     private function checkAgainProduct($store_id, $category_id)
@@ -2030,6 +2062,47 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             }
         }
         return array($alert, $message);
+    }
+
+    // xóa file google feed
+    public function feedDeleteFile($google_feed_id)
+    {
+        $google_feed = \DB::table('google_feeds')->select('file_name','path')->where('id',$google_feed_id)->first();
+        if ($google_feed != NULL)
+        {
+            $path = $google_feed->path;
+            //xóa file trên hệ thống server
+            if (\File::exists($path)) {
+                \File::delete($path);
+            }
+            $result = \DB::table('google_feeds')->where('id',$google_feed_id)->delete();
+            if ($result)
+            {
+                $alert = 'success';
+                $message = 'Xóa thành công google feed : '.$google_feed->file_name;
+            } else {
+                $alert = 'error';
+                $message = 'Xảy ra lỗi khi xóa file : '.$google_feed->file_name.'. Mời bạn thử lại';
+            }
+        } else {
+            $alert = 'error';
+            $message = 'Không tồn tại google feed này. Mời bạn kiểm tra lại';
+        }
+        return redirect('get-store')->with($alert, $message);
+    }
+
+    //download file google feed
+    public function feedGetFile($google_feed_id)
+    {
+        $google_feed = \DB::table('google_feeds')->select('file_name','path')->where('id',$google_feed_id+30)->first();
+        if ($google_feed != NULL)
+        {
+            return response()->download($google_feed->path);
+        } else {
+            $alert = 'error';
+            $message = 'Không tồn tại google feed này. Mời bạn kiểm tra lại';
+            return redirect('get-store')->with($alert, $message);
+        }
     }
     /*End Admin + QC*/
 }

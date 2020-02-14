@@ -104,8 +104,10 @@ Route::middleware('auth')->group(function () {
     Route::get('keyword-category-edit/{id}','WooController@editKeywordCategory');
     Route::post('ajax-get-all-keyword-category','WooController@showKeywordCategory');
     Route::post('add-list-keyword','WooController@addListKeyword');
-    Route::get('get-store','WooController@getStore');
+    Route::get('get-store','WooController@getStoreFeed');
     Route::post('process-feed-store','WooController@processFeedStore');
+    Route::get('feed-delete-file/{google_feed_id}','WooController@feedDeleteFile');
+    Route::get('feed-get-file/{google_feed_id}','WooController@feedGetFile');
     /*End QC + Admin*/
 
     /*Staff*/
