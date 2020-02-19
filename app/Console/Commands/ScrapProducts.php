@@ -127,7 +127,7 @@ class ScrapProducts extends Command
                         break;
                     case 9:
                     case 17:
-                        $this->getProductMerchKing($dt, array(2,3,7));
+                        $this->getProductMerchKing($dt, array(2,3,4,7));
                         break;
                     case 10:
                         $this->getProductEsty_LinkName($dt);
