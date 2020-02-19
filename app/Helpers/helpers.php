@@ -28,7 +28,8 @@ function website()
         '13' => 'https://www.etsy.com/shop/threaddomain?section_id=25308779',
         '14' => 'https://www.etsy.com/shop/MyDivaBabyAU?section_id=24442401',
         '15' => 'https://creationslaunch.com/search?q=high+top&type=product',
-        '16' => 'https://creationslaunch.com/search?q=low+top&type=product'
+        '16' => 'https://creationslaunch.com/search?q=low+top&type=product',
+        '17' => 'https://anzgiftshop.com/search?q=blanket'
     ];
     return $website;
 }

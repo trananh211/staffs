@@ -68,6 +68,7 @@ class NameStory extends Command
                         $this->scanMerchKing_Zolagifts($website_id, $template_id, $store_id, $woo_template_id,'15198');
                         break;
                     case 9:
+                    case 17:
                         $this->scanMerchKing_getTag($website_id, $template_id, $store_id, $woo_template_id);
                         break;
                     case 10:

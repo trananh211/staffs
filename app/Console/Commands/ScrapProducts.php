@@ -126,6 +126,7 @@ class ScrapProducts extends Command
                         $this->getProductMerchKing($dt, array(1));
                         break;
                     case 9:
+                    case 17:
                         $this->getProductMerchKing($dt, array(2,3,7));
                         break;
                     case 10:
@@ -959,16 +960,7 @@ class ScrapProducts extends Command
                 $woocommerce = $this->getConnectStore($val['url'], $val['consumer_key'], $val['consumer_secret']);
                 $save_product = ($woocommerce->post('products', $prod_data));
                 $woo_product_id = $save_product->id;
-
-                // Cap nhat product id vao woo_product_driver
-                \DB::table('scrap_products')->where('id', $val['id'])
-                    ->update([
-                        'woo_product_id' => $woo_product_id,
-                        'woo_product_name' => $woo_product_name,
-                        'woo_slug' => $save_product->permalink,
-                        'status' => 1,
-                        'updated_at' => date("Y-m-d H:i:s")
-                    ]);
+                $link_product = $save_product->permalink;
                 $key_variation = $val['template_id'] . '_' . $val['store_id'];
                 if (sizeof($variation_store) > 0 && array_key_exists($key_variation, $variation_store))
                 {
@@ -996,10 +988,20 @@ class ScrapProducts extends Command
                 );
                 $result = $woocommerce->put('products/' . $woo_product_id, $tmp);
                 if ($result) {
+                    $link_product = $result->permalink;
                     logfile('-- Đã tạo thành công sản phẩm ' . $woo_product_name);
                 } else {
-                    logfile('-- Thất bại. Khôn tạo được sản phẩm ' . $woo_product_name);
+                    logfile('-- Thất bại. Không tạo được sản phẩm ' . $woo_product_name);
                 }
+                // Cap nhat product id vao woo_product_driver
+                \DB::table('scrap_products')->where('id', $val['id'])
+                    ->update([
+                        'woo_product_id' => $woo_product_id,
+                        'woo_product_name' => $woo_product_name,
+                        'woo_slug' => $link_product,
+                        'status' => 1,
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
             }
             /*// gui image luu vao database
             $this->saveImagePath($db_image);*/
