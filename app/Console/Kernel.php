@@ -44,8 +44,8 @@ class Kernel extends ConsoleKernel
 //        $schedule->call('App\Http\Controllers\TrackingController@getInfoTracking')->hourlyAt(33);
 
         /*Upload Product*/
-        $schedule->call('App\Http\Controllers\ApiController@autoUploadProduct')->everyFiveMinutes();
-        $schedule->call('App\Http\Controllers\ApiController@autoUploadImage')->everyMinute();
+//        $schedule->call('App\Http\Controllers\ApiController@autoUploadProduct')->everyFiveMinutes();
+//        $schedule->call('App\Http\Controllers\ApiController@autoUploadImage')->everyMinute();
 
         /** Cao san pham*/
         $schedule->command('scan:website')->dailyAt('22:37');

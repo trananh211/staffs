@@ -32,7 +32,7 @@ class CustomCommand extends Command
         parent::__construct();
     }
 
-    protected $array_minute = [1, 3, 4, 7];
+    protected $array_minute = [7, 4, 3, 1];
     /**
      * Execute the console command.
      *
@@ -98,6 +98,10 @@ class CustomCommand extends Command
 //        $check = $api_controller->getCategoryChecking();
         if ($check) {
             $check2 = $api_controller->reCheckProductInfo();
+            if ($check2)
+            {
+                $check3 = $api_controller->autoUploadImage();
+            }
         }
     }
 
@@ -125,8 +129,13 @@ class CustomCommand extends Command
     private function run6Minute()
     {
         echo 'run 6 phut';
-        $api_controller = new GoogleController();
-        $check = $api_controller->uploadFileDriver();
+        $google_controller = new GoogleController();
+        $api_controller = new ApiController();
+        $check = $google_controller->uploadFileDriver();
+        if ($check)
+        {
+            $api_controller->autoUploadProduct();
+        }
         logfile('run 6 phut');
     }
 
