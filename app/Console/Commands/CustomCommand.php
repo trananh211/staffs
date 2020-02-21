@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Http\Controllers\GoogleController;
 use Illuminate\Console\Command;
 use App\Http\Controllers\ApiController;
 
@@ -94,7 +95,7 @@ class CustomCommand extends Command
     {
         $api_controller = new ApiController(); // make sure to import the controller
         $check = true;
-        $check = $api_controller->getCategoryChecking();
+//        $check = $api_controller->getCategoryChecking();
         if ($check) {
             $check2 = $api_controller->reCheckProductInfo();
         }
@@ -124,6 +125,9 @@ class CustomCommand extends Command
     private function run6Minute()
     {
         echo 'run 6 phut';
+        $api_controller = new GoogleController();
+        $check = $api_controller->uploadFileDriver();
+        logfile('run 6 phut');
     }
 
     private function run7Minute()

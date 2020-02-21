@@ -486,6 +486,7 @@ class GoogleController extends Controller
 
     public function uploadFileDriver()
     {
+        $return = false;
         $lists = \DB::table('workings')
             ->join('woo_orders as wod', 'workings.woo_order_id', '=', 'wod.id')
             ->join('working_files as file', 'workings.id', '=', 'file.working_id')
@@ -519,12 +520,14 @@ class GoogleController extends Controller
             }
         } else {
             logfile('-- Đã hết file custom để Upload fulfill. Chuyển sang fulfill file Product Auto');
-            $this->uploadProductAutoToDriver();
+            $return = $this->uploadProductAutoToDriver();
         }
+        return $return;
     }
 
     public function uploadProductAutoToDriver()
     {
+        $return = false;
         $where = [
             ['wd.status', '=', env('STATUS_WORKING_MOVE')],
             ['wd.custom_status', '=', env('STATUS_P_AUTO_PRODUCT')]
@@ -557,8 +560,10 @@ class GoogleController extends Controller
                 logfile('-- Xảy ra lỗi. Không thể upload file lên vào thời điểm này');
             }
         } else {
+            $return = true;
             logfile(' -- Đã hết sản phẩm auto để upload fullfill.');
         }
+        return $return;
     }
 
     private function preDataUpload($lists)
