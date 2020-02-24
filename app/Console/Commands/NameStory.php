@@ -88,6 +88,10 @@ class NameStory extends Command
                     case 16:
                         $this->scanCreationsLaunch_getTag($website_id, $template_id, $store_id, $woo_template_id,'Low Top');
                         break;
+                    case 18:
+                        $text_exclude = 'B6L2AF01';
+                        $this->scanMerchKing_getTag_excludeText($website_id, $template_id, $store_id, $woo_template_id, $text_exclude);
+                        break;
                     default:
                         $str = "-- Không có website nào cần được cào.";
                         logfile($str);
@@ -593,6 +597,81 @@ class NameStory extends Command
                         {
                             $name = trim($node->filter('a')->text());
                             $tag = explode(' ', strtolower($name))[0];
+                            $tag_name = preg_replace('/[^a-z\d]/i', '-', sanitizer($tag));
+                            $tag_name = rtrim($tag_name, '-');
+                            $category_name = 'Fleece Blanket';
+                            $data[] = [
+                                'category_name' => $category_name,
+                                'tag_name' => $tag_name,
+                                'link' => $link,
+                                'website_id' => $website_id,
+                                'website' => $url,
+                                'template_id' => $template_id,
+                                'store_id' => $store_id,
+                                'status' => 0,
+                                'created_at' => date("Y-m-d H:i:s"),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                        }
+                    });
+            }
+
+            //Phần cuối cùng. Không được chèn thêm ở đây nữa
+            // kiểm tra xem đây có phải là trang cuối cùng hay không
+            $check = $crawler->filter('ul.pager li:nth-last-child(1) .disabled')->count();
+            if ($check == 0)
+            {
+                $next_page_link = $crawler->filter('ul.pager li:nth-last-child(1) a')->attr('href');
+                $next_page = preg_replace("/[^0-9]/", '', $next_page_link);
+                $page = $next_page;
+            } else {
+                $next_page = 0;
+            }
+        } while ($next_page > $curent_page);
+        // Lưu dữ liệu vào database
+        $this->saveTemplate($data, $woo_template_id, $domain);
+    }
+
+    private function scanMerchKing_getTag_excludeText($website_id, $template_id, $store_id, $woo_template_id, $text_exclude)
+    {
+        echo "<pre>";
+        // so sanh product cu. trung thi se k lay nua
+        $products_old = $this->checkProductExist($template_id, $store_id);
+        $website = website();
+        $domain = $website[$website_id];
+        $domain_origin = explode('/search', $domain)[0];
+        $link = $domain.'&page=';
+        $page = 1;
+        $data = array();
+        $text_exclude = ucwords($text_exclude);
+        do {
+            echo $page . '-page' . "\n";
+            $url = $link . $page;
+            $curent_page = $page;
+
+            $client = new \Goutte\Client();
+            $response = $client->request('GET', $url);
+            $crawler = $response;
+
+            // kiem tra xem co ton tai product nao ở page hiện tại hay không
+            $products = ($crawler->filter('section.site-content div.container div.col-md-3')->count() > 0) ?
+                $crawler->filter('section.site-content div.container div.col-md-3')->count() : 0;
+            if ($products > 0) {
+                $crawler->filter('section.site-content div.container div.col-md-3')
+                    ->each(function ($node) use (&$data, &$website_id, &$template_id, &$store_id, &$url, &$domain_origin,
+                        &$products_old, &$text_exclude) {
+                        $link = $domain_origin . trim($node->filter('a')->attr('href'));
+                        if (!in_array($link, $products_old))
+                        {
+                            $name = ucwords(trim($node->filter('a')->text()));
+                            $name = str_replace($text_exclude, '', $name);
+                            $tmp_tag = explode(' ', strtolower($name));
+                            if (sizeof($tmp_tag) > 0 && $tmp_tag[0] != '')
+                            {
+                                $tag = explode(' ', strtolower($name))[0];
+                            } else {
+                                $tag = $tmp_tag[1];
+                            }
                             $tag_name = preg_replace('/[^a-z\d]/i', '-', sanitizer($tag));
                             $tag_name = rtrim($tag_name, '-');
                             $category_name = 'Fleece Blanket';

@@ -142,6 +142,9 @@ class ScrapProducts extends Command
                     case 16:
                         $this->getProductCreationsLaunch_LinkName($dt,array(0,1,2,3) ,true);
                         break;
+                    case 18:
+                        $text_exclude = 'B6L2AF01';
+                        $this->getProductMerchKing_excludeText($dt, array(2,3,4,7), $text_exclude);
                     default:
                         $str = "-- Không có website nào cần được up sản phẩm.";
                         logfile($str);
@@ -1062,7 +1065,7 @@ class ScrapProducts extends Command
     }
 
     /*Begin Merch King*/
-    private function getProductMerchKing($data, $array_image)
+    private function getProductMerchKing($data, $array_image, $text_exclude)
     {
         $client = new \Goutte\Client();
         $db = array();
@@ -1077,6 +1080,66 @@ class ScrapProducts extends Command
             if ($crawler->filter('h3.selected-campaign-mockup-title')->count() > 0) {
                 //get name
                 $product_name = ucwords(strtolower(trim($crawler->filter('h3.selected-campaign-mockup-title')->text())));
+                $data[$key]['product_name'] = trim(preg_replace('/[^a-z\d ]/i', '', $product_name));
+                // get description
+                $description = $crawler->filter('div.campaign-description .sizing-specs-desk')->text();
+                $description = trim(str_replace('Sizing Specs', '', $description));
+                $description = trim(str_replace('Size Chart', '', $description));
+                $data[$key]['description'] = htmlentities($description);
+                $i = 0;
+                //get image to variation color
+                $crawler->filter('div.thumb-outter .thumb-box')
+                    ->each(function ($node) use (&$data, &$key, &$i, &$product_name, &$array_image, &$http) {
+                        if (!in_array($i, $array_image)) {
+                            $tmp_img = $node->filter('img.shoe-preview')->attr('src');
+                            $tmp = explode('&width=',$tmp_img);
+                            if (sizeof($tmp) > 1)
+                            {
+                                $size_img = explode('&height=',$tmp[1]);
+                                $width = ((int) $size_img[0])*7;
+                                $height = ((int) $size_img[1])*7;
+//                                $image = $http.':' . explode('&width=', $tmp_img)[0] . '&width='.$width.'&height='.$height;
+                                $image = $http.':' . explode('&width=', $tmp_img)[0] . '&width=600&height=600';
+//                                $image = 'http:' . explode('&width=', $tmp_img)[0];
+                            } else {
+                                $image = $tmp_img;
+                            }
+                            $data[$key]['images'][$i]['src'] = $image;
+                            $data[$key]['images'][$i]['name'] = $product_name . "_" . basename($image);
+                        }
+                        $i++;
+                    });
+            }
+            $variation_id[$dt['template_id']] = $dt['template_id'];
+        }
+        if (sizeof($data) > 0) {
+            try {
+                $this->createProduct($data, $variation_id);
+            } catch (\Exception $e) {
+                logfile($e->getMessage());
+            }
+        }
+    }
+
+    private function getProductMerchKing_excludeText($data, $array_image, $text_exclude)
+    {
+        $client = new \Goutte\Client();
+        $db = array();
+        $variation_id = array();
+        $text_exclude = ucwords($text_exclude);
+        foreach ($data as $key => $dt) {
+            $link = $dt['link'];
+            $tmp_http = parse_url($link);
+            $http = $tmp_http['scheme'];
+            $response = $client->request('GET', $link);
+            $crawler = $response;
+            //kiem tra xem co anh hay khong
+            if ($crawler->filter('h3.selected-campaign-mockup-title')->count() > 0) {
+                //get name
+                $name = $crawler->filter('h3.selected-campaign-mockup-title')->text();
+                $name = str_replace($text_exclude,'', $name);
+                $product_name = ucwords(strtolower(trim($name)));
+
                 $data[$key]['product_name'] = trim(preg_replace('/[^a-z\d ]/i', '', $product_name));
                 // get description
                 $description = $crawler->filter('div.campaign-description .sizing-specs-desk')->text();
