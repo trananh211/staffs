@@ -97,9 +97,11 @@ class CustomCommand extends Command
         $check = true;
 //        $check = $api_controller->getCategoryChecking();
         if ($check) {
+            // tạo feed check feed đầu tiên
             $check2 = $api_controller->reCheckProductInfo();
             if ($check2)
             {
+                // upload sản phẩm lên web từ google driver
                 $check3 = $api_controller->autoUploadImage();
             }
         }
@@ -136,7 +138,6 @@ class CustomCommand extends Command
         {
             $api_controller->autoUploadProduct();
         }
-        logfile('run 6 phut');
     }
 
     private function run7Minute()

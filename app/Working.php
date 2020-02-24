@@ -1871,17 +1871,17 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             $rq = $request->all();
             $store_id = $rq['store_id'];
             $lst_category = $rq['lst_category'];
-        switch ($request->input('action')) {
-            case 'feed':
-                // Save model
-                $result = $this->makeFileFeed($store_id, $lst_category);
-                break;
+            switch ($request->input('action')) {
+                case 'feed':
+                    // Save model
+                    $result = $this->makeFileFeed($store_id, $lst_category);
+                    break;
 
-            case 'check_again':
-                $result = $this->checkAgainProduct($store_id, $lst_category);
-                // Redirect to advanced edit
-                break;
-        }
+                case 'check_again':
+                    $result = $this->checkAgainProduct($store_id, $lst_category);
+                    // Redirect to advanced edit
+                    break;
+            }
             $alert = $result[0];
             $message = $result[1];
             \DB::commit(); // if there was no errors, your query will be executed
@@ -1955,8 +1955,8 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 }
                 $lst_feeds[$feed->id] = [
                     'id' => $feed->woo_product_id,
-                    'title' => $title.' '.$feed->woo_product_name,
-                    'description' => $feed->description,
+                    'title' => trim($title).' '.trim($feed->woo_product_name),
+                    'description' => trim($feed->description),
                     'link' => $feed->woo_slug,
                     'image_link' => $feed->woo_image,
                     'availability' => 'in stock',
@@ -1973,7 +1973,11 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     'age_group' => 'Adult',
                     'gender' => 'Unisex',
                     'product_type' => $feed->category_name,
-                    'custom_label_0' => $feed->category_name
+                    'custom_label_0' => $feed->category_name,
+                    'custom_label_1' => '',
+                    'custom_label_2' => '',
+                    'custom_label_3' => '',
+                    'custom_label_4' => ''
                 ];
             }
             $name_file = 'feeds_'.date("mdYHis");
@@ -2094,7 +2098,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     //download file google feed
     public function feedGetFile($google_feed_id)
     {
-        $google_feed = \DB::table('google_feeds')->select('file_name','path')->where('id',$google_feed_id+30)->first();
+        $google_feed = \DB::table('google_feeds')->select('file_name','path')->where('id',$google_feed_id)->first();
         if ($google_feed != NULL)
         {
             return response()->download($google_feed->path);
