@@ -697,7 +697,8 @@ class NameStory extends Command
             if ($check == 0)
             {
                 $next_page_link = $crawler->filter('ul.pager li:nth-last-child(1) a')->attr('href');
-                $next_page = preg_replace("/[^0-9]/", '', $next_page_link);
+                $tmp_page = explode('page', $next_page_link)[1];
+                $next_page = preg_replace("/[^0-9]/", '', $tmp_page);
                 $page = $next_page;
             } else {
                 $next_page = 0;
