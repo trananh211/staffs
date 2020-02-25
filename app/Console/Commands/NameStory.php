@@ -697,9 +697,13 @@ class NameStory extends Command
             if ($check == 0)
             {
                 $next_page_link = $crawler->filter('ul.pager li:nth-last-child(1) a')->attr('href');
-                $tmp_page = explode('page', $next_page_link)[1];
-                $next_page = preg_replace("/[^0-9]/", '', $tmp_page);
-                $page = $next_page;
+                $text_split = 'page';
+                // nếu tồn tại text split
+                if (strpos($next_page_link, $text_split) !== false) {
+                    $tmp_page = explode($text_split, $next_page_link)[1];
+                    $next_page = preg_replace("/[^0-9]/", '', $tmp_page);
+                    $page = $next_page;
+                }
             } else {
                 $next_page = 0;
             }
