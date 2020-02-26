@@ -73,7 +73,6 @@ class Api extends Model
     {
         $db = array();
         logfile('=====================CREATE NEW ORDER=======================');
-//        dd($data);
         $lst_product_skip = $this->getProductSkip();
         if (sizeof($data['line_items']) > 0) {
             logfile('Store ' . $woo_id . ' has new ' . sizeof($data['line_items']) . ' order item.');
@@ -109,7 +108,6 @@ class Api extends Model
                         $str .= $item['key'] . " : " . $item['value'] . " -;-;-\n";
                     }
                 }
-
                 $db[] = [
                     'woo_info_id' => $woo_id,
                     'order_id' => $data['id'],

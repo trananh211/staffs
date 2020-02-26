@@ -21,26 +21,36 @@ class ApiController extends Controller
     /*WOOCOMMERCE API*/
     public function newOrder(Request $request)
     {
+        logfile('--------------------------------Co new order ------------------------------------------');
         /*Get Header Request*/
         $header = getallheaders();
-        $webhook_head = [
-            'x-wc-webhook-event' => trim($header['X-Wc-Webhook-Event']),
-            'x-wc-webhook-resource' => trim($header['X-Wc-Webhook-Resource']),
-            'x-wc-webhook-source' => trim($header['X-Wc-Webhook-Source'])
-        ];
-        $woo_id = $this->getStoreInfo($webhook_head);
-//        \Log::info($woo_id);
+        if (is_array($header))
+        {
+            $woo_id = false;
+            $woo_infos = \DB::table('woo_infos')->pluck('id','url')->toArray();
+            foreach ($header as $key => $value)
+            {
+                // kiểm tra xem có phải url không
+                if (filter_var($value, FILTER_VALIDATE_URL) !== FALSE) {
+                    $url = substr($value, 0, -1);
+                    if (array_key_exists($url, $woo_infos))
+                    {
+                        $woo_id = $woo_infos[$url];
+                        break;
+                    }
+                }
+            }
+            /*Get data Request*/
+            $data = @file_get_contents('php://input');
+            $data = json_decode($data, true);
 
-        /*Get data Request*/
-        $data = @file_get_contents('php://input');
-        $data = json_decode($data, true);
-//        \Log::info($data);
-
-        /*Send data to processing*/
-        if (sizeof($data) > 0 && $woo_id !== false) {
-            $api = new Api();
-            $api->createOrder($data, $woo_id);
+            /*Send data to processing*/
+            if (sizeof($data) > 0 && $woo_id !== false) {
+                $api = new Api();
+                $api->createOrder($data, $woo_id);
+            }
         }
+
     }
 
     public function getStoreInfo($webhook_head)

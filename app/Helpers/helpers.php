@@ -10,6 +10,13 @@ function logfile($str)
 //    echo $datetime . '==> ' . $str."\n";
 }
 
+function logfile_system($str)
+{
+    $datetime = Carbon::now('Asia/Ho_Chi_Minh');
+    \Log::notice($datetime . '==> ' . $str);
+    echo $datetime . '==> ' . $str."\n";
+}
+
 function website()
 {
     $website = [
