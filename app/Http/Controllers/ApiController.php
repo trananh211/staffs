@@ -23,7 +23,7 @@ class ApiController extends Controller
     {
         /*Get Header Request*/
         $header = getallheaders();
-        logfile_system('[New Order] Phát hiện thấy order mới');
+        logfile('[New Order] Phát hiện thấy order mới');
         if (is_array($header))
         {
             $woo_id = false;
@@ -31,11 +31,12 @@ class ApiController extends Controller
             foreach ($header as $key => $value)
             {
                 // kiểm tra xem có phải url không
-                if (filter_var($value, FILTER_VALIDATE_URL) !== FALSE) {
-                    $url = substr($value, 0, -1);
+                if (strpos($value, 'http') !== false) {
+                    // $url = substr($value, 0, -1);
+                    $url = $value;
                     if (array_key_exists($url, $woo_infos))
                     {
-                        logfile_system('[New Order] from '.$url);
+                        logfile('[New Order] from '.$url);
                         $woo_id = $woo_infos[$url];
                         break;
                     }
@@ -53,13 +54,13 @@ class ApiController extends Controller
                     $api = new Api();
                     $api->createOrder($data, $woo_id);
                 } else {
-                    logfile_system('[Error data] Không nhận được data của new order truyền vào');
+                    logfile('[Error data] Không nhận được data của new order truyền vào');
                 }
             } else {
-                logfile_system('[Error Id] Store Id không được tìm thấy');
+                logfile('[Error Id] Store Id không được tìm thấy');
             }
         } else {
-            logfile_system('[Error Header] [New Order] Không tồn tại header');
+            logfile('[Error Header] [New Order] Không tồn tại header');
         }
     }
 
