@@ -21,9 +21,9 @@ class ApiController extends Controller
     /*WOOCOMMERCE API*/
     public function newOrder(Request $request)
     {
-        logfile('--------------------------------Co new order ------------------------------------------');
         /*Get Header Request*/
         $header = getallheaders();
+        logfile('[New Order] Phát hiện thấy order mới');
         if (is_array($header))
         {
             $woo_id = false;
@@ -35,6 +35,7 @@ class ApiController extends Controller
                     $url = substr($value, 0, -1);
                     if (array_key_exists($url, $woo_infos))
                     {
+                        logfile('[New Order] from '.$url);
                         $woo_id = $woo_infos[$url];
                         break;
                     }
@@ -48,9 +49,12 @@ class ApiController extends Controller
             if (sizeof($data) > 0 && $woo_id !== false) {
                 $api = new Api();
                 $api->createOrder($data, $woo_id);
+            } else {
+                logfile('[Error Data or Id not found] Không tồn tại data hoặc id của shop');
             }
+        } else {
+            logfile('[Error Header] [New Order] Không tồn tại header');
         }
-
     }
 
     public function getStoreInfo($webhook_head)
