@@ -23,7 +23,7 @@ class ApiController extends Controller
     {
         /*Get Header Request*/
         $header = getallheaders();
-        logfile('[New Order] Phát hiện thấy order mới');
+        logfile_system('[New Order] Phát hiện thấy order mới');
         if (is_array($header))
         {
             $woo_id = false;
@@ -35,7 +35,7 @@ class ApiController extends Controller
                     $url = substr($value, 0, -1);
                     if (array_key_exists($url, $woo_infos))
                     {
-                        logfile('[New Order] from '.$url);
+                        logfile_system('[New Order] from '.$url);
                         $woo_id = $woo_infos[$url];
                         break;
                     }
@@ -46,14 +46,20 @@ class ApiController extends Controller
             $data = json_decode($data, true);
 
             /*Send data to processing*/
-            if (sizeof($data) > 0 && $woo_id !== false) {
-                $api = new Api();
-                $api->createOrder($data, $woo_id);
+            if ($woo_id !== false)
+            {
+                if (sizeof($data) > 0)
+                {
+                    $api = new Api();
+                    $api->createOrder($data, $woo_id);
+                } else {
+                    logfile_system('[Error data] Không nhận được data của new order truyền vào');
+                }
             } else {
-                logfile('[Error Data or Id not found] Không tồn tại data hoặc id của shop');
+                logfile_system('[Error Id] Store Id không được tìm thấy');
             }
         } else {
-            logfile('[Error Header] [New Order] Không tồn tại header');
+            logfile_system('[Error Header] [New Order] Không tồn tại header');
         }
     }
 
@@ -146,7 +152,7 @@ class ApiController extends Controller
 
     public function seeLog()
     {
-        $files = File::files(storage_path() . '/' . 'logs/');
+        $files = \File::files(storage_path() . '/' . 'logs/');
         $data = infoShop();
         $files = array_reverse($files);
         return view('admin/seelog', compact('data', 'files'));

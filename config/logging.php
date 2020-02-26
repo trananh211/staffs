@@ -89,6 +89,14 @@ return [
             'driver' => 'errorlog',
             'level' => 'debug',
         ],
+
+        'hasu' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/laravel-system.log'),
+            'level' => 'debug',
+            'days' => 0,
+            'permission' => 777,
+        ],
     ],
 
 ];

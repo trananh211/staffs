@@ -72,10 +72,10 @@ class Api extends Model
     public function createOrder($data, $woo_id)
     {
         $db = array();
-        logfile('=====================CREATE NEW ORDER=======================');
+        logfile_system('=====================CREATE NEW ORDER=======================');
         $lst_product_skip = $this->getProductSkip();
         if (sizeof($data['line_items']) > 0) {
-            logfile('Store ' . $woo_id . ' has new ' . sizeof($data['line_items']) . ' order item.');
+            logfile_system('Store ' . $woo_id . ' has new ' . sizeof($data['line_items']) . ' order item.');
             $woo_infos = $this->getWooSkuInfo();
             $paypal_id = $this->getPaypalId($woo_id);
             $lst_product = array();
@@ -155,7 +155,7 @@ class Api extends Model
                 $save = "[Error] Save to database error.";
                 \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
             }
-            logfile($save . "\n");
+            logfile_system($save . "\n");
         }
 
         /*Create new product*/
@@ -165,7 +165,7 @@ class Api extends Model
     public function updateProduct($data, $store_id)
     {
         if (sizeof($data) > 0) {
-            logfile("==== Update product ====");
+            logfile_system("==== Update product ====");
             $product_id = $data['id'];
             $product_name = $data['name'];
             $img = '';
@@ -219,16 +219,16 @@ class Api extends Model
                             'updated_at' => date("Y-m-d H:i:s")
                         ]);
                 }
-                logfile("Cập nhật thành công product " . $product_name);
+                logfile_system("Cập nhật thành công product " . $product_name);
             } else {
-                logfile("==== Product  " . $product_name . " chưa được mua hàng lần nào. Bỏ qua ====");
+                logfile_system("==== Product  " . $product_name . " chưa được mua hàng lần nào. Bỏ qua ====");
             }
         }
     }
 
     private function syncProduct($lst, $woo_id)
     {
-        logfile("==== Create product ====");
+        logfile_system("==== Create product ====");
         /*Kiem tra xem danh sach product da ton tai hay chua*/
         $products = DB::table('woo_products')
             ->whereIn('product_id', $lst)
@@ -276,18 +276,18 @@ class Api extends Model
                             $save = "[Error] Save " . sizeof($db) . " product to database error.";
                             \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
                         }
-                        logfile($save . "\n");
+                        logfile_system($save . "\n");
                     }
                 }
             }
         } else {
-            logfile('All ' . sizeof($lst) . ' products had add to database before.');
+            logfile_system('All ' . sizeof($lst) . ' products had add to database before.');
         }
     }
 
     public function checkPaymentAgain()
     {
-        logfile('---------------- [Payment Again]------------------');
+        logfile_system('---------------- [Payment Again]------------------');
         $lists = \DB::table('woo_orders')
             ->join('woo_infos', 'woo_orders.woo_info_id', '=', 'woo_infos.id')
             ->select(
@@ -300,7 +300,7 @@ class Api extends Model
             $status = env('STATUS_WORKING_DONE');
             $this->checkPaymentAgain($lists, $status);
         } else {
-            logfile('-- [Payment Again] Chuyển sang kiểm tra đơn hàng auto');
+            logfile_system('-- [Payment Again] Chuyển sang kiểm tra đơn hàng auto');
 //
 //            $list_auto = \DB::table('woo_orders')
 //                ->join('woo_infos', 'woo_orders.woo_info_id', '=', 'woo_infos.id')
@@ -315,9 +315,9 @@ class Api extends Model
 //            {
 //                $this->checkPaymentAgain($list_auto);
 //            } else {
-//                logfile('-- [Payment Again] Check Payment không tìm thấy pending');
+//                logfile_system('-- [Payment Again] Check Payment không tìm thấy pending');
 //            }
-            logfile('-- [Payment Again] Check Payment không tìm thấy pending');
+            logfile_system('-- [Payment Again] Check Payment không tìm thấy pending');
         }
     }
 
@@ -358,9 +358,9 @@ class Api extends Model
                     }
                     $result = \DB::table('woo_orders')->where('id', $list->id)->update($update);
                     if ($result) {
-                        logfile('-- [Payment Again] Cập nhật thành công ' . $list->number);
+                        logfile_system('-- [Payment Again] Cập nhật thành công ' . $list->number);
                     } else {
-                        logfile('-- [Payment Again] [Error] Cập nhật thất bại ' . $list->number);
+                        logfile_system('-- [Payment Again] [Error] Cập nhật thất bại ' . $list->number);
                     }
                 }
             }
@@ -370,7 +370,7 @@ class Api extends Model
             $return = false;
             \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
         }
-        logfile('-- [Payment Again] Đã kiểm tra xong ' . sizeof($lists) . ' check payment');
+        logfile_system('-- [Payment Again] Đã kiểm tra xong ' . sizeof($lists) . ' check payment');
     }
 
     public function updateSku()
@@ -533,7 +533,7 @@ class Api extends Model
                 chmod($template_path, 777);
                 // Nếu tạo file json thành công. Luu thông tin template vao database
                 if ($result) {
-                    logfile('-- Tạo json file template thành công. chuyển sang tạo variantions file json');
+                    logfile_system('-- Tạo json file template thành công. chuyển sang tạo variantions file json');
                     $woo_template_id = \DB::table('woo_templates')->insertGetId([
                         'product_name' => $template_name,
                         'template_id' => $template_id,
@@ -551,7 +551,7 @@ class Api extends Model
                         $variation_data = $woocommerce->get('products/' . $template_id . '/variations/' . $varid);
                         $result = writeFileJson($variation_path, $variation_data);
                         if ($result) {
-                            logfile('-- Tạo json file variations thành công. ' . $variation_path);
+                            logfile_system('-- Tạo json file variations thành công. ' . $variation_path);
                         }
                         chmod($variation_path, 0777);
                         $insert_variation[] = [
@@ -628,7 +628,7 @@ class Api extends Model
                             'woo_up_id' => $tmp_woo_up_id
                         ];
                     }
-                    logfile("-- Đang tải " . sizeof($checks) . " images từ store :" . $val->url);
+                    logfile_system("-- Đang tải " . sizeof($checks) . " images từ store :" . $val->url);
                     $product_update_data = array();
                     $product_image_uploaded = array();
                     $product_update_data_false = array();
@@ -659,10 +659,10 @@ class Api extends Model
                                 $slug_data[$store_id][$product_id] = $myarray['permalink'];
                                 $product_update_data[] = $product_id;
                                 $product_image_uploaded = array_merge($product_image_uploaded, $store['woo_up_id'][$product_id]);
-                                logfile('--- Upload thành công: ' . sizeof($images) . ' của product_id: ' . $product_id);
+                                logfile_system('--- Upload thành công: ' . sizeof($images) . ' của product_id: ' . $product_id);
                             } else {
                                 $product_update_data_false[] = $product_id;
-                                logfile('--- [Error] Upload thất bại: ' . sizeof($images) . ' của product_id: ' . $product_id);
+                                logfile_system('--- [Error] Upload thất bại: ' . sizeof($images) . ' của product_id: ' . $product_id);
                             }
                         }
                     }
@@ -703,23 +703,23 @@ class Api extends Model
                             }
                         }
                     }
-                    logfile('-- [END] Hoàn tất tiến trình upload ảnh.');
+                    logfile_system('-- [END] Hoàn tất tiến trình upload ảnh.');
                 } else {
-                    logfile('-- [END] Đã hết ảnh từ google driver để tải lên woocommerce. Kết thúc.');
-                    logfile('-- Chuyển sang xóa sản phẩm');
+                    logfile_system('-- [END] Đã hết ảnh từ google driver để tải lên woocommerce. Kết thúc.');
+                    logfile_system('-- Chuyển sang xóa sản phẩm');
                     $this->deleteProductUploaded();
                 }
             } else {
-                logfile('-- Chuyển sang up ảnh scrap website');
+                logfile_system('-- Chuyển sang up ảnh scrap website');
 //                $result = $this->uploadScrapImage();
                 $result = true;
                 if ($result) {
-                    logfile('-- Chuyển sang xóa sản phẩm');
+                    logfile_system('-- Chuyển sang xóa sản phẩm');
                     $this->deleteProductUploaded();
                 }
             }
         } catch (\Exception $e) {
-            logfile($e->getMessage());
+            logfile_system($e->getMessage());
             return $e->getMessage();
         }
     }
@@ -763,7 +763,7 @@ class Api extends Model
                         'woo_up_id' => $tmp_woo_up_id
                     ];
                 }
-                logfile("-- Đang tải " . sizeof($checks) . " images từ store :" . $val->url);
+                logfile_system("-- Đang tải " . sizeof($checks) . " images từ store :" . $val->url);
                 $product_update_data = array();
                 $product_image_uploaded = array();
                 $product_update_data_false = array();
@@ -791,10 +791,10 @@ class Api extends Model
                             $myarray = (array)$result;
                             $product_update_data[$store_id][] = $product_id;
                             $product_image_uploaded = array_merge($product_image_uploaded, $store['woo_up_id'][$product_id]);
-                            logfile('--- Upload thành công: ' . sizeof($images) . ' của product_id: ' . $product_id);
+                            logfile_system('--- Upload thành công: ' . sizeof($images) . ' của product_id: ' . $product_id);
                         } else {
                             $product_update_data_false[] = $product_id;
-                            logfile('--- [Error] Upload thất bại: ' . sizeof($images) . ' của product_id: ' . $product_id);
+                            logfile_system('--- [Error] Upload thất bại: ' . sizeof($images) . ' của product_id: ' . $product_id);
                         }
                     }
                 }
@@ -827,9 +827,9 @@ class Api extends Model
                     }
                 }
 
-                logfile('-- [END] Hoàn tất tiến trình upload ảnh.');
+                logfile_system('-- [END] Hoàn tất tiến trình upload ảnh.');
             } else {
-                logfile('-- [END] Đã hết ảnh scrap để tải lên. Kết thúc.');
+                logfile_system('-- [END] Đã hết ảnh scrap để tải lên. Kết thúc.');
             }
         } else {
             $result = true;
@@ -851,7 +851,7 @@ class Api extends Model
                 ->where('woc.status', 23)
                 ->limit(50)
                 ->get()->toArray();
-            logfile('-- Đang xóa ' . sizeof($lists) . ' categories');
+            logfile_system('-- Đang xóa ' . sizeof($lists) . ' categories');
             if (sizeof($lists) > 0) {
                 $data = array();
                 foreach ($lists as $list) {
@@ -873,7 +873,7 @@ class Api extends Model
             } else {
                 $str = '-- Đã hết category để xóa.';
                 echo $str;
-                logfile($str);
+                logfile_system($str);
             }
             $return = true;
             $save = "Save to database successfully";
@@ -930,16 +930,16 @@ class Api extends Model
                     } else { // sản phẩm cần xóa ở bảng woo_product_drivers
                         \DB::table('woo_product_drivers')->whereIn('id', $update_deleted)->delete();
                     }
-                    logfile('-- [Success] Đã xóa ' . sizeof($delete) . ' sản phẩm thành công.');
+                    logfile_system('-- [Success] Đã xóa ' . sizeof($delete) . ' sản phẩm thành công.');
                 } else {
-                    logfile('-- [Error] Không thể xóa sản phẩm thuộc template= ' . $temps->template_id . ' và store: ' . $temps->store_id);
+                    logfile_system('-- [Error] Không thể xóa sản phẩm thuộc template= ' . $temps->template_id . ' và store: ' . $temps->store_id);
                 }
             } else {
                 \DB::table('woo_templates')->where('id', $temps->id)->update(['status' => 24]);
-                logfile('-- Đã hết sản phẩm để xóa.');
+                logfile_system('-- Đã hết sản phẩm để xóa.');
             }
         } else {
-            logfile('-- [End] Đã hết template để xóa.');
+            logfile_system('-- [End] Đã hết template để xóa.');
         }
     }
 
@@ -947,7 +947,7 @@ class Api extends Model
     private function checkCreateProduct()
     {
         try {
-            logfile('===============[Create Product] =============');
+            logfile_system('===============[Create Product] =============');
             //kiểm tra xem có file nào đang up dở hay không
             $check_processing = \DB::table('woo_product_drivers')->select('name', 'template_id')->where('status', 2)->first();
             //nếu không có file nào đang up dở
@@ -979,7 +979,7 @@ class Api extends Model
                         // Tìm template
                         $template_json = readFileJson($val->template_path);
                         $woo_product_name = ucwords($val->name) . ' ' . $template_json['name'];
-                        logfile("-- Đang tạo sản phẩm mới : " . $woo_product_name);
+                        logfile_system("-- Đang tạo sản phẩm mới : " . $woo_product_name);
                         $prod_data = $template_json;
                         $prod_data['name'] = ucwords($val->name) . ' ' . $template_json['name'];
                         $prod_data['status'] = 'draft';
@@ -993,7 +993,7 @@ class Api extends Model
                         // Tìm image
                         $scan_images = scanGoogleDir($val->path, 'file');
 //                        dd($scan_images);
-                        logfile('---- Tìm được ' . sizeof($scan_images) . ' ảnh của ' . ucwords($val->name));
+                        logfile_system('---- Tìm được ' . sizeof($scan_images) . ' ảnh của ' . ucwords($val->name));
                         $tmp_images = array();
                         $woo_product_driver_id_array = array();
                         $m = 0;
@@ -1022,11 +1022,11 @@ class Api extends Model
                                         'store_id' => $val->store_id,
                                         'status' => 0
                                     ];
-                                    logfile('----- Chấp nhận file ' . $file['name']);
+                                    logfile_system('----- Chấp nhận file ' . $file['name']);
                                 }
                             }
                         }
-                        logfile('---- Tìm được ' . $m . ' ảnh của ' . ucwords($val->name));
+                        logfile_system('---- Tìm được ' . $m . ' ảnh của ' . ucwords($val->name));
                         // $prod_data['images'] = $tmp_images;
 
                         // End tìm image
@@ -1053,7 +1053,7 @@ class Api extends Model
 
                     //Cập nhật variations vào product id
                     if (sizeof($stores_process) > 0) {
-                        logfile('-- Cập nhật variations vào product');
+                        logfile_system('-- Cập nhật variations vào product');
                         foreach ($stores_process as $store) {
                             $lst_prod_variations = array();
                             $lst_prod_variations = \DB::table('woo_product_drivers as wpd')
@@ -1079,7 +1079,7 @@ class Api extends Model
                                         'meta_data' => $variation_json['meta_data'],
                                     );
                                     $woocommerce->post('products/' . $variation->woo_product_id . '/variations', $variation_data);
-//                                    logfile('-- Đang cập nhật variation của '.$variation->woo_product_id);
+//                                    logfile_system('-- Đang cập nhật variation của '.$variation->woo_product_id);
                                 }
                             }
                         }
@@ -1087,12 +1087,12 @@ class Api extends Model
                     if (sizeof($image_local) > 0) {
                         \DB::table('woo_image_uploads')->insert($image_local);
                     }
-                    logfile('-- [END] Hoàn tất quá trình tạo sản phẩm.');
+                    logfile_system('-- [END] Hoàn tất quá trình tạo sản phẩm.');
                 } else {
-                    logfile('-- [END] Đã hết product để chuẩn bị dữ liệu.');
+                    logfile_system('-- [END] Đã hết product để chuẩn bị dữ liệu.');
                 }
             } else {
-                logfile('[Bỏ qua] Hiện đang tạo product : "' . $check_processing->name . '" có template_id :' . $check_processing->template_id);
+                logfile_system('[Bỏ qua] Hiện đang tạo product : "' . $check_processing->name . '" có template_id :' . $check_processing->template_id);
             }
         } catch (\HttpClientException $e) {
             return $e->getMessage();
@@ -1103,7 +1103,7 @@ class Api extends Model
     /*Tao category cap nhat vao file de tao product*/
     private function checkCategory()
     {
-        logfile('===============[Check Category]==============');
+        logfile_system('===============[Check Category]==============');
         $lst_product_category = \DB::table('woo_product_drivers as wpd')
             ->join('woo_infos as woo_info', 'wpd.store_id', '=', 'woo_info.id')
             ->select(
@@ -1182,14 +1182,14 @@ class Api extends Model
                 }
                 //them toan bo thong tin woo_categories mới get được về database
                 if (sizeof($woo_categories_data) > 0) {
-                    logfile('-- Tạo mới thông tin woo_categories : ' . sizeof($woo_categories_data) . ' news');
+                    logfile_system('-- Tạo mới thông tin woo_categories : ' . sizeof($woo_categories_data) . ' news');
                     \DB::table('woo_categories')->insert($woo_categories_data);
                 }
             }
 
             // Nếu tồn tại thông tin để update vào sản phẩm lưu driver
             if (sizeof($woo_product_driver_update) > 0) {
-                logfile('-- Cập nhật thông tin category vào woo_product_driver : ' . sizeof($woo_product_driver_update) . ' update.');
+                logfile_system('-- Cập nhật thông tin category vào woo_product_driver : ' . sizeof($woo_product_driver_update) . ' update.');
                 foreach ($woo_product_driver_update as $woo_category_id => $list_id) {
                     $data = [
                         'woo_category_id' => $woo_category_id
@@ -1200,7 +1200,7 @@ class Api extends Model
             $result = false;
         } else {
             $result = true;
-            logfile('-- Đã cập nhật đủ category. Chuyển sang tạo product');
+            logfile_system('-- Đã cập nhật đủ category. Chuyển sang tạo product');
         }
         $result = true;
         return $result;
@@ -1290,13 +1290,13 @@ class Api extends Model
                 // nếu tồn tại 2 giá trị feed và scrap product khác nhau. xóa đi và insert lại
                 if (sizeof($delete_feed_product) > 0) {
                     \DB::table('feed_products')->whereIn('id', $delete_feed_product)->delete();
-                    logfile('-- Xóa sản phẩm trên feed thông tin đã cũ.');
+                    logfile_system('-- Xóa sản phẩm trên feed thông tin đã cũ.');
                 }
 
                 // nếu tồn tại giá trị cần insert thì tạo mới 1 loạt sản phẩm trong feed theo info của scrap product.
                 if (sizeof($insert_feed_data) > 0) {
                     \DB::table('feed_products')->insert($insert_feed_data);
-                    logfile('-- Thêm dữ liệu đã được cập nhật từ scrap product');
+                    logfile_system('-- Thêm dữ liệu đã được cập nhật từ scrap product');
                 }
 
                 // nếu giá trị được so sánh giống hoàn toàn với dữ liệu cũ. cập nhật lại để check
@@ -1312,14 +1312,14 @@ class Api extends Model
                 \DB::table('check_categories')->where('id',$check_categories_id)->update(['status' => 2]);
                 $re = false;
             } else {
-                logfile('-- Category đã được cập nhật thông tin mới nhất.');
+                logfile_system('-- Category đã được cập nhật thông tin mới nhất.');
             }
         } else {
             if ($check_running)
             {
-                logfile('-- Đang cập nhật check category id : ' . $check_running->id);
+                logfile_system('-- Đang cập nhật check category id : ' . $check_running->id);
             } else {
-                logfile('-- Không có category để check');
+                logfile_system('-- Không có category để check');
             }
         }
         return $re;
@@ -1328,8 +1328,8 @@ class Api extends Model
     public function reCheckProductInfo()
     {
         $re = true;
-        logfile('-- Đang check feed product');
-        $limit = 10;
+        logfile_system('-- Đang check feed product');
+        $limit = 20;
         $products = \DB::table('feed_products')
             ->select('id', 'woo_product_name', 'woo_slug', 'woo_image', 'woo_product_id', 'category_name', 'store_id',
                 'scrap_product_id','description')
@@ -1408,9 +1408,9 @@ class Api extends Model
                             'category_name' => $result->categories[0]->name,
                             'updated_at' => date("Y-m-d H:i:s")
                         ];
-                        logfile(' --- Đang check feed id: ' . $feed['id'] . ' : Thong tin khac nhau');
+                        logfile_system(' --- Đang check feed id: ' . $feed['id'] . ' : Thong tin khac nhau');
                     } else {
-                        logfile(' --- Đang check feed id: ' . $feed['id'] . ' : Thong tin giong nhau');
+                        logfile_system(' --- Đang check feed id: ' . $feed['id'] . ' : Thong tin giong nhau');
                         // kiểm tra xem nếu description rỗng thì thêm mới
                         if ($feed['description'] == '')
                         {
@@ -1445,7 +1445,7 @@ class Api extends Model
             }
             $re = false;
         } else {
-            logfile('-- [DONE] Đã check xong toàn bộ feed product');
+            logfile_system('-- [DONE] Đã check xong toàn bộ feed product');
         }
         return $re;
     }

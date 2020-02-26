@@ -13,8 +13,9 @@ function logfile($str)
 function logfile_system($str)
 {
     $datetime = Carbon::now('Asia/Ho_Chi_Minh');
-    \Log::notice($datetime . '==> ' . $str);
-    echo $datetime . '==> ' . $str."\n";
+    $log_str = $datetime . '==> ' . $str;
+    \Log::channel('hasu')->info($log_str);
+    echo $log_str."\n";
 }
 
 function website()
