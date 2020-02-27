@@ -1065,7 +1065,7 @@ class ScrapProducts extends Command
     }
 
     /*Begin Merch King*/
-    private function getProductMerchKing($data, $array_image, $text_exclude)
+    private function getProductMerchKing($data, $array_image)
     {
         $client = new \Goutte\Client();
         $db = array();
