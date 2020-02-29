@@ -437,6 +437,12 @@ class WooController extends Controller
         return $work->listCategories();
     }
 
+    public function deleteWooCategory($woo_category_id)
+    {
+        $work = new Working();
+        return $work->deleteWooCategory($woo_category_id);
+    }
+
     public function editKeywordCategory($woo_category_id)
     {
         $work = new Working();

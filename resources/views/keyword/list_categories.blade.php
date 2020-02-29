@@ -27,6 +27,8 @@
                                     <span class="js-btn-show-right waves-effect waves-light btn blue"
                                           data-catid="{{ $value->id }}" data-catname="{{ $value->category_name }}">
                                         View</span>
+                                    <a href="{{ url('delete-woo-category/'.$value->id) }}" class="waves-effect waves-light btn red">
+                                        Delete</a>
                                 </td>
                             </tr>
                         @endforeach
