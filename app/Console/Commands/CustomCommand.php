@@ -86,19 +86,16 @@ class CustomCommand extends Command
     {
         $api_controller = new ApiController(); // make sure to import the controller
         $check = true;
+        // upload image from google driver to product
+        $check = $api_controller->autoUploadImage();
 //        $check = $api_controller->getCategoryChecking();
         if ($check) {
             // tạo feed check feed đầu tiên
             $check2 = $api_controller->reCheckProductInfo();
             if ($check2)
             {
-                // upload sản phẩm lên web từ google driver
-                $check3 = $api_controller->autoUploadImage();
-                if ($check3)
-                {
-                    //Cào sản phẩm
-//                    $this->call('scrap:product');
-                }
+                //Cào sản phẩm
+                $this->call('scrap:product');
             }
         }
     }
@@ -122,12 +119,15 @@ class CustomCommand extends Command
     private function run6Minute()
     {
         echo 'run 6 phut';
-        $google_controller = new GoogleController();
         $api_controller = new ApiController();
-        $check = $google_controller->uploadFileDriver();
+        // up load product from google driver
+        $check = $api_controller->autoUploadProduct();
+
         if ($check)
         {
-            $api_controller->autoUploadProduct();
+            $google_controller = new GoogleController();
+            // up load product fullfill from google driver
+            $check2 = $google_controller->uploadFileDriver();
         }
     }
 

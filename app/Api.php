@@ -582,10 +582,12 @@ class Api extends Model
 
     public function autoUploadProduct()
     {
+        $return = false;
         $result_check_category = $this->checkCategory();
         if ($result_check_category) {
-            $this->checkCreateProduct();
+            $return = $this->checkCreateProduct();
         }
+        return $return;
     }
 
     public function autoUploadImage()
@@ -946,8 +948,9 @@ class Api extends Model
     /*Tao moi product*/
     private function checkCreateProduct()
     {
+        $return = false;
         try {
-            logfile_system('===============[Create Product] =============');
+            logfile_system('[Create Product] ========================================');
             //kiểm tra xem có file nào đang up dở hay không
             $check_processing = \DB::table('woo_product_drivers')->select('name', 'template_id')->where('status', 2)->first();
             //nếu không có file nào đang up dở
@@ -1089,15 +1092,16 @@ class Api extends Model
                     }
                     logfile_system('-- [END] Hoàn tất quá trình tạo sản phẩm.');
                 } else {
+                    $return = true;
                     logfile_system('-- [END] Đã hết product để chuẩn bị dữ liệu.');
                 }
             } else {
                 logfile_system('[Bỏ qua] Hiện đang tạo product : "' . $check_processing->name . '" có template_id :' . $check_processing->template_id);
             }
         } catch (\HttpClientException $e) {
-            return $e->getMessage();
+            logfile_system($e->getMessage());
         }
-
+        return $return;
     }
 
     /*Tao category cap nhat vao file de tao product*/
