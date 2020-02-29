@@ -373,6 +373,7 @@ class WooController extends Controller
                 'woo_infos.name as store_name',
                 'sup.name as sup_name'
             )
+            ->orderBy('w_temp.store_id')
             ->get()->toArray();
         $suppliers = \DB::table('suppliers')->select('id', 'name')->get()->toArray();
         $variation_changes = \DB::table('variation_changes')->select('id','name')->get()->toArray();

@@ -1782,8 +1782,11 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 'woo_infos.name as store_name'
             )
             ->where('wot.status', 0)
+            ->orderBy('wot.store_id')
+            ->orderBy('wot.id','DESC')
             ->get()->toArray();
-        return view('/keyword/list_categories', compact('data', 'categories'));
+        $woo_infos = \DB::table('woo_infos')->select('id','name')->get()->toArray();
+        return view('/keyword/list_categories', compact('data', 'categories', 'woo_infos'));
     }
 
     public function deleteWooCategory($woo_category_id)
