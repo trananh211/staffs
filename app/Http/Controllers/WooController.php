@@ -387,6 +387,12 @@ class WooController extends Controller
         return $work->editWooTemplate($request);
     }
 
+    public function scanAgainTemplate($woo_template_id)
+    {
+        $work = new Working();
+        return $work->scanAgainTemplate($woo_template_id);
+    }
+
     public function getListConvertVariation()
     {
         $data = array();

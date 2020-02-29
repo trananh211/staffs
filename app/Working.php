@@ -1216,6 +1216,30 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         }
     }
 
+    public function scanAgainTemplate($woo_template_id)
+    {
+        try {
+            $message_status = 'error';
+            $message = '';
+            $id = $woo_template_id;
+            $result = \DB::table('woo_templates')->where('id', $id)->update([
+                'status' => 0,
+                'updated_at' => date("Y-m-d H:i:s")
+            ]);
+            if ($result) {
+                $message_status = 'success';
+                $message = 'Re scan template thành công.';
+            } else {
+                $message = 'Re scan template thất bại. Mời bạn thử lại';
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+            echo $e->getMessage();
+        }
+        return redirect('woo-get-template')->with($message_status, $message);
+    }
+
     public function editWooTemplate($request)
     {
         try {

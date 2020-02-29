@@ -32,7 +32,7 @@ class CustomCommand extends Command
         parent::__construct();
     }
 
-    protected $array_minute = [7, 4, 3, 1];
+    protected $array_minute = [59, 6, 4, 3, 1];
     /**
      * Execute the console command.
      *
@@ -70,20 +70,11 @@ class CustomCommand extends Command
             case 4:
                 $this->run4Minute();
                 break;
-            case 5:
-                $this->run5Minute();
-                break;
             case 6:
                 $this->run6Minute();
                 break;
-            case 7:
-                $this->run7Minute();
-                break;
-            case 8:
-                $this->run8Minute();
-                break;
-            case 9:
-                $this->run9Minute();
+            case 59:
+                $this->run59Minute();
                 break;
             default:
                 echo 'khong run duoc vao thoi gian nay '. $minute;
@@ -103,6 +94,11 @@ class CustomCommand extends Command
             {
                 // upload sản phẩm lên web từ google driver
                 $check3 = $api_controller->autoUploadImage();
+                if ($check3)
+                {
+                    //Cào sản phẩm
+//                    $this->call('scrap:product');
+                }
             }
         }
     }
@@ -122,11 +118,6 @@ class CustomCommand extends Command
         $api_controller = new ApiController(); // make sure to import the controller
         $api_controller->getCategoryChecking();
     }
-    private function run5Minute()
-    {
-        echo 'run 5 phut';
-
-    }
 
     private function run6Minute()
     {
@@ -140,18 +131,9 @@ class CustomCommand extends Command
         }
     }
 
-    private function run7Minute()
+    private function run59Minute()
     {
-        echo 'run 7 phut';
-    }
-
-    private function run8Minute()
-    {
-        echo 'run 8 phut';
-    }
-
-    private function run9Minute()
-    {
-        echo 'run 9 phut';
+        // Cào website
+        $this->call('scan:website');
     }
 }

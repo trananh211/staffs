@@ -25,6 +25,7 @@
                             @if( sizeof($lists) > 0)
                                 <?php
                                     $i = 1;
+                                    //trạng thái đã bị xóa sản phẩm hoặc template
                                     $deleted = [23,24];
                                 ?>
                             @foreach( $lists as $list)
@@ -42,13 +43,18 @@
                                             <span class="red">Deleted</span>
                                         @endif
                                     @else
-                                        <span class="green"> {{ $list->status }}</span>
+                                        @if($list->status == 0)
+                                            <span class="yellow">Running</span>
+                                        @else
+                                            <span class="green">Done</span>
+                                        @endif
+
                                     @endif
                                 </td>
                                 <td>{{ $list->template_id }}</td>
                                 <td>{{ $list->store_name }}</td>
-                                <td>{{ ($list->sup_name != null)? $list->sup_name : 'Chưa có sup' }}</td>
-                                <td>{{ ($list->base_price != null)? '$ '.$list->base_price : 'Chưa deal giá' }}</td>
+                                <td>{{ ($list->sup_name != null)? $list->sup_name : 'N/A' }}</td>
+                                <td>{{ ($list->base_price != null)? '$ '.$list->base_price : 'N/A' }}</td>
                                 <td>
                                     <a class="waves-effect waves-light btn modal-trigger" href="#modal{{$list->id}}">Edit</a>
                                     <!-- Modal Structure -->
@@ -114,9 +120,9 @@
                                         </div>
                                     </div>
                                     <a onclick="return confirm('Bạn có chắc chắn muốn cập nhật template này?');"
-                                       href="{{ url('woo-update-template/'.$list->id) }}"
+                                       href="{{ url('woo-scan-template/'.$list->id) }}"
                                        class="waves-effect waves-light btn green">
-                                        Update
+                                        ReScan
                                     </a>
 
                                 </td>

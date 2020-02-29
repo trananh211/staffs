@@ -37,7 +37,7 @@ class NameStory extends Command
      */
     public function handle()
     {
-        logfile('========================= [ Bắt đầu cào website ] ===========================');
+        logfile_system('========================= [ Bắt đầu cào website ] ===========================');
         try {
             $check = $this->checkWebsite();
             //Nếu tồn tại website đang cần được scrap
@@ -94,16 +94,16 @@ class NameStory extends Command
                         break;
                     default:
                         $str = "-- Không có website nào cần được cào.";
-                        logfile($str);
+                        logfile_system($str);
                 }
             } else {
                 $str = '-- Không tồn tại website nào cần được scrap dữ liệu.';
-                logfile($str);
+                logfile_system($str);
             }
         } catch (\Exception $e) {
-            logfile($e->getMessage());
+            logfile_system($e->getMessage());
         }
-        logfile('========================= [ Kết thúc cào website ] ===========================');
+        logfile_system('========================= [ Kết thúc cào website ] ===========================');
     }
 
     //Kiểm tra xem có website nào chưa được scan hay không
@@ -131,14 +131,14 @@ class NameStory extends Command
                     'status' => 1,
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
-                logfile('Insert thành công dữ liệu ' . sizeof($data) . ' link sản phẩm website '.$domain);
+                logfile_system('Insert thành công dữ liệu ' . sizeof($data) . ' link sản phẩm website '.$domain);
             }
         } else {
             \DB::table('woo_templates')->where('id', $woo_template_id)->update([
                 'status' => 1,
                 'updated_at' => date("Y-m-d H:i:s")
             ]);
-            logfile('Không có dữ liệu cào từ website '.$domain);
+            logfile_system('Không có dữ liệu cào từ website '.$domain);
         }
     }
 
@@ -195,7 +195,7 @@ class NameStory extends Command
                     'status' => 1,
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
-                logfile('Insert thành công dữ liệu ' . sizeof($data) . ' link sản phẩm website namestories.com');
+                logfile_system('Insert thành công dữ liệu ' . sizeof($data) . ' link sản phẩm website namestories.com');
             }
         }
     }
@@ -288,13 +288,13 @@ class NameStory extends Command
                     $ar_category[$name] = $link;
                 });
             if (sizeof($ar_category) > 0) {
-                logfile('-- Phát hiện ' . (sizeof($ar_category) - 1) . ' categories cần được cào.');
+                logfile_system('-- Phát hiện ' . (sizeof($ar_category) - 1) . ' categories cần được cào.');
                 $i = 1;
                 foreach ($ar_category as $category_name => $link) {
                     if (strtolower($category_name) === 'all') {
                         continue;
                     }
-                    logfile('--- ' . $i . " Category: " . $category_name);
+                    logfile_system('--- ' . $i . " Category: " . $category_name);
                     $dt = array();
                     $url = 'https://www.etsy.com' . $link;
                     $dt = $this->scanCollectionEsty($client, $url, $category_name, $website_id, $template_id, $store_id, $woo_template_id);
@@ -303,7 +303,7 @@ class NameStory extends Command
                 }
             }
         } else {
-            logfile('-- Không tồn tại categories nào ở shop ' . $link);
+            logfile_system('-- Không tồn tại categories nào ở shop ' . $link);
         }
 
         if (sizeof($data) > 0) {
@@ -313,7 +313,7 @@ class NameStory extends Command
                     'status' => 1,
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
-                logfile('-- Insert thành công dữ liệu ' . sizeof($data) . ' link sản phẩm website '.$link);
+                logfile_system('-- Insert thành công dữ liệu ' . sizeof($data) . ' link sản phẩm website '.$link);
             }
         }
     }
@@ -356,9 +356,9 @@ class NameStory extends Command
                         ];
                     });
                 $str .= ' - Product ' . sizeof($data);
-                logfile($str);
+                logfile_system($str);
             } else {
-                logfile('---- Không có product nào ở trang này. Bỏ qua');
+                logfile_system('---- Không có product nào ở trang này. Bỏ qua');
             }
             //Phần cuối cùng. Không được chèn thêm ở đây nữa
             // kiểm tra xem đây có phải là 1 page hay không
