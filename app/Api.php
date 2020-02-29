@@ -1459,6 +1459,55 @@ class Api extends Model
         return $re;
     }
 
+    public function getMoreWooCategory($request)
+    {
+        \DB::beginTransaction();
+        try {
+            $rq = $request->all();
+            $store_id = $rq['store_id'];
+            $category_name = $rq['category_name'];
+            $alert = 'error';
+            $check = \DB::table('woo_categories')
+                ->where('slug', $category_name)
+                ->where('store_id', $store_id)
+                ->first();
+            if ($check == NULL) {
+                $woo_info = \DB::table('woo_infos')->select('*')->where('id', $store_id)->first();
+                $woocommerce = $this->getConnectStore($woo_info->url, $woo_info->consumer_key, $woo_info->consumer_secret);
+                $data = [
+                    'slug' => $category_name,
+                ];
+                // kết nối tới woocommerce store để lấy thông tin
+                $result = ($woocommerce->get('products/categories', $data));
+                if (sizeof($result) > 0) {
+                    $insert_data = [
+                        'woo_category_id' => $result[0]->id,
+                        'name' => $result[0]->name,
+                        'slug' => $result[0]->slug,
+                        'store_id' => $store_id,
+                        'created_at' => date("Y-m-d H:i:s"),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ];
+                    $result_insert = \DB::table('woo_categories')->insert($insert_data);
+                    if ($result_insert) {
+                        $alert = 'success';
+                        $message = 'Thêm category ' . $result[0]->name . ' thành công';
+                    } else {
+                        $message = 'Xảy ra lỗi. Không thể thêm category ' . $result[0]->name . '. Mời bạn thử lại.';
+                    }
+                } else {
+                    $message = 'Không tồn tại category ' . $category_name . ' này tại store ' . $woo_info->name;
+                }
+            } else {
+                $message = 'Đã tồn tại category "' . $category_name . '" này ở hệ thống. Mời bạn kiểm tra lại ở phần trên';
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            logfile($e->getMessage());
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return redirect('list-categories')->with($alert, $message);
+    }
     // End Google feed
     /*End WooCommerce API*/
 }

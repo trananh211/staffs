@@ -109,6 +109,8 @@ Route::middleware('auth')->group(function () {
     Route::post('process-feed-store','WooController@processFeedStore');
     Route::get('feed-delete-file/{google_feed_id}','WooController@feedDeleteFile');
     Route::get('feed-get-file/{google_feed_id}','WooController@feedGetFile');
+    Route::get('delete-woo-category/{woo_category_id}','WooController@deleteWooCategory');
+    Route::post('get-more-category','ApiController@getMoreWooCategory');
     /*End QC + Admin*/
 
     /*Staff*/

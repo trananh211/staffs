@@ -1782,8 +1782,30 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 'woo_infos.name as store_name'
             )
             ->where('wot.status', 0)
+            ->orderBy('wot.store_id')
+            ->orderBy('wot.id','DESC')
             ->get()->toArray();
-        return view('/keyword/list_categories', compact('data', 'categories'));
+        $woo_infos = \DB::table('woo_infos')->select('id','name')->get()->toArray();
+        return view('/keyword/list_categories', compact('data', 'categories', 'woo_infos'));
+    }
+
+    public function deleteWooCategory($woo_category_id)
+    {
+        try {
+            //xóa hết keyword
+            \DB::table('ads_keywords')->where('woo_category_id',$woo_category_id)->delete();
+            \DB::table('woo_categories')->where('id',$woo_category_id)->delete();
+
+            $alert = 'success';
+            $message = 'Đã xóa cateogory thành công.';
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $alert = 'error';
+            logfile($e->getMessage());
+            $message = 'Xóa cateogory thất bại. Mời bạn thử lại' . $e->getMessage();
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return redirect('/list-categories')->with($alert, $message);
     }
 
     public function showKeywordCategory($request)

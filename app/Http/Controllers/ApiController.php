@@ -222,5 +222,11 @@ class ApiController extends Controller
     /*End Check Product of category info*/
 
     // End Google Feed
+
+    public function getMoreWooCategory(Request $request)
+    {
+        $api = new Api();
+        return $api->getMoreWooCategory($request);
+    }
 }
 
