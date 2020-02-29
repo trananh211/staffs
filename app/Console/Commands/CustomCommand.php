@@ -32,7 +32,7 @@ class CustomCommand extends Command
         parent::__construct();
     }
 
-    protected $array_minute = [59, 6, 4, 3, 1];
+    protected $array_minute = [59, 6, 4, 1];
     /**
      * Execute the console command.
      *
@@ -49,6 +49,7 @@ class CustomCommand extends Command
             if (($minute % $minute_compare) == 0)
             {
                 $min = $minute_compare;
+                logfile_system('+++++++++++++++++++++++ Hàm đang chạy bởi '.$min." phut \n");
                 break;
             }
         }
@@ -60,12 +61,6 @@ class CustomCommand extends Command
         switch ($minute) {
             case 1:
                 $this->run1Minute();
-                break;
-            case 2:
-                $this->run2Minute();
-                break;
-            case 3:
-                $this->run3Minute();
                 break;
             case 4:
                 $this->run4Minute();

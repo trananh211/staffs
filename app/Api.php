@@ -592,6 +592,7 @@ class Api extends Model
 
     public function autoUploadImage()
     {
+        $return = false;
         try {
             $limit = 2;
             $check = \DB::table('woo_product_drivers')
@@ -709,7 +710,7 @@ class Api extends Model
                 } else {
                     logfile_system('-- [END] Đã hết ảnh từ google driver để tải lên woocommerce. Kết thúc.');
                     logfile_system('-- Chuyển sang xóa sản phẩm');
-                    $this->deleteProductUploaded();
+                    $return = $this->deleteProductUploaded();
                 }
             } else {
                 logfile_system('-- Chuyển sang up ảnh scrap website');
@@ -717,13 +718,14 @@ class Api extends Model
                 $result = true;
                 if ($result) {
                     logfile_system('-- Chuyển sang xóa sản phẩm');
-                    $this->deleteProductUploaded();
+                   $return = $this->deleteProductUploaded();
                 }
             }
         } catch (\Exception $e) {
             logfile_system($e->getMessage());
             return $e->getMessage();
         }
+        return $return;
     }
 
     private function uploadScrapImage()
@@ -890,6 +892,7 @@ class Api extends Model
     /*Xóa product*/
     private function deleteProductUploaded()
     {
+        $return = false;
         $temps = \DB::table('woo_templates')->select('id', 'template_id', 'store_id', 'website_id')->where('status', 23)->first();
         if ($temps != NULL) {
             $where = [
@@ -941,8 +944,10 @@ class Api extends Model
                 logfile_system('-- Đã hết sản phẩm để xóa.');
             }
         } else {
+            $return = true;
             logfile_system('-- [End] Đã hết template để xóa.');
         }
+        return $return;
     }
 
     /*Tao moi product*/

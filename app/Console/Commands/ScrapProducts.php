@@ -76,7 +76,7 @@ class ScrapProducts extends Command
     {
         set_time_limit(0);
         echo "<pre>";
-        logfile('========================= [ Bắt đầu scrap products ] ==========================');
+        logfile_system('========================= [ Bắt đầu scrap products ] ==========================');
         $products = $this->checkProductNew();
         // tồn tại sản phẩm chưa up lên trên shop
         if (is_array($products)) {
@@ -90,9 +90,9 @@ class ScrapProducts extends Command
                 $this->preProduct($data);
             }
         } else {
-            logfile('Đã hết product để import vào website');
+            logfile_system('Đã hết product để import vào website');
         }
-        logfile('========================= [ Kết thúc scrap products ] =========================');
+        logfile_system('========================= [ Kết thúc scrap products ] =========================');
     }
 
     private function preProduct($data)
@@ -104,7 +104,7 @@ class ScrapProducts extends Command
         }
         if ($check_tag) {
             $str = '-- Đã cập nhật xong categories và tags vào toàn bộ product. Chuyển sang tạo mới sản phẩm.';
-            logfile($str);
+            logfile_system($str);
             foreach ($data as $website_id => $dt) {
                 switch ($website_id) {
                     case 1:
@@ -147,13 +147,13 @@ class ScrapProducts extends Command
                         $this->getProductMerchKing_excludeText($dt, array(2,3,4,7), $text_exclude);
                     default:
                         $str = "-- Không có website nào cần được up sản phẩm.";
-                        logfile($str);
+                        logfile_system($str);
                 }
                 break;
             }
         } else {
             $str = '-- Đang cập nhật tag vào scrap_products';
-            logfile($str);
+            logfile_system($str);
         }
     }
 
@@ -190,7 +190,7 @@ class ScrapProducts extends Command
     // kiểm tra categories để lưu vào product
     private function checkCategory()
     {
-        logfile('--[ Check Category ] ---------------------------');
+        logfile_system('--[ Check Category ] ---------------------------');
         $lst_product_category = \DB::table('scrap_products as spd')
             ->join('woo_infos as woo_info', 'spd.store_id', '=', 'woo_info.id')
             ->select(
@@ -273,14 +273,14 @@ class ScrapProducts extends Command
                 }
                 //them toan bo thong tin woo_categories mới get được về database
                 if (sizeof($woo_categories_data) > 0) {
-                    logfile('-- Tạo mới thông tin woo_categories : ' . sizeof($woo_categories_data) . ' news');
+                    logfile_system('-- Tạo mới thông tin woo_categories : ' . sizeof($woo_categories_data) . ' news');
                     \DB::table('woo_categories')->insert($woo_categories_data);
                 }
             }
 
             // Nếu tồn tại thông tin để update vào sản phẩm scrap_products
             if (sizeof($scrap_product_update) > 0) {
-                logfile('-- Cập nhật thông tin category vào scrap_products : ' . sizeof($scrap_product_update) . ' update.');
+                logfile_system('-- Cập nhật thông tin category vào scrap_products : ' . sizeof($scrap_product_update) . ' update.');
                 foreach ($scrap_product_update as $woo_category_id => $list_id) {
                     $data = [
                         'woo_category_id' => $woo_category_id
@@ -291,7 +291,7 @@ class ScrapProducts extends Command
             $result = false;
         } else {
             $result = true;
-            logfile('-- Đã chuẩn bị đủ category. Chuyển sang cập nhật category vào từng product.');
+            logfile_system('-- Đã chuẩn bị đủ category. Chuyển sang cập nhật category vào từng product.');
         }
         return $result;
     }
@@ -299,7 +299,7 @@ class ScrapProducts extends Command
     // kiểm tra tag để lưu vào product
     private function checkTag()
     {
-        logfile('--[ Check Tag ] ---------------------------');
+        logfile_system('--[ Check Tag ] ---------------------------');
         $lst_product_tag = \DB::table('scrap_products as spd')
             ->join('woo_infos as woo_info', 'spd.store_id', '=', 'woo_info.id')
             ->select(
@@ -383,14 +383,14 @@ class ScrapProducts extends Command
                 }
                 //them toan bo thong tin woo_tags mới get được về database
                 if (sizeof($woo_tags_data) > 0) {
-                    logfile('-- Tạo mới thông tin woo_tags : ' . sizeof($woo_tags_data) . ' news');
+                    logfile_system('-- Tạo mới thông tin woo_tags : ' . sizeof($woo_tags_data) . ' news');
                     \DB::table('woo_tags')->insert($woo_tags_data);
                 }
             }
 
             // Nếu tồn tại thông tin để update vào sản phẩm scrap_products
             if (sizeof($scrap_product_update) > 0) {
-                logfile('-- Cập nhật thông tin tag vào scrap_products : ' . sizeof($scrap_product_update) . ' update.');
+                logfile_system('-- Cập nhật thông tin tag vào scrap_products : ' . sizeof($scrap_product_update) . ' update.');
                 foreach ($scrap_product_update as $woo_tag_id => $list_id) {
                     $data = [
                         'woo_tag_id' => $woo_tag_id
@@ -401,7 +401,7 @@ class ScrapProducts extends Command
             $result = false;
         } else {
             $result = true;
-            logfile('-- Đã chuẩn bị đủ tag. Chuyển sang cập nhật tag vào từng product.');
+            logfile_system('-- Đã chuẩn bị đủ tag. Chuyển sang cập nhật tag vào từng product.');
         }
         return $result;
     }
@@ -439,7 +439,7 @@ class ScrapProducts extends Command
             try {
                 $this->createProductNameStories($data, $variation_id);
             } catch (\Exception $e) {
-                logfile($e->getMessage());
+                logfile_system($e->getMessage());
             }
         }
     }
@@ -488,7 +488,7 @@ class ScrapProducts extends Command
                 }
             }
             // Kết thúc chọn name
-            logfile("-- Đang tạo sản phẩm mới : " . $woo_product_name);
+            logfile_system("-- Đang tạo sản phẩm mới : " . $woo_product_name);
             $prod_data = $template_json;
             $prod_data['name'] = $woo_product_name;
             $prod_data['status'] = 'draft';
@@ -562,9 +562,9 @@ class ScrapProducts extends Command
             );
             $result = $woocommerce->put('products/' . $woo_product_id, $tmp);
             if ($result) {
-                logfile('-- Đã tạo thành công sản phẩm ' . $woo_product_name);
+                logfile_system('-- Đã tạo thành công sản phẩm ' . $woo_product_name);
             } else {
-                logfile('-- Thất bại. Khôn tạo được sản phẩm ' . $woo_product_name);
+                logfile_system('-- Thất bại. Khôn tạo được sản phẩm ' . $woo_product_name);
             }
         }
     }
@@ -602,7 +602,7 @@ class ScrapProducts extends Command
             try {
                 $this->createProductEsty($data, $variation_id);
             } catch (\Exception $e) {
-                logfile($e->getMessage());
+                logfile_system($e->getMessage());
             }
         }
     }
@@ -661,7 +661,7 @@ class ScrapProducts extends Command
             try {
                 $this->createProductEsty_LinkName($data, $variation_id, $fixed);
             } catch (\Exception $e) {
-                logfile($e->getMessage());
+                logfile_system($e->getMessage());
             }
         }
     }
@@ -703,7 +703,7 @@ class ScrapProducts extends Command
             try {
                 $this->createProduct($data, $variation_id);
             } catch (\Exception $e) {
-                logfile($e->getMessage());
+                logfile_system($e->getMessage());
             }
         }
     }
@@ -725,7 +725,7 @@ class ScrapProducts extends Command
             // Chọn name
             $woo_product_name = ucwords(trim($val['product_name'] . ' ' . $template_json['name']));
             // Kết thúc chọn name
-            logfile("-- Đang tạo sản phẩm mới : " . $woo_product_name);
+            logfile_system("-- Đang tạo sản phẩm mới : " . $woo_product_name);
             $prod_data = $this->preProductData($template_json);
             $prod_data['name'] = $woo_product_name;
             $prod_data['status'] = 'draft';
@@ -791,9 +791,9 @@ class ScrapProducts extends Command
             $result = $woocommerce->put('products/' . $woo_product_id, $tmp);
             if ($result)
             {
-                logfile('--- Tạo thành công sản phẩm '.$woo_product_name);
+                logfile_system('--- Tạo thành công sản phẩm '.$woo_product_name);
             } else {
-                logfile('--- Tạo thất bại sản phẩm '.$woo_product_name);
+                logfile_system('--- Tạo thất bại sản phẩm '.$woo_product_name);
             }
         }
     }
@@ -815,7 +815,7 @@ class ScrapProducts extends Command
             // Chọn name
             $woo_product_name = ucwords(trim($val['product_name'] . ' ' . $template_json['name']));
             // Kết thúc chọn name
-            logfile("-- Đang tạo sản phẩm mới : " . $woo_product_name);
+            logfile_system("-- Đang tạo sản phẩm mới : " . $woo_product_name);
             $prod_data = $template_json;
             $prod_data['name'] = $woo_product_name;
             $prod_data['status'] = 'draft';
@@ -906,7 +906,7 @@ class ScrapProducts extends Command
             try {
                 $this->createProduct($data, $variation_id);
             } catch (\Exception $e) {
-                logfile($e->getMessage());
+                logfile_system($e->getMessage());
             }
         }
     }
@@ -938,7 +938,7 @@ class ScrapProducts extends Command
                 $db_image[$val['id'].'_'.$val['store_id']] = $images;
 
                 // Kết thúc chọn name
-                logfile("-- Đang tạo sản phẩm mới : " . $woo_product_name);
+                logfile_system("-- Đang tạo sản phẩm mới : " . $woo_product_name);
                 $prod_data = $this->preProductData($template_json);
 //            $prod_data = $template_json;
                 $prod_data['name'] = $woo_product_name;
@@ -992,9 +992,9 @@ class ScrapProducts extends Command
                 $result = $woocommerce->put('products/' . $woo_product_id, $tmp);
                 if ($result) {
                     $link_product = $result->permalink;
-                    logfile('-- Đã tạo thành công sản phẩm ' . $woo_product_name);
+                    logfile_system('-- Đã tạo thành công sản phẩm ' . $woo_product_name);
                 } else {
-                    logfile('-- Thất bại. Không tạo được sản phẩm ' . $woo_product_name);
+                    logfile_system('-- Thất bại. Không tạo được sản phẩm ' . $woo_product_name);
                 }
                 // Cap nhat product id vao woo_product_driver
                 \DB::table('scrap_products')->where('id', $val['id'])
@@ -1009,7 +1009,7 @@ class ScrapProducts extends Command
             /*// gui image luu vao database
             $this->saveImagePath($db_image);*/
         } catch (\Exception $e) {
-            logfile('--- Xảy ra lỗi ngoài ý muốn. ' . $e->getMessage());
+            logfile_system('--- Xảy ra lỗi ngoài ý muốn. ' . $e->getMessage());
         }
     }
 
@@ -1116,7 +1116,7 @@ class ScrapProducts extends Command
             try {
                 $this->createProduct($data, $variation_id);
             } catch (\Exception $e) {
-                logfile($e->getMessage());
+                logfile_system($e->getMessage());
             }
         }
     }
@@ -1176,7 +1176,7 @@ class ScrapProducts extends Command
             try {
                 $this->createProduct($data, $variation_id);
             } catch (\Exception $e) {
-                logfile($e->getMessage());
+                logfile_system($e->getMessage());
             }
         }
     }
