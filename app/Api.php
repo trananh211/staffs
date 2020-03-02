@@ -627,12 +627,121 @@ class Api extends Model
     public function autoUploadProduct()
     {
         $return = false;
-        $result_check_category = $this->checkCategory();
-        die('aaaa');
-        if ($result_check_category) {
+        $result_check_tag = $this->checkTag();
+        if ($result_check_tag) {
             $return = $this->checkCreateProduct();
         }
         return $return;
+    }
+
+    // kiểm tra tag để lưu vào product
+    private function checkTag()
+    {
+        logfile_system('--[ Check Tag ] ---------------------------');
+        $lst_product_tag = \DB::table('woo_product_drivers as spd')
+            ->join('woo_infos as woo_info', 'spd.store_id', '=', 'woo_info.id')
+            ->select(
+                'spd.id as scrap_product_id', 'spd.tag_name', 'spd.store_id',
+                'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret'
+            )
+            ->where([
+                ['woo_tag_id', '=', NULL],
+                ['tag_name', '<>', NULL]
+            ])
+            ->limit(30)
+            ->get()->toArray();
+        if (sizeof($lst_product_tag) > 0) {
+            $tag_store_lst = array();
+            $tmp = array();
+            $scrap_product_update = array();
+            // cập nhật tag_id vào woo_product_drivers
+            $tags = \DB::table('woo_tags')
+                ->select('id', 'store_id', 'slug')
+                ->get()->toArray();
+            // tạo mảng mới có key là store_id và name folder để so sánh
+            $compare_tag = array();
+            foreach ($tags as $tag) {
+                $key = $tag->store_id . '_' . $tag->slug;
+                $compare_tag[$key] = $tag->id;
+            }
+            foreach ($lst_product_tag as $val) {
+                $val->tag_name = strtolower($val->tag_name);
+                $key_compare = $val->store_id . '_' . $val->tag_name;
+                //nếu đã tồn tại
+                if (array_key_exists($key_compare, $compare_tag)) {
+                    $scrap_product_update[$compare_tag[$key_compare]][] = $val->scrap_product_id;
+                } else { // nếu chưa tồn tại. lưu vào 1 mảng khác để truy vấn.
+                    if (!in_array($val->tag_name, $tmp)) {
+                        $tmp[] = $val->tag_name;
+                    }
+                    $tag_store_lst[$val->store_id] = [
+                        'url' => $val->url,
+                        'consumer_key' => $val->consumer_key,
+                        'consumer_secret' => $val->consumer_secret,
+                        'tags' => $tmp
+                    ];
+                }
+            }
+            //nếu tồn tại sản phẩm chưa có tag
+            if (sizeof($tag_store_lst) > 0) {
+                $woo_tags_data = array();
+                foreach ($tag_store_lst as $store_id => $info) {
+                    $woocommerce = $this->getConnectStore($info['url'], $info['consumer_key'], $info['consumer_secret']);
+                    foreach ($info['tags'] as $tag_name) {
+                        $data = [
+                            'slug' => $tag_name,
+                        ];
+                        // kết nối tới woocommerce store để lấy thông tin
+                        $result = ($woocommerce->get('products/tags', $data));
+                        //nếu không thấy thông tin thì tạo mới
+                        if (sizeof($result) == 0) {
+                            $data = [
+                                'name' => $tag_name
+                            ];
+                            $i = ($woocommerce->post('products/tags', $data));
+                            $woo_tags_data[] = [
+                                'woo_tag_id' => $i->id,
+                                'name' => $i->name,
+                                'slug' => $i->slug,
+                                'store_id' => $store_id,
+                                'created_at' => date("Y-m-d H:i:s"),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                        } else {
+                            $woo_tags_data[] = [
+                                'woo_tag_id' => $result[0]->id,
+                                'name' => $result[0]->name,
+                                'slug' => $result[0]->slug,
+                                'store_id' => $store_id,
+                                'created_at' => date("Y-m-d H:i:s"),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                        }
+                    }
+                }
+                //them toan bo thong tin woo_tags mới get được về database
+                if (sizeof($woo_tags_data) > 0) {
+                    logfile_system('-- Tạo mới thông tin woo_tags : ' . sizeof($woo_tags_data) . ' news');
+                    \DB::table('woo_tags')->insert($woo_tags_data);
+                }
+            }
+
+            // Nếu tồn tại thông tin để update vào sản phẩm scrap_products
+            if (sizeof($scrap_product_update) > 0) {
+                logfile_system('-- Cập nhật thông tin tag vào woo_product_drivers : ' . sizeof($scrap_product_update) . ' update.');
+                foreach ($scrap_product_update as $woo_tag_id => $list_id) {
+                    $data = [
+                        'woo_tag_id' => $woo_tag_id
+                    ];
+                    \DB::table('woo_product_drivers')->whereIn('id', $list_id)->update($data);
+                }
+            }
+            $result = false;
+        } else {
+            $result = true;
+            logfile_system('-- Đã chuẩn bị đủ tag. Chuyển sang tạo mới sản phẩm.');
+        }
+        return $result;
     }
 
     public function autoUploadImage()
@@ -1000,22 +1109,24 @@ class Api extends Model
     {
         $return = false;
         try {
-            logfile_system('[Create Product] ========================================');
+            logfile_system('=== [Create Product] ========================================');
             //kiểm tra xem có file nào đang up dở hay không
             $check_processing = \DB::table('woo_product_drivers')->select('name', 'template_id')->where('status', 2)->first();
             //nếu không có file nào đang up dở
             if ($check_processing == NULL) {
                 $limit = 5;
                 $check = \DB::table('woo_product_drivers as wopd')
-                    ->join('woo_categories as woo_cat', 'wopd.woo_category_id', '=', 'woo_cat.id')
                     ->join('woo_infos as woo_info', 'wopd.store_id', '=', 'woo_info.id')
+                    ->join('woo_tags','woo_tags.id', '=', 'wopd.woo_tag_id')
                     ->join('woo_templates as woo_temp', function ($join) {
                         $join->on('wopd.template_id', '=', 'woo_temp.template_id');
                         $join->on('wopd.store_id', '=', 'woo_temp.store_id');
                     })
                     ->select(
                         'wopd.id as woo_product_driver_id', 'wopd.name', 'wopd.path', 'wopd.template_id', 'wopd.store_id',
-                        'woo_cat.woo_category_id', 'woo_temp.template_path',
+                        'wopd.woo_category_id',
+                        'woo_tags.woo_tag_id', 'woo_tags.name as tag_name', 'woo_tags.slug as tag_slug',
+                        'woo_temp.template_path',
                         'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret'
                     )
                     ->where([
@@ -1039,6 +1150,14 @@ class Api extends Model
                         $prod_data['categories'] = [
                             ['id' => $val->woo_category_id]
                         ];
+                        //them tag vao san pham
+                        if ($val->woo_tag_id != '') {
+                            $prod_data['tags'][] = [
+                                'id' => $val->woo_tag_id,
+                                'name' => $val->tag_name,
+                                'slug' => $val->tag_slug,
+                            ];
+                        }
                         $prod_data['description'] = html_entity_decode($template_json['description']);
                         unset($prod_data['variations']);
                         // End tìm template
@@ -1152,132 +1271,6 @@ class Api extends Model
             logfile_system($e->getMessage());
         }
         return $return;
-    }
-
-    /*Tao category cap nhat vao file de tao product*/
-    private function checkCategory()
-    {
-        logfile_system('===============[Check Category]==============');
-        $lst_product_category = \DB::table('woo_product_drivers as wpd')
-            ->join('woo_infos as woo_info', 'wpd.store_id', '=', 'woo_info.id')
-            ->select(
-                'wpd.id as woo_product_driver_id', 'wpd.category_name', 'wpd.store_id',
-                'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret'
-            )
-            ->where([
-                ['category_id', '=', NULL]
-            ])
-            ->get()->toArray();
-        echo "<pre>";
-        print_r($lst_product_category);
-    }
-
-    private function checkCategory2()
-    {
-        logfile_system('===============[Check Category]==============');
-        $lst_product_category = \DB::table('woo_product_drivers as wpd')
-            ->join('woo_infos as woo_info', 'wpd.store_id', '=', 'woo_info.id')
-            ->select(
-                'wpd.id as woo_product_driver_id', 'wpd.name', 'wpd.store_id',
-                'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret'
-            )
-            ->where([
-                ['woo_category_id', '=', NULL]
-            ])
-            ->get()->toArray();
-        echo "<pre>";
-        print_r($lst_product_category);
-        die();
-        if (sizeof($lst_product_category) > 0) {
-            $category_store_lst = array();
-            $tmp = array();
-            $woo_product_driver_update = array();
-            // cập nhật category_id vào woo_product_drivers
-            $categories = \DB::table('woo_categories')
-                ->select('id', 'store_id', 'slug')
-                ->get()->toArray();
-            // tạo mảng mới có key là store_id và name folder để so sánh
-            $compare_categories = array();
-            foreach ($categories as $category) {
-                $key = $category->store_id . '_' . $category->slug;
-                $compare_categories[$key] = $category->id;
-            }
-            foreach ($lst_product_category as $val) {
-                $key_compare = $val->store_id . '_' . $val->name;
-                //nếu đã tồn tại
-                if (array_key_exists($key_compare, $compare_categories)) {
-                    $woo_product_driver_update[$compare_categories[$key_compare]][] = $val->woo_product_driver_id;
-                } else { // nếu chưa tồn tại. lưu vào 1 mảng khác để truy vấn.
-                    $tmp[] = $val->name;
-                    $category_store_lst[$val->store_id] = [
-                        'url' => $val->url,
-                        'consumer_key' => $val->consumer_key,
-                        'consumer_secret' => $val->consumer_secret,
-                        'categories' => $tmp
-                    ];
-                }
-            }
-            //nếu tồn tại sản phẩm chưa có category
-            if (sizeof($category_store_lst) > 0) {
-                $woo_categories_data = array();
-                foreach ($category_store_lst as $store_id => $info) {
-                    $woocommerce = $this->getConnectStore($info['url'], $info['consumer_key'], $info['consumer_secret']);
-                    foreach ($info['categories'] as $category_name) {
-                        $data = [
-                            'slug' => $category_name,
-                        ];
-                        // kết nối tới woocommerce store để lấy thông tin
-                        $result = ($woocommerce->get('products/categories', $data));
-                        //nếu không thấy thông tin thì tạo mới
-                        if (sizeof($result) == 0) {
-                            $data = [
-                                'name' => $category_name
-                            ];
-                            $i = ($woocommerce->post('products/categories', $data));
-                            $woo_categories_data[] = [
-                                'woo_category_id' => $i->id,
-                                'name' => $i->name,
-                                'slug' => $i->slug,
-                                'store_id' => $store_id,
-                                'created_at' => date("Y-m-d H:i:s"),
-                                'updated_at' => date("Y-m-d H:i:s")
-                            ];
-                        } else {
-                            $woo_categories_data[] = [
-                                'woo_category_id' => $result[0]->id,
-                                'name' => $result[0]->name,
-                                'slug' => $result[0]->slug,
-                                'store_id' => $store_id,
-                                'created_at' => date("Y-m-d H:i:s"),
-                                'updated_at' => date("Y-m-d H:i:s")
-                            ];
-                        }
-                    }
-                }
-                //them toan bo thong tin woo_categories mới get được về database
-                if (sizeof($woo_categories_data) > 0) {
-                    logfile_system('-- Tạo mới thông tin woo_categories : ' . sizeof($woo_categories_data) . ' news');
-                    \DB::table('woo_categories')->insert($woo_categories_data);
-                }
-            }
-
-            // Nếu tồn tại thông tin để update vào sản phẩm lưu driver
-            if (sizeof($woo_product_driver_update) > 0) {
-                logfile_system('-- Cập nhật thông tin category vào woo_product_driver : ' . sizeof($woo_product_driver_update) . ' update.');
-                foreach ($woo_product_driver_update as $woo_category_id => $list_id) {
-                    $data = [
-                        'woo_category_id' => $woo_category_id
-                    ];
-                    \DB::table('woo_product_drivers')->whereIn('id', $list_id)->update($data);
-                }
-            }
-            $result = false;
-        } else {
-            $result = true;
-            logfile_system('-- Đã cập nhật đủ category. Chuyển sang tạo product');
-        }
-        $result = true;
-        return $result;
     }
 
     // Google Feed
