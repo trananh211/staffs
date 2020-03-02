@@ -27,6 +27,20 @@
                                 </div>
                             </div>
                             <div class="row">
+                                <div class="input-field col s3">
+                                    <input type="text" value="{{ $rq['category_id'] }}" name="category_id" class="validate" required>
+                                    <label for="email">Category Id</label>
+                                </div>
+                                <div class="input-field col s3">
+                                    <input type="text" value="{{ $rq['category_name'] }}" name="category_name" class="validate" required>
+                                    <label for="email">Category Name</label>
+                                </div>
+                                <div class="input-field col s3">
+                                    <input value="{{ $rq['woo_category_id'] }}" name="woo_category_id" type="text" class="validate">
+                                    <label for="active">Woo Category Id</label>
+                                </div>
+                            </div>
+                            <div class="row">
                                 <div class="input-field col s4">
                                     <input type="text" value="{{ $rq['name_driver'] }}" name="name_driver" placeholder="Tên của thư mục Google Driver" class="validate" required>
                                     <label for="email">Tên thư mục</label>
