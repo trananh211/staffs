@@ -518,7 +518,7 @@ class Api extends Model
                 $description = htmlentities(str_replace("\n", "<br />", $template_data['description']));
                 $template_data['description'] = $description;
                 //xoa cac key khong can thiet
-                $deleted = array('id', 'slug', 'permalink', 'price_html', 'categories', 'images', '_links');
+                $deleted = array('id', 'slug', 'permalink', 'price_html', 'images', '_links');
                 $variation_list = $template_data['variations'];
                 foreach ($deleted as $v) {
                     unset($template_data[$v]);
@@ -533,7 +533,7 @@ class Api extends Model
                 chmod($template_path, 777);
                 // Nếu tạo file json thành công. Luu thông tin template vao database
                 if ($result) {
-                    logfile_system('-- Tạo json file template thành công. chuyển sang tạo variantions file json');
+                    logfile('-- Tạo json file template thành công. chuyển sang tạo variantions file json');
                     $woo_template_id = \DB::table('woo_templates')->insertGetId([
                         'product_name' => $template_name,
                         'template_id' => $template_id,
@@ -551,7 +551,7 @@ class Api extends Model
                         $variation_data = $woocommerce->get('products/' . $template_id . '/variations/' . $varid);
                         $result = writeFileJson($variation_path, $variation_data);
                         if ($result) {
-                            logfile_system('-- Tạo json file variations thành công. ' . $variation_path);
+                            logfile('-- Tạo json file variations thành công. ' . $variation_path);
                         }
                         chmod($variation_path, 0777);
                         $insert_variation[] = [
@@ -569,11 +569,55 @@ class Api extends Model
                     }
                 }
             }
+
+            // lấy tên và id của category
+            if (isset($template_data['categories'][0]))
+            {
+                $tem_category = $template_data['categories'][0];
+                $category_name = $tem_category['name'];
+                $woo_category_id = $tem_category['id'];
+            } else {
+                $category_name = null;
+                $woo_category_id = null;
+            }
+
+            // kiểm tra với woo_categories có sẵn tại tool xem tồn tại chưa.
+            $check_category = \DB::table('woo_categories')->select('id')
+                ->where([
+                    ['name', '=', $category_name],
+                    ['store_id', '=', $id_store]
+                ])->first();
+            if ($check_category != NULL)
+            {
+                $category_id = $check_category->id;
+            } else {
+                $woocommerce = $this->getConnectStore($rq['url'], $rq['consumer_key'], $rq['consumer_secret']);
+                $data = [
+                    'slug' => $category_name,
+                ];
+                // kết nối tới woocommerce store để lấy thông tin
+                $result = ($woocommerce->get('products/categories', $data));
+                $category_id = $result[0]->id;
+                $data = [
+                    'woo_category_id' => $woo_category_id,
+                    'name' => $category_name,
+                    'slug' => $result[0]->slug,
+                    'store_id' => $id_store,
+                    'created_at' => date("Y-m-d H:i:s"),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ];
+                \DB::table('woo_categories')->insert($data);
+            }
+            $category_data = [
+                'category_id' => $category_id,
+                'category_name' => $category_name,
+                'woo_category_id' => $woo_category_id
+            ];
             $data = array();
             if ($scrap != null) {
                 return redirect('scrap-create-template')->with('success', 'Connect với template thành công');
             } else {
-                return view("/admin/woo/save_path_template", compact('data', "template_data", 'rq'));
+                return view("/admin/woo/save_path_template", compact('data', "template_data", 'rq', 'category_data'));
             }
         } catch (\Exception $e) {
             return $e->getMessage();
@@ -584,6 +628,7 @@ class Api extends Model
     {
         $return = false;
         $result_check_category = $this->checkCategory();
+        die('aaaa');
         if ($result_check_category) {
             $return = $this->checkCreateProduct();
         }
@@ -653,7 +698,7 @@ class Api extends Model
                                 'id' => $product_id,
                                 'status' => 'publish',
                                 'images' => $images,
-                                'date_created' => date("Y-m-d H:i:s", strtotime(" -6 month"))
+                                'date_created' => date("Y-m-d H:i:s", strtotime(" -2 days"))
                             );
                             $update_images_data['update'][] = $tmp;
                             $result = $woocommerce->put('products/' . $product_id, $tmp);
@@ -1116,6 +1161,23 @@ class Api extends Model
         $lst_product_category = \DB::table('woo_product_drivers as wpd')
             ->join('woo_infos as woo_info', 'wpd.store_id', '=', 'woo_info.id')
             ->select(
+                'wpd.id as woo_product_driver_id', 'wpd.category_name', 'wpd.store_id',
+                'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret'
+            )
+            ->where([
+                ['category_id', '=', NULL]
+            ])
+            ->get()->toArray();
+        echo "<pre>";
+        print_r($lst_product_category);
+    }
+
+    private function checkCategory2()
+    {
+        logfile_system('===============[Check Category]==============');
+        $lst_product_category = \DB::table('woo_product_drivers as wpd')
+            ->join('woo_infos as woo_info', 'wpd.store_id', '=', 'woo_info.id')
+            ->select(
                 'wpd.id as woo_product_driver_id', 'wpd.name', 'wpd.store_id',
                 'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret'
             )
@@ -1123,6 +1185,9 @@ class Api extends Model
                 ['woo_category_id', '=', NULL]
             ])
             ->get()->toArray();
+        echo "<pre>";
+        print_r($lst_product_category);
+        die();
         if (sizeof($lst_product_category) > 0) {
             $category_store_lst = array();
             $tmp = array();

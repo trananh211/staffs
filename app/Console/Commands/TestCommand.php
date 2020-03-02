@@ -39,8 +39,12 @@ class TestCommand extends Command
      */
     public function handle()
     {
-        $controller = new ApiController(); // make sure to import the controller
+//        $controller = new ApiController(); // make sure to import the controller
 //        $controller->autoUploadProduct();
-        $controller->autoUploadImage();
+//        $controller->autoUploadImage();
+
+        $api_controller = new ApiController();
+        // up load product from google driver
+        $check = $api_controller->autoUploadProduct();
     }
 }
