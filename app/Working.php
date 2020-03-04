@@ -827,59 +827,55 @@ class Working extends Model
         return $return;
     }
 
-    public function sendCustomer($order_id)
+    public function sendCustomer($working_id)
     {
-        /*Move file về thư mục done*/
         $where = [
-            ['workings.id', '=', $order_id],
+            ['workings.id', '=', $working_id],
             ['wfl.is_mockup', '=', 1],
         ];
         $working = \DB::table('workings')
             ->join('working_files as wfl', 'workings.id', '=', 'wfl.working_id')
-            ->join('woo_orders as wod', 'workings.woo_order_id', '=', 'wod.id')
             ->select(
-                'workings.id', 'workings.number', 'workings.status', 'workings.woo_order_id', 'workings.woo_info_id',
-                'wfl.path', 'wfl.name', 'wod.email as customer_email', 'wod.fullname as customer_name'
+                'workings.design_id',
+                'wfl.path', 'wfl.name as file_name'
             )
             ->where($where)
             ->first();
         if ($working !== NULL) {
-            \DB::table('workings')->where('id', $order_id)
+            \DB::table('workings')->where('id', $working_id)
                 ->update([
                     'status' => env('STATUS_WORKING_CUSTOMER'),
                     'qc_id' => Auth::id(),
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
-            \DB::table('woo_orders')->where('id', $working->woo_order_id)
+            \DB::table('designs')->where('id', $working->design_id)
                 ->update([
                     'status' => env('STATUS_WORKING_CUSTOMER'),
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
-            \DB::table('working_files')->where('working_id', $order_id)
+            \DB::table('working_files')->where('working_id', $working_id)
                 ->update([
                     'status' => env('STATUS_WORKING_CUSTOMER'),
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
-            /*Todo: Xây dựng hàm gửi email tới khách hàng ở đây */
-            $info = \DB::table('woo_infos')
-                ->select('name', 'email', 'password', 'host', 'port', 'security')
-                ->where('id', $working->woo_info_id)
-                ->first();
-            $title = '[ ' . $info->name . ' ] Update information about order ' . $working->number;
-            $file = public_path($working->path . $working->name);
-            $body = "Dear " . $working->customer_name . ",
-We send you this email with information about " . $working->number . " order. 
-We send detailed information about the design in the attached file below. 
-If you want to resubmit your order redesign request, please reply to the message within 24 hours from the time you receive this email, after 24 hours we will move on to the next stage. 
-If you are satisfied with the product, please do not reply to this email.
-Thank you for your purchase at our store. Wish you a good day and lots of luck.
-            ";
-            $info->email_to = $working->customer_email;
-            $info->title = $title;
-            $info->body = $body;
-            $info->file = $file;
-            dispatch(new SendPostEmail($info));
-            /*End todo: Xây dựng hàm gửi email */
+            $list_customer = \DB::table('woo_orders as wod')
+                ->leftjoin('woo_infos as wif','wod.woo_info_id', '=', 'wif.id')
+                ->select(
+                    'wod.email as customer_email', 'wod.fullname as customer_name', 'wod.number',
+                    'wif.name', 'wif.email', 'wif.password', 'wif.host', 'wif.port', 'wif.security'
+                )
+                ->where('design_id',$working->design_id)
+                ->get()->toArray();
+            if( sizeof($list_customer) > 0)
+            {
+                foreach($list_customer as $info)
+                {
+                    $data = array();
+                    $data = json_decode(json_encode($info), true);;
+                    $data['file'] = public_path($working->path . $working->file_name);
+                    $this->sendEmailToCustomer($data);
+                }
+            }
             $status = 'success';
             $message = "Thành công. Tiếp tục kiểm tra các đơn hàng còn lại.";
         } else {
@@ -890,68 +886,87 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         return back();
     }
 
-    public function sendCustomer2($order_id)
+    /*Todo: Xây dựng hàm gửi email tới khách hàng ở đây */
+    private function sendEmailToCustomer($data)
     {
-        /*Move file về thư mục done*/
-        $where = [
-            ['workings.id', '=', $order_id],
-            ['wfl.is_mockup', '=', 1],
-        ];
-        $working = \DB::table('workings')
-            ->join('working_files as wfl', 'workings.id', '=', 'wfl.working_id')
-            ->join('woo_orders as wod', 'workings.woo_order_id', '=', 'wod.id')
-            ->select(
-                'workings.id', 'workings.number', 'workings.status', 'workings.woo_order_id', 'workings.woo_info_id',
-                'wfl.path', 'wfl.name', 'wod.email as customer_email', 'wod.fullname as customer_name'
-            )
-            ->where($where)
-            ->first();
-        if ($working !== NULL) {
-            \DB::table('workings')->where('id', $order_id)
-                ->update([
-                    'status' => env('STATUS_WORKING_CUSTOMER'),
-                    'qc_id' => Auth::id(),
-                    'updated_at' => date("Y-m-d H:i:s")
-                ]);
-            \DB::table('woo_orders')->where('id', $working->woo_order_id)
-                ->update([
-                    'status' => env('STATUS_WORKING_CUSTOMER'),
-                    'updated_at' => date("Y-m-d H:i:s")
-                ]);
-            \DB::table('working_files')->where('working_id', $order_id)
-                ->update([
-                    'status' => env('STATUS_WORKING_CUSTOMER'),
-                    'updated_at' => date("Y-m-d H:i:s")
-                ]);
-            /*Todo: Xây dựng hàm gửi email tới khách hàng ở đây */
-            $info = \DB::table('woo_infos')
-                ->select('name', 'email', 'password', 'host', 'port', 'security')
-                ->where('id', $working->woo_info_id)
-                ->first();
-            $title = '[ ' . $info->name . ' ] Update information about order ' . $working->number;
-            $file = public_path($working->path . $working->name);
-            $body = "Dear " . $working->customer_name . ",
-We send you this email with information about " . $working->number . " order. 
+        $info = (object) array();
+        $info->email_to = $data['customer_email'];
+        $info->title = '[ ' . $data['name'] . ' ] Update information about order ' . $data['number'];
+        $info->file = $data['file'];
+        $info->body = "Dear " . $data['customer_name'] . ",
+We send you this email with information about " . $data['number'] . " order. 
 We send detailed information about the design in the attached file below. 
 If you want to resubmit your order redesign request, please reply to the message within 24 hours from the time you receive this email, after 24 hours we will move on to the next stage. 
 If you are satisfied with the product, please do not reply to this email.
 Thank you for your purchase at our store. Wish you a good day and lots of luck.
             ";
-            $info->email_to = $working->customer_email;
-            $info->title = $title;
-            $info->body = $body;
-            $info->file = $file;
-            dispatch(new SendPostEmail($info));
-            /*End todo: Xây dựng hàm gửi email */
-            $status = 'success';
-            $message = "Thành công. Tiếp tục kiểm tra các đơn hàng còn lại.";
-        } else {
-            $status = 'error';
-            $message = "Xảy ra lỗi. Mời bạn thử lại. Nếu vẫn không được hãy báo với quản lý của bạn và kiểm tra đơn kế tiếp";
-        }
-        \Session::flash($status, $message);
-        return back();
+        dispatch(new SendPostEmail($info));
+
     }
+    /*End todo: Xây dựng hàm gửi email */
+
+//    public function sendCustomer2($order_id)
+//    {
+//        /*Move file về thư mục done*/
+//        $where = [
+//            ['workings.id', '=', $order_id],
+//            ['wfl.is_mockup', '=', 1],
+//        ];
+//        $working = \DB::table('workings')
+//            ->join('working_files as wfl', 'workings.id', '=', 'wfl.working_id')
+//            ->join('woo_orders as wod', 'workings.woo_order_id', '=', 'wod.id')
+//            ->select(
+//                'workings.id', 'workings.number', 'workings.status', 'workings.woo_order_id', 'workings.woo_info_id',
+//                'wfl.path', 'wfl.name', 'wod.email as customer_email', 'wod.fullname as customer_name'
+//            )
+//            ->where($where)
+//            ->first();
+//        if ($working !== NULL) {
+//            \DB::table('workings')->where('id', $order_id)
+//                ->update([
+//                    'status' => env('STATUS_WORKING_CUSTOMER'),
+//                    'qc_id' => Auth::id(),
+//                    'updated_at' => date("Y-m-d H:i:s")
+//                ]);
+//            \DB::table('woo_orders')->where('id', $working->woo_order_id)
+//                ->update([
+//                    'status' => env('STATUS_WORKING_CUSTOMER'),
+//                    'updated_at' => date("Y-m-d H:i:s")
+//                ]);
+//            \DB::table('working_files')->where('working_id', $order_id)
+//                ->update([
+//                    'status' => env('STATUS_WORKING_CUSTOMER'),
+//                    'updated_at' => date("Y-m-d H:i:s")
+//                ]);
+//            /*Todo: Xây dựng hàm gửi email tới khách hàng ở đây */
+//            $info = \DB::table('woo_infos')
+//                ->select('name', 'email', 'password', 'host', 'port', 'security')
+//                ->where('id', $working->woo_info_id)
+//                ->first();
+//            $title = '[ ' . $info->name . ' ] Update information about order ' . $working->number;
+//            $file = public_path($working->path . $working->name);
+//            $body = "Dear " . $working->customer_name . ",
+//We send you this email with information about " . $working->number . " order.
+//We send detailed information about the design in the attached file below.
+//If you want to resubmit your order redesign request, please reply to the message within 24 hours from the time you receive this email, after 24 hours we will move on to the next stage.
+//If you are satisfied with the product, please do not reply to this email.
+//Thank you for your purchase at our store. Wish you a good day and lots of luck.
+//            ";
+//            $info->email_to = $working->customer_email;
+//            $info->title = $title;
+//            $info->body = $body;
+//            $info->file = $file;
+//            dispatch(new SendPostEmail($info));
+//            /*End todo: Xây dựng hàm gửi email */
+//            $status = 'success';
+//            $message = "Thành công. Tiếp tục kiểm tra các đơn hàng còn lại.";
+//        } else {
+//            $status = 'error';
+//            $message = "Xảy ra lỗi. Mời bạn thử lại. Nếu vẫn không được hãy báo với quản lý của bạn và kiểm tra đơn kế tiếp";
+//        }
+//        \Session::flash($status, $message);
+//        return back();
+//    }
 
     public function axReSendEmail($request)
     {

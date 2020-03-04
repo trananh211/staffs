@@ -17,7 +17,7 @@ use Swift_Message;
 class SendPostEmail implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-
+    
     protected $info;
     /**
      * Create a new job instance.
