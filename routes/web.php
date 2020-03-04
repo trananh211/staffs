@@ -69,6 +69,8 @@ Route::middleware('auth')->group(function () {
     Route::post('ajax-re-send-email','WooController@axReSendEmail');
     Route::post('action-deleted-categories','WooController@actionDeletedCategories');
     Route::get('deleted-categories','WooController@deletedCategories');
+    Route::get('list-design-new','WooController@listDesignNew');
+    Route::get('get-design-new','WooController@getDesignNew');
 
     /** Paypal */
     Route::get('paypal-connect','PaypalController@index');

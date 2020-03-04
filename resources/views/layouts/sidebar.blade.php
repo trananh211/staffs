@@ -420,20 +420,16 @@
                         </ul>
                     </div>
                 </li>
-
                 <li class="no-padding">
                     <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">ring_volume</i>
-                        New Idea
-                        {!! (array_key_exists('private', $data)) ? notiSideBar($data['private']['check_idea'] + $data['private']['idea_send_support']) : '' !!}
+                        Designed
                         <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
                     </a>
                     <div class="collapsible-body">
                         <ul>
-                            <li><a href="{{ url('list-idea') }}">
-                                    List Idea New{!! (array_key_exists('private', $data)) ? notiSideBar($data['private']['check_idea']) : '' !!}</a></li>
-                            <li><a href="{{ url('list-idea-done') }}">List Idea Up Shop
-                                    {!!  (array_key_exists('private', $data)) ? notiSideBar($data['private']['idea_send_support']) : '' !!}</a></li>
-                            <li><a href="{{ url('new-job-idea') }}">Create New Job</a></li>
+                            <li><a href="{{ url('list-design-new') }}">Chưa có thiết kế</a></li>
+                            <li><a href="{{ url('list-design-done') }}">Đã có thiết kế</a></li>
+
                         </ul>
                     </div>
                 </li>
@@ -501,11 +497,6 @@
                 <li class="no-padding"><a class="waves-effect waves-grey" href="{{ url('staff-dashboard') }}">
                         <i class="material-icons">trending_up</i>Workings
                         {!! (array_key_exists('private', $data)) ?  notiSideBar($data['private']['order_new']) : '' !!}
-                    </a>
-                </li>
-                <li class="no-padding"><a class="waves-effect waves-grey" href="{{ url('new-idea') }}">
-                        <i class="material-icons">ring_volume</i>New Idea
-                        {!! (array_key_exists('private', $data)) ?  notiSideBar($data['private']['idea_new']) : '' !!}
                     </a>
                 </li>
             @endif

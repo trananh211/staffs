@@ -18,6 +18,12 @@ function logfile_system($str)
     echo $log_str."\n";
 }
 
+// sub day là ngày muốn dời về phía trước, 10 ngày trước, 15 ngày trước, 30 ngày trước
+function getTimeAgo($subday)
+{
+    return Carbon::now()->subDays($subday)->toDateString();
+}
+
 function website()
 {
     $website = [

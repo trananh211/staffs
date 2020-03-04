@@ -3,91 +3,42 @@
     Staff
     <div class="row no-m-t no-m-b">
         <div class="col s12 m12 l4">
-            <div class="card stats-card">
+            <div class="card stats-card lime lighten-4">
                 <div class="card-content">
                     <div class="card-options">
                         <ul>
-                            <li class="red-text"><span class="badge cyan lighten-1">gross</span></li>
+                            <li class="red-text"><span class="badge cyan lighten-1">working</span></li>
                         </ul>
                     </div>
-                    <span class="card-title">Sales</span>
-                    <span class="stats-counter">$<span class="counter">48190</span><small>This week</small></span>
+                    <span class="card-title">Jobs</span>
+                    <span class="stats-counter"><span class="counter">{{ $reports['working'] }}</span><small>Đang làm</small></span>
                 </div>
                 <div id="sparkline-bar"></div>
             </div>
         </div>
         <div class="col s12 m12 l4">
-            <div class="card stats-card">
+            <div class="card stats-card green lighten-4">
                 <div class="card-content">
                     <div class="card-options">
                         <ul>
                             <li><a href="javascript:void(0)"><i class="material-icons">more_vert</i></a></li>
                         </ul>
                     </div>
-                    <span class="card-title">Page views</span>
-                    <span class="stats-counter"><span class="counter">83710</span><small>This month</small></span>
+                    <span class="card-title">Job hoàn thành</span>
+                    <span class="stats-counter"><span class="counter">{{ $reports['work_in_week'] }}</span><small>Tuần Này</small></span>
                 </div>
                 <div id="sparkline-line"></div>
             </div>
         </div>
         <div class="col s12 m12 l4">
-            <div class="card stats-card">
+            <div class="card stats-card teal lighten-3">
                 <div class="card-content">
-                    <span class="card-title">Reports</span>
-                    <span class="stats-counter"><span class="counter">23230</span><small>Last week</small></span>
-                    <div class="percent-info green-text">8% <i class="material-icons">trending_up</i></div>
+                    <span class="card-title">Job hoàn thành</span>
+                    <span class="stats-counter"><span class="counter">{{ $reports['work_in_month'] }}</span><small>Tháng Này</small></span>
+                    <div class="percent-info green-text"><i class="material-icons">trending_up</i></div>
                 </div>
                 <div class="progress stats-card-progress">
                     <div class="determinate" style="width: 70%"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="row no-m-t no-m-b">
-        <div class="col s12 m12 l8">
-            <div class="card visitors-card">
-                <div class="card-content">
-                    <div class="card-options">
-                        <ul>
-                            <li><a href="javascript:void(0)" class="card-refresh"><i class="material-icons">refresh</i></a></li>
-                        </ul>
-                    </div>
-                    <span class="card-title">Visitors<span class="secondary-title">Showing stats from the last week</span></span>
-                    <div id="flotchart1"></div>
-                </div>
-            </div>
-        </div>
-        <div class="col s12 m12 l4">
-            <div class="card server-card">
-                <div class="card-content">
-                    <div class="card-options">
-                        <ul>
-                            <li class="red-text"><span class="badge blue-grey lighten-3">optimal</span></li>
-                        </ul>
-                    </div>
-                    <span class="card-title">Server Load</span>
-                    <div class="server-load row">
-                        <div class="server-stat col s4">
-                            <p>167GB</p>
-                            <span>Usage</span>
-                        </div>
-                        <div class="server-stat col s4">
-                            <p>320GB</p>
-                            <span>Space</span>
-                        </div>
-                        <div class="server-stat col s4">
-                            <p>57.4%</p>
-                            <span>CPU</span>
-                        </div>
-                    </div>
-                    <div class="stats-info">
-                        <ul>
-                            <li>Google Chrome<div class="percent-info green-text right">32% <i class="material-icons">trending_up</i></div></li>
-                            <li>Safari<div class="percent-info red-text right">20% <i class="material-icons">trending_down</i></div></li>
-                            <li>Mozilla Firefox<div class="percent-info green-text right">18% <i class="material-icons">trending_up</i></div></li>
-                        </ul>
-                    </div>
-                    <div id="flotchart2"></div>
                 </div>
             </div>
         </div>

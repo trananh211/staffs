@@ -88,12 +88,6 @@ class WooController extends Controller
         return view('staff/staff', compact('data', 'lists'));
     }
 
-    public function detailOrder($order_id)
-    {
-        $work = new Working();
-        return view('staff/detail_order', ['details' => $work->detailOrder($order_id)]);
-    }
-
     public function staffGetJob()
     {
         $work = new Working();
@@ -488,6 +482,17 @@ class WooController extends Controller
         return $work->feedGetFile($google_feed_id);
     }
 
+    //show danh sach cac design chua duoc thiet ke
+    public function listDesignNew()
+    {
+        $work = new Working();
+        return $work->listDesignNew();
+    }
 
+    public function getDesignNew()
+    {
+        $work = new Working();
+        return $work->getDesignNew();
+    }
     /*End Admin + QC*/
 }

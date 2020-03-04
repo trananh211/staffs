@@ -107,8 +107,13 @@ class CustomCommand extends Command
     private function run4Minute()
     {
         echo 'run 4 phut';
-        $api_controller = new ApiController(); // make sure to import the controller
-        $api_controller->getCategoryChecking();
+        $woo_controller = new WooController();
+        $check = $woo_controller->getDesignNew();
+        if ($check)
+        {
+            $api_controller = new ApiController(); // make sure to import the controller
+            $api_controller->getCategoryChecking();
+        }
     }
 
     private function run6Minute()
