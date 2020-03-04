@@ -55,14 +55,15 @@
                                     </td>
                                     <td class="center">
                                         <!-- Modal Trigger -->
-                                        <a class="waves-effect waves-light btn blue modal-trigger" href="#modal1">Chi Tiết</a>
+                                        <a class="waves-effect waves-light btn blue modal-trigger" href="#modal{{ $list->id }}">
+                                            Yêu Cầu
+                                        </a>
                                         <!-- Modal Structure -->
-                                        <div id="modal1" class="modal">
+                                        <div id="modal{{ $list->id }}" class="modal">
                                             <div class="modal-content">
         <!-- Chi tiết-->
         <div class="row">
             <?php
-            $details = $list;
             $images = explode(',', $list->image);
             $del = explode('-;-;-', $list->detail);
             ?>
@@ -70,12 +71,12 @@
                 <div class="card">
                     <div class="card-content">
                         <ul>
-                            <li>Bạn phải lưu file Mockup với tên : <b>{{ $details->sku.'-PID-'.$details->id }}
+                            <li>Bạn phải lưu file Mockup với tên : <b>{{ $list->sku.'-PID-'.$list->id }}
                                     _mockup </b></li>
-                            <li>Bạn phải lưu file Design với tên : <b>{{ $details->sku.'-PID-'.$details->id }}_1, _2, _3
+                            <li>Bạn phải lưu file Design với tên : <b>{{ $list->sku.'-PID-'.$list->id }}_1, _L, _Left, _Front, _Back, _B
                                     ... </b></li>
-                            <li>Tên sản phẩm : {{ $details->name }}</li>
-                            <li>Link gốc sản phẩm : {{ $details->permalink }}</li>
+                            <li>Tên sản phẩm : {{ $list->name }}</li>
+                            <li>Link gốc sản phẩm : {{ $list->permalink }}</li>
                             <li>Và sử dụng những yêu cầu dưới đây để làm file sản xuất.</li>
                         </ul>
                     </div>
@@ -94,11 +95,11 @@
                 </div>
             </div>
             <div class="col s16 m12 l6">
-                @if ($details->redo == 1)
+                @if ($list->redo == 1)
                     <div class="card red lighten-1">
                         <div class="card-content">
                             <p class="card-title">Redo</p>
-                            {!! html_entity_decode($details->reason) !!}
+                            {!! html_entity_decode($list->reason) !!}
                             </p>
                         </div>
                     </div>

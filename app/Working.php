@@ -23,7 +23,7 @@ class Working extends Model
     }
 
     /*Hàm check Auth ajax*/
-    private static function checkAuth()
+    public static function checkAuth()
     {
         if (!Auth::check()) {
             $return = [
@@ -56,6 +56,7 @@ class Working extends Model
     /*DASHBOARD*/
     public function adminDashboard($data)
     {
+//        echo "<pre>";
         $list_order = $this->getListOrderOfMonth(30);
         return view('/admin/dashboard')
             ->with(compact('list_order', 'data'));
@@ -74,7 +75,7 @@ class Working extends Model
         // số file đã làm việc trong tuần
         $where_working_in_week = [
             ['workings.worker_id', '=', $uid],
-            ['workings.status', '=', env('STATUS_WORKING_DONE')],
+            ['workings.status', '>', env('STATUS_WORKING_NEW')],
             ['workings.created_at', '>=', "'" . $week_day . "'"],
         ];
 
@@ -93,9 +94,13 @@ class Working extends Model
             'work_in_week' => $file_work_inweek,
             'work_in_month' => $file_work_inmonth
         ];
-        //
+        // Hiển thị tất cả các job đã làm và trạng thái hoàn thành
+        $where = [
+            ['workings.worker_id', '=', $uid],
+        ];
+        $lst_jobs = $this->orderStaff($where);
         return view('/staff/dashboard')
-            ->with(compact('data','reports'));
+            ->with(compact('data','reports', 'lst_jobs'));
     }
 
     private function countStaffWorking($where)
@@ -131,13 +136,18 @@ class Working extends Model
         $lists = \DB::table('woo_orders')
             ->join('woo_infos', 'woo_orders.woo_info_id', '=', 'woo_infos.id')
             ->leftJoin('trackings as t', 'woo_orders.id', '=', 't.woo_order_id')
-            ->leftJoin('workings', 'woo_orders.id', '=', 'workings.woo_order_id')
+            ->leftjoin('workings', function ($join) {
+                $join->on('workings.design_id', '=', 'woo_orders.design_id')
+                    ->on('workings.product_id', '=', 'woo_orders.product_id')
+                    ->on('workings.store_id', '=', 'woo_orders.woo_info_id');
+            })
             ->select(
-                'woo_orders.id', 'woo_orders.number', 'woo_orders.status', 'woo_orders.product_name',
+                'woo_orders.id', 'woo_orders.number', 'woo_orders.product_name',
                 'woo_orders.quantity', 'woo_orders.price', 'woo_orders.created_at', 'woo_orders.payment_method',
                 'woo_infos.name', 'woo_orders.order_status', 'woo_orders.email',
                 'woo_orders.sku', 'woo_orders.variation_full_detail', 'woo_orders.variation_detail',
-                't.tracking_number', 't.status as tracking_status', 'workings.id as working_id'
+                't.tracking_number', 't.status as tracking_status',
+                'workings.id as working_id', 'workings.status'
             )
             ->where($where)
             ->orderBy('woo_orders.id', 'DESC')
@@ -382,20 +392,19 @@ class Working extends Model
             $message = $tmp['message'];
             $files = $tmp['files'];
             $img = '';
-            echo "<pre>";
-//            print_r($files);
-//            die();
             if (sizeof($files) > 0) {
                 /*Kiểm tra file đang làm việc*/
-                $lsts = \DB::table('workings')->select('id', 'number')
+                $lsts = \DB::table('workings')
+                    ->leftjoin('designs', 'designs.id', '=', 'workings.design_id')
+                    ->select('workings.id', 'designs.sku')
                     ->where([
-                        'status' => env('STATUS_WORKING_NEW'),
-                        'worker_id' => $uid
+                        'workings.status' => env('STATUS_WORKING_NEW'),
+                        'workings.worker_id' => $uid
                     ])->get()->toArray();
                 if (sizeof($lsts) > 0) {
                     $ar_filecheck = array();
                     foreach ($lsts as $lst) {
-                        $ar_filecheck[$lst->number][] = $lst->id;
+                        $ar_filecheck[$lst->sku][] = $lst->id;
                     }
                     $mockup = array();
                     $file_upload = array();
@@ -412,7 +421,7 @@ class Working extends Model
                             }
                             $file_upload[$file_id][] = $file;
                         } else {
-                            $message .= getErrorMessage('File ' . $file . ': Bạn không làm job này.');
+                            $message .= getErrorMessage('File ' . $file . ' sai tên hoặc Bạn không làm job này.');
                         }
                     }
                     $deleted = array();
@@ -446,6 +455,7 @@ class Working extends Model
                                 }
                             }
                         } else {
+                            $message .= getErrorMessage('Bạn tải lên thiếu file mockup. Bạn cần tải thêm để hoàn thành job.');
                             $deleted = array_merge($deleted, $f_up);
                         }
                     }
@@ -463,8 +473,9 @@ class Working extends Model
                 } else {
                     $message .= getErrorMessage('Hiện tại bạn không có job. Bạn làm sai quy trình.');
                 }
+            } else {
+                $message .= getErrorMessage('File ảnh bạn tải lên không đúng định dạng yêu cầu. Thiếu -PID- hoặc sai định dạng ảnh.');
             }
-            die();
             return response()->json([
                 'message' => getMessage($message),
                 'uploaded_image' => $img
@@ -778,11 +789,14 @@ class Working extends Model
             ['workings.status', '=', env('STATUS_WORKING_CHECK')]
         ];
         $lists = $this->orderStaff($where);
-
         $where_working_file = [
             ['working_files.status', '=', env('STATUS_WORKING_CHECK')]
         ];
         $images = $this->getWorkingFile($where_working_file);
+//        echo "<pre>";
+//        print_r($lists);
+//        print_r($images);
+//        die();
         $data = infoShop();
         return view('admin/checking')->with(compact('lists', 'images', 'data'));
     }
@@ -797,7 +811,7 @@ class Working extends Model
         return view('admin/working')->with(compact('data', 'lists'));
     }
 
-    private function getWorkingFile($where)
+    public function getWorkingFile($where)
     {
         $return = array();
         $files = \DB::table('working_files')->select('working_id', 'name', 'thumb')
@@ -814,6 +828,69 @@ class Working extends Model
     }
 
     public function sendCustomer($order_id)
+    {
+        /*Move file về thư mục done*/
+        $where = [
+            ['workings.id', '=', $order_id],
+            ['wfl.is_mockup', '=', 1],
+        ];
+        $working = \DB::table('workings')
+            ->join('working_files as wfl', 'workings.id', '=', 'wfl.working_id')
+            ->join('woo_orders as wod', 'workings.woo_order_id', '=', 'wod.id')
+            ->select(
+                'workings.id', 'workings.number', 'workings.status', 'workings.woo_order_id', 'workings.woo_info_id',
+                'wfl.path', 'wfl.name', 'wod.email as customer_email', 'wod.fullname as customer_name'
+            )
+            ->where($where)
+            ->first();
+        if ($working !== NULL) {
+            \DB::table('workings')->where('id', $order_id)
+                ->update([
+                    'status' => env('STATUS_WORKING_CUSTOMER'),
+                    'qc_id' => Auth::id(),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+            \DB::table('woo_orders')->where('id', $working->woo_order_id)
+                ->update([
+                    'status' => env('STATUS_WORKING_CUSTOMER'),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+            \DB::table('working_files')->where('working_id', $order_id)
+                ->update([
+                    'status' => env('STATUS_WORKING_CUSTOMER'),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+            /*Todo: Xây dựng hàm gửi email tới khách hàng ở đây */
+            $info = \DB::table('woo_infos')
+                ->select('name', 'email', 'password', 'host', 'port', 'security')
+                ->where('id', $working->woo_info_id)
+                ->first();
+            $title = '[ ' . $info->name . ' ] Update information about order ' . $working->number;
+            $file = public_path($working->path . $working->name);
+            $body = "Dear " . $working->customer_name . ",
+We send you this email with information about " . $working->number . " order. 
+We send detailed information about the design in the attached file below. 
+If you want to resubmit your order redesign request, please reply to the message within 24 hours from the time you receive this email, after 24 hours we will move on to the next stage. 
+If you are satisfied with the product, please do not reply to this email.
+Thank you for your purchase at our store. Wish you a good day and lots of luck.
+            ";
+            $info->email_to = $working->customer_email;
+            $info->title = $title;
+            $info->body = $body;
+            $info->file = $file;
+            dispatch(new SendPostEmail($info));
+            /*End todo: Xây dựng hàm gửi email */
+            $status = 'success';
+            $message = "Thành công. Tiếp tục kiểm tra các đơn hàng còn lại.";
+        } else {
+            $status = 'error';
+            $message = "Xảy ra lỗi. Mời bạn thử lại. Nếu vẫn không được hãy báo với quản lý của bạn và kiểm tra đơn kế tiếp";
+        }
+        \Session::flash($status, $message);
+        return back();
+    }
+
+    public function sendCustomer2($order_id)
     {
         /*Move file về thư mục done*/
         $where = [
@@ -930,6 +1007,42 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 'message' => $message
             ]);
         }
+    }
+
+    public function redoingJobStaff($working_id)
+    {
+        try {
+            $update = [
+                'status' => env('STATUS_WORKING_NEW'),
+                'updated_at' => date("Y-m-d H:i:s"),
+            ];
+            $files = \DB::table('working_files')
+                ->select('name', 'path', 'thumb')
+                ->where('working_id', $working_id)
+                ->get();
+            $deleted = array();
+            foreach ($files as $file) {
+                $deleted[] = public_path($file->path . $file->name);
+                $deleted[] = public_path($file->thumb);
+            }
+            if (\File::delete($deleted)) {
+                $status = 'success';
+                $save = "Yêu cầu làm lại thành công.";
+                \DB::table('workings')->where('id', $working_id)->update($update);
+                \DB::table('working_files')->where('working_id', $working_id)->delete();
+            } else {
+                $status = 'error';
+                $save = "[Redo] Yêu cầu làm lại thất bại. Mời bạn thử lại";
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $status = 'error';
+            $save = "[Redo Error] Xảy ra lỗi nội bộ. Mời bạn thử lại";
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        $this->log($save . "\n");
+        \Session::flash($status, $save);
+        return back();
     }
 
     public function redoDesigner($request)

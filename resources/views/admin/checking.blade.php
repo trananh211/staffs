@@ -25,7 +25,7 @@
                             @foreach($lists as $key => $list)
                                 <tr>
                                     <td class="center">{{ $key+1 }}</td>
-                                    <td class="center"> {{ $list->number.'-PID-'.$list->id }}</td>
+                                    <td class="center"> {{ $list->sku.'-PID-'.$list->id }}</td>
                                     <td class="center">{{ $list->name }}</td>
                                     <td class="center">{{ $list->worker_name }}</td>
                                     <td class="center">

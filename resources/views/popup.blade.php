@@ -32,18 +32,18 @@
                 url: url,
                 method: "POST",
                 data: new FormData(this),
-                dataType: 'html',
-                // dataType: 'JSON',
+                // dataType: 'html',
+                dataType: 'JSON',
                 contentType: false,
                 cache: false,
                 processData: false,
                 success: function (data) {
-                    // $('#message').css('display', 'block');
-                    // $('#message').html(data.message);
-                    // if ($.trim(data.uploaded_image).length > 0){
-                    //     $('#uploaded_image').html(data.uploaded_image);
-                    // }
-                    console.log(data);
+                    $('#message').css('display', 'block');
+                    $('#message').html(data.message);
+                    if ($.trim(data.uploaded_image).length > 0){
+                        $('#uploaded_image').html(data.uploaded_image);
+                    }
+                    // console.log(data);
                 }
             });
         });

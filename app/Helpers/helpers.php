@@ -174,7 +174,7 @@ function statusJob($status, $redo, $reason)
 {
     $class = '' . $status;
     $st = '' . $reason;
-    if ($status == env('STATUS_WORKING_NEW')) {
+    if ($status == '' || $status == env('STATUS_WORKING_NEW')) {
         $class = 'blue lighten-3';
         $st = 'New';
     } else if ($status == env('STATUS_WORKING_CHECK')) {

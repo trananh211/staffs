@@ -80,7 +80,7 @@ class WooController extends Controller
     /*End S Admin*/
 
     /*Staff */
-    public function staffDashboard()
+    public function workingDashboard()
     {
         $work = new Working();
         $lists = $work->listOrder();
@@ -147,6 +147,12 @@ class WooController extends Controller
     {
         $work = new Working();
         return $work->redoDesigner($request);
+    }
+
+    public function redoingJobStaff($working_id)
+    {
+        $work = new Working();
+        return $work->redoingJobStaff($working_id);
     }
 
     public function reviewCustomer()

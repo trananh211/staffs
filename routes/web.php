@@ -116,7 +116,7 @@ Route::middleware('auth')->group(function () {
     /*End QC + Admin*/
 
     /*Staff*/
-    Route::get('staff-dashboard','WooController@staffDashboard');
+    Route::get('staff-dashboard','WooController@workingDashboard');
     Route::get('staff-get-job','WooController@staffGetJob');
     Route::get('detail-order/{order_id}','WooController@detailOrder');
 
@@ -125,6 +125,7 @@ Route::middleware('auth')->group(function () {
     Route::post('ajax_upload/action', 'WooController@action')->name('ajaxupload.action');
     Route::get('new-idea','WooController@doNewIdea');
     Route::post('ideaUpload', 'WooController@uploadIdea')->name('ajaxIdeaUpload.action');
+    Route::get('redoing-job/{working_id}','WooController@redoingJobStaff');
     /*End Staff*/
 });
 

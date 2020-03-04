@@ -97,7 +97,7 @@ class Api extends Model
                     $custom_status = env('STATUS_P_AUTO_PRODUCT');
                 }
                 foreach ($value['meta_data'] as $item) {
-                    if (!is_array($item['value']) && strpos(strtolower($item['key']), 'id_add') === false) {
+                    if (!is_array($item['value']) && strpos(strtolower($item['key']), '_id_') === false) {
                         if (strpos(strtolower($item['key']), 'add') !== false) {
                             $str_sku .= ' ' . $item['value'];
                             $custom_status = env('STATUS_P_CUSTOM_PRODUCT');
