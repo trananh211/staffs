@@ -953,7 +953,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         if ($uid) {
             $rq = $request->all();
             $working_id = $rq['working_id'];
-            $order_id = $rq['order_id'];
+            $design_id = $rq['design_id'];
 
             $where = [
                 ['workings.id', '=', $working_id],
@@ -961,39 +961,52 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             ];
             $working = \DB::table('workings')
                 ->join('working_files as wfl', 'workings.id', '=', 'wfl.working_id')
-                ->join('woo_orders as wod', 'workings.woo_order_id', '=', 'wod.id')
                 ->select(
-                    'workings.id', 'workings.number', 'workings.status', 'workings.woo_order_id', 'workings.woo_info_id',
-                    'wfl.path', 'wfl.name', 'wod.email as customer_email', 'wod.fullname as customer_name'
+                    'workings.design_id',
+                    'wfl.path', 'wfl.name as file_name'
                 )
                 ->where($where)
                 ->first();
             if ($working !== NULL) {
-                /*Todo: Xây dựng hàm gửi email tới khách hàng ở đây */
-                $info = \DB::table('woo_infos')
-                    ->select('name', 'email', 'password', 'host', 'port', 'security')
-                    ->where('id', $working->woo_info_id)
-                    ->first();
-                $title = '[ ' . $info->name . ' ] Update information about order ' . $working->number;
-                $file = public_path($working->path . $working->name);
-                $body = "Dear " . $working->customer_name . ",
-We send you this email with information about " . $working->number . " order. 
-We send detailed information about the design in the attached file below. 
-If you want to resubmit your order redesign request, please reply to the message within 24 hours from the time you receive this email, after 24 hours we will move on to the next stage. 
-If you are satisfied with the product, please do not reply to this email.
-Thank you for your purchase at our store. Wish you a good day and lots of luck.
-            ";
-                $info->email_to = $working->customer_email;
-                $info->title = $title;
-                $info->body = $body;
-                $info->file = $file;
-                dispatch(new SendPostEmail($info));
-                /*End todo: Xây dựng hàm gửi email */
+                \DB::table('workings')->where('id', $working_id)
+                    ->update([
+                        'status' => env('STATUS_WORKING_CUSTOMER'),
+                        'qc_id' => Auth::id(),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                \DB::table('designs')->where('id', $working->design_id)
+                    ->update([
+                        'status' => env('STATUS_WORKING_CUSTOMER'),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                \DB::table('working_files')->where('working_id', $working_id)
+                    ->update([
+                        'status' => env('STATUS_WORKING_CUSTOMER'),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                $list_customer = \DB::table('woo_orders as wod')
+                    ->leftjoin('woo_infos as wif','wod.woo_info_id', '=', 'wif.id')
+                    ->select(
+                        'wod.email as customer_email', 'wod.fullname as customer_name', 'wod.number',
+                        'wif.name', 'wif.email', 'wif.password', 'wif.host', 'wif.port', 'wif.security'
+                    )
+                    ->where('design_id',$working->design_id)
+                    ->get()->toArray();
+                if( sizeof($list_customer) > 0)
+                {
+                    foreach($list_customer as $info)
+                    {
+                        $data = array();
+                        $data = json_decode(json_encode($info), true);;
+                        $data['file'] = public_path($working->path . $working->file_name);
+                        $this->sendEmailToCustomer($data);
+                    }
+                }
                 $status = 'success';
-                $message = "Gửi lại email thành công. ";
+                $message = "Gửi lại email cho khách thành công.";
             } else {
                 $status = 'error';
-                $message = "Xảy ra lỗi. Không thể tìm thấy file đang làm việc. Mời bạn thử lại. ";
+                $message = "Xảy ra lỗi. Mời bạn thử lại. Nếu vẫn không được hãy báo với quản lý của bạn.";
             }
 
             return response()->json([

@@ -243,13 +243,13 @@ $(document).ready(function () {
     $('.js-re-send-email').on( 'click', function (e) {
         e.preventDefault();
         var working_id = $(this).attr('working_id');
-        var order_id = $(this).attr('order_id');
+        var design_id = $(this).attr('design_id');
         var url = $(this).attr('data-url');
         $(this).parents('tr').addClass('js-remove-table');
         $.ajax({
             method: "POST",
             url: url,
-            data: {working_id : working_id, order_id: order_id},
+            data: {working_id : working_id, design_id: design_id},
             dataType: 'JSON',
             // dataType: 'html',
             success: function (data) {
