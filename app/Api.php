@@ -160,6 +160,102 @@ class Api extends Model
 
         /*Create new product*/
         $this->syncProduct(array_unique($lst_product), $woo_id);
+
+        /*get designs SKU*/
+        $this->getDesignNew();
+    }
+
+    public function getDesignNew()
+    {
+        logfile_system('-- Tạo Design new');
+        $list_orders = \DB::table('woo_orders')
+            ->select('id', 'product_name', 'product_id', 'woo_info_id', 'sku', 'variation_detail')
+            ->where([
+                ['status', '=', env('STATUS_WORKING_NEW')]
+            ])
+            ->whereNull('design_id')
+            ->get()->toArray();
+        if (sizeof($list_orders) > 0)
+        {
+            $list_designs = \DB::table('designs')->select('id','sku','variation')->get()->toArray();
+            $ar_design = array();
+            foreach ($list_designs as $item)
+            {
+                $key = $item->sku."___".$item->variation;
+                $ar_design[$key] = $item->id;
+            }
+
+            //so sánh để lưu vào database
+            $data_designed = array();
+            $data_send_to_staff = array();
+            foreach ($list_orders as $value)
+            {
+                $key = $value->sku."___".$value->variation_detail;
+                // nếu đã tồn tại designs thì cập nhật vào woo_orders
+                if (array_key_exists($key, $ar_design))
+                {
+                    $data_designed[$ar_design[$key]][] = $value->id;
+                } else  // nếu chưa tồn tại design thì chuyển sang cho staff làm
+                {
+                    $data_send_to_staff[] = $value->id;
+                }
+            }
+
+            // nếu tồn tại file chuyển cho staff thì cập nhật luôn
+            if (sizeof($data_send_to_staff) > 0)
+            {
+                $ar_orders = array();
+                // dồn list order vào chung 1 sku để tạo data cho bảng designs
+                foreach ($list_orders as $order)
+                {
+                    //nếu id tồn tại trong data send to staff
+                    if (in_array($order->id, $data_send_to_staff))
+                    {
+                        $key = $order->sku."___".$order->variation_detail;
+                        $ar_orders[$key]['info'] = [
+                            'product_name' => $order->product_name,
+                            'product_id' => $order->product_id,
+                            'store_id' => $order->woo_info_id,
+                            'sku' => $order->sku,
+                            'variation' => $order->variation_detail,
+                            'created_at' => date("Y-m-d H:i:s"),
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
+                        $ar_orders[$key]['list_id'][] = $order->id;
+                    }
+                }
+
+                // bắt đầu tạo data cho design
+                if (sizeof($ar_orders) > 0)
+                {
+                    foreach ($ar_orders as $key => $data)
+                    {
+                        $design_id = \DB::table('designs')->insertGetId($data['info']);
+                        $data_designed[$design_id] = $data['list_id'];
+                    }
+                }
+            }
+
+            // nếu tồn tại file đã design rồi thì cập nhật lại woo_order
+            if (sizeof($data_designed) > 0)
+            {
+                foreach ($data_designed as $design_id => $list_woo_order_id)
+                {
+                    $result = \DB::table('woo_orders')
+                        ->whereIn('woo_orders.id', $list_woo_order_id)
+                        ->update([
+                            'woo_orders.design_id' => $design_id,
+                            'woo_orders.updated_at' => date("Y-m-d H:i:s")
+                        ]);
+                }
+            }
+            $return = false;
+            logfile_system('--- Tạo thành công design');
+        } else {
+            logfile_system('--- Không có order để tạo design');
+            $return = true;
+        }
+        return $return;
     }
 
     public function updateProduct($data, $store_id)

@@ -206,27 +206,6 @@ class Working extends Model
         return $lists;
     }
 
-    private static function reviewWork($where)
-    {
-        $lists = \DB::table('workings')
-            ->join('woo_orders', 'workings.woo_order_id', '=', 'woo_orders.id')
-            ->join('woo_products', 'workings.product_id', '=', 'woo_products.product_id')
-            ->join('users as worker', 'workings.worker_id', '=', 'worker.id')
-            ->join('users as qc', 'workings.qc_id', '=', 'qc.id')
-            ->select(
-                'workings.id', 'workings.status', 'workings.updated_at',
-                'workings.qc_id', 'workings.worker_id', 'workings.woo_order_id', 'workings.reason', 'workings.redo',
-                'worker.id as worker_id', 'worker.name as worker_name', 'qc.id as qc_id', 'qc.name as qc_name',
-                'woo_orders.number', 'woo_orders.detail',
-                'woo_products.name', 'woo_products.permalink', 'woo_products.image'
-            )
-            ->where($where)
-            ->orderBy('workings.id', 'ASC')
-            ->get()
-            ->toArray();
-        return $lists;
-    }
-
     /*Hàm nhận job sau khi ấn button ở trang staff*/
     public function staffGetJob()
     {
@@ -1124,11 +1103,67 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         return $this->reviewWork($where);
     }
 
+    /*Hàm hiển thị danh sách review của customer*/
+    private static function reviewWork($where)
+    {
+        $lists = array();
+        $lsts = \DB::table('workings')
+            ->leftjoin('designs', 'workings.design_id', '=', 'designs.id')
+            ->leftjoin('users as worker', 'workings.worker_id', '=', 'worker.id')
+            ->leftjoin('users as qc', 'workings.qc_id', '=', 'qc.id')
+            ->leftjoin('woo_products', 'workings.product_id', '=', 'woo_products.product_id')
+            ->select(
+                'workings.id', 'workings.status', 'workings.updated_at', 'workings.design_id',
+                'workings.qc_id', 'workings.worker_id', 'workings.reason', 'workings.redo','workings.updated_at',
+                'designs.sku','designs.variation', 'designs.status',
+                'worker.id as worker_id', 'worker.name as worker_name', 'qc.id as qc_id', 'qc.name as qc_name',
+                'woo_products.name', 'woo_products.permalink', 'woo_products.image'
+            )
+            ->where($where)
+            ->get()->toArray();
+        if (sizeof($lsts) > 0)
+        {
+            $lst_design_id = array();
+            foreach( $lsts as $lst)
+            {
+                $lst_design_id[$lst->design_id] = $lst->design_id;
+            }
+            // lấy toàn bộ danh sách woo_orders ra để hiển thị ra ngoài
+            $lst_orders = \DB::table('woo_orders')
+                ->select(
+                    'woo_orders.id as woo_order_id','woo_orders.number', 'woo_orders.email', 'woo_orders.fullname',
+                    'woo_orders.payment_method','woo_orders.sku','woo_orders.design_id', 'woo_orders.variation_full_detail'
+                )
+                ->whereIn('design_id',$lst_design_id)
+                ->where('status', '<', env('STATUS_WORKING_DONE'))
+                ->get()->toArray();
+            if (sizeof($lst_orders) > 0)
+            {
+                $lst_designs = array();
+                foreach ($lst_orders as $lst_order)
+                {
+                    $lst_designs[$lst_order->design_id][] = json_decode(json_encode($lst_order,true),true);
+                }
+            }
+            // dồn toàn bộ woo_orders vào trong 1 array với design
+            $lsts = json_decode(json_encode($lsts,true),true);
+            foreach ($lsts as $key => $lst)
+            {
+                if (array_key_exists($lst['design_id'], $lst_designs))
+                {
+                    $lists[$key]['info'] = $lst;
+                    $lists[$key]['orders'] = $lst_designs[$lst['design_id']];
+                }
+            }
+        }
+        return $lists;
+    }
+
     public function eventQcDone($request)
     {
         if (Auth::check()) {
             $working_id = $request->all()['working_id'];
-            $order_id = $request->all()['order_id'];
+            $design_id = $request->all()['design_id'];
             \DB::beginTransaction();
             try {
                 $update = [
@@ -1136,7 +1171,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     'updated_at' => date("Y-m-d H:i:s"),
                 ];
                 \DB::table('workings')->where('id', $working_id)->update($update);
-                \DB::table('woo_orders')->where('id', $order_id)->update($update);
+                \DB::table('woo_orders')->where('id', $design_id)->update($update);
                 \DB::table('working_files')->where('working_id', $working_id)->update($update);
                 $status = 'success';
                 $message = "Yêu cầu chuyển cho supplier thành công. Tiếp tục kiểm tra các đơn hàng còn lại.";
@@ -2419,98 +2454,6 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     {
         $data = array();
         return view('/admin/woo/list_design_new',compact('data'));
-    }
-
-    public function getDesignNew()
-    {
-        $list_orders = \DB::table('woo_orders')
-            ->select('id', 'product_name', 'product_id', 'woo_info_id', 'sku', 'variation_detail')
-            ->where([
-                ['status', '=', env('STATUS_WORKING_NEW')]
-            ])
-            ->whereNull('design_id')
-            ->get()->toArray();
-        echo "<pre>";
-        if (sizeof($list_orders) > 0)
-        {
-            $list_designs = \DB::table('designs')->select('id','sku','variation')->get()->toArray();
-            $ar_design = array();
-            foreach ($list_designs as $item)
-            {
-                $key = $item->sku."___".$item->variation;
-                $ar_design[$key] = $item->id;
-            }
-
-            //so sánh để lưu vào database
-            $data_designed = array();
-            $data_send_to_staff = array();
-            foreach ($list_orders as $value)
-            {
-                $key = $value->sku."___".$value->variation_detail;
-                // nếu đã tồn tại designs thì cập nhật vào woo_orders
-                if (array_key_exists($key, $ar_design))
-                {
-                    $data_designed[$ar_design[$key]][] = $value->id;
-                } else  // nếu chưa tồn tại design thì chuyển sang cho staff làm
-                {
-                    $data_send_to_staff[] = $value->id;
-                }
-            }
-
-            // nếu tồn tại file chuyển cho staff thì cập nhật luôn
-            if (sizeof($data_send_to_staff) > 0)
-            {
-                $ar_orders = array();
-                // dồn list order vào chung 1 sku để tạo data cho bảng designs
-                foreach ($list_orders as $order)
-                {
-                    //nếu id tồn tại trong data send to staff
-                    if (in_array($order->id, $data_send_to_staff))
-                    {
-                        $key = $order->sku."___".$order->variation_detail;
-                        $ar_orders[$key]['info'] = [
-                            'product_name' => $order->product_name,
-                            'product_id' => $order->product_id,
-                            'store_id' => $order->woo_info_id,
-                            'sku' => $order->sku,
-                            'variation' => $order->variation_detail,
-                            'created_at' => date("Y-m-d H:i:s"),
-                            'updated_at' => date("Y-m-d H:i:s")
-                        ];
-                        $ar_orders[$key]['list_id'] = $order->id;
-                    }
-                }
-
-                // bắt đầu tạo data cho design
-                if (sizeof($ar_orders) > 0)
-                {
-                    foreach ($ar_orders as $key => $data)
-                    {
-                        $design_id = \DB::table('designs')->insertGetId($data['info']);
-                        $data_designed[$design_id] = $data['list_id'];
-                    }
-                }
-            }
-
-            // nếu tồn tại file đã design rồi thì cập nhật lại woo_order
-            if (sizeof($data_designed) > 0)
-            {
-                foreach ($data_designed as $design_id => $list_woo_order_id)
-                {
-                    \DB::table('woo_orders')
-                        ->whereIn('id',$list_woo_order_id)
-                        ->where('status', env('STATUS_WORKING_NEW'))
-                        ->update([
-                            'design_id' => $design_id,
-                            'updated_at' => date("Y-m-d H:i:s")
-                        ]);
-                }
-            }
-            $return = false;
-        } else {
-            $return = true;
-        }
-//        return $return;
     }
     /*End Admin + QC*/
 }

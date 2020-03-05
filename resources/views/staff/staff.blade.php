@@ -87,7 +87,7 @@
                     <div class="card-content">
                         <p class="card-title">Image</p>
                         <div class="material-placeholder" style="">
-                            @foreach($images as $image)
+                            @foreach($images as $key => $image)
                                 <img class="materialboxed responsive-img initialized" src="{{ $image }}" alt="" style="">
                             @endforeach
                         </div>

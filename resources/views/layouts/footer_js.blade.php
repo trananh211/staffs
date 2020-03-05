@@ -39,12 +39,12 @@
         $('#review-job tbody').on( 'click', '.js-done-job', function (e) {
             e.preventDefault();
             var working_id = $(this).attr('working_id');
-            var order_id = $(this).attr('order_id');
+            var design_id = $(this).attr('design_id');
             $(this).parents('tr').addClass('js-remove-table');
             $.ajax({
                 method: "POST",
                 url: "{{ route('ajaxdonejob.action') }}",
-                data: {working_id : working_id, order_id: order_id},
+                data: {working_id : working_id, design_id: design_id},
                 dataType: 'JSON',
                 // dataType: 'html',
                 success: function (data) {

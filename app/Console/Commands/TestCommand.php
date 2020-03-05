@@ -45,6 +45,6 @@ class TestCommand extends Command
 
         $api_controller = new ApiController();
         // up load product from google driver
-        $check = $api_controller->autoUploadProduct();
+        $check = $api_controller->getDesignNew();
     }
 }

@@ -494,11 +494,5 @@ class WooController extends Controller
         $work = new Working();
         return $work->listDesignNew();
     }
-
-    public function getDesignNew()
-    {
-        $work = new Working();
-        return $work->getDesignNew();
-    }
     /*End Admin + QC*/
 }
