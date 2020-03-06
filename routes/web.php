@@ -100,6 +100,7 @@ Route::middleware('auth')->group(function () {
     Route::post('scrap-save-template','ApiController@scrapSaveTemplate');
     Route::get('woo-deleted-all-template/{woo_template_id}','WooController@deleteAllTemplate');
     Route::get('woo-deleted-all-product/{woo_template_id}&{type}','WooController@deleteAllProductTemplate');
+    Route::post('ajax-redo-new-sku','WooController@axRedoNewSKU');
 
     //lấy link về để cào lấy keyword
     Route::get('list-categories','WooController@listCategories');

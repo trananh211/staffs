@@ -155,6 +155,12 @@ class WooController extends Controller
         return $work->redoingJobStaff($working_id);
     }
 
+    public function axRedoNewSKU(Request $request)
+    {
+        $work = new Working();
+        return $work->axRedoNewSKU($request);
+    }
+
     public function reviewCustomer()
     {
         $work = new Working();

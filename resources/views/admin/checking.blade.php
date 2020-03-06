@@ -104,6 +104,17 @@
                                                             </div>
                                                             <div class="col s6">
                                                                 <div class="card white">
+                                                                    {{-- Redo --}}
+                                                                    @if ($list->redo == 1)
+                                                                        <div class="card red lighten-1">
+                                                                            <div class="card-content">
+                                                                                <p class="card-title">Redo</p>
+                                                                                {!! html_entity_decode($list->reason) !!}
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                    @endif
+                                                                    {{-- End Redo--}}
                                                                     <span class="card-title">Ảnh thiết kế</span>
                                                                     <div class="card-content center">
                                                                         @if(array_key_exists($list->id, $images))
@@ -115,15 +126,7 @@
                                                                         @endif
                                                                     </div>
                                                                 </div>
-                                                                @if ($list->redo == 1)
-                                                                    <div class="card red lighten-1">
-                                                                        <div class="card-content">
-                                                                            <p class="card-title">Redo</p>
-                                                                            {!! html_entity_decode($list->reason) !!}
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-                                                                @endif
+
                                                                 <div class="card">
                                                                     <div class="card-content">
                                                                         <ul class="collection">

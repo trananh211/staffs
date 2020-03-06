@@ -25,7 +25,9 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->exec('chmod -R 777 '.public_path())->dailyAt('00:10');
-        $schedule->exec('chmod -R 777 '.storage_path())->dailyAt('00:20');
+        $schedule->exec('chown -R nginx:nginx '.public_path())->dailyAt('00:09');
+        $schedule->exec('chown -R nginx:nginx '.storage_path())->dailyAt('00:11');
+        $schedule->exec('chmod -R 777 '.storage_path())->dailyAt('00:12');
 
         /** Quet carrires moi o paypal*/
         $schedule->command('scan:paypal')->dailyAt('23:37');

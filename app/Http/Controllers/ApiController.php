@@ -64,6 +64,12 @@ class ApiController extends Controller
         }
     }
 
+    public function getDesignNew()
+    {
+        $api = new Api();
+        return $api->getDesignNew();
+    }
+
     public function getStoreInfo($webhook_head)
     {
         $url = substr($webhook_head['x-wc-webhook-source'], 0, -1);

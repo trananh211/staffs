@@ -40,10 +40,60 @@ $(document).ready(function () {
                 $('#loading').fadeOut();
                 window.location.reload();
                 // console.log('error');
-                // console.log(error);
             }
         })
     });
+
+    /* Redo new Sku*/
+    $('.js-show-redo-sku').on('click',function (e) {
+        e.preventDefault();
+        var order_id = $(this).attr('order_id');
+        $( ".js-show-redo-sku-"+order_id ).toggle();
+    });
+
+    $('.js-redo-new-submit').on('click',function (e) {
+        e.preventDefault();
+        var order_id = $(this).attr('order-id');
+        var working_id = $(this).attr('working-id');
+        var design_id = $(this).attr('design-id');
+        var variation = $(this).attr('variation');
+        var sku = $('.js-redo-new-sku-'+order_id).val();
+        var worker_id = $('select.js-redo-new-designer-'+order_id).val();
+        var reason = $('.js-redo-new-reason-'+order_id).val();
+        var url = $('.js-redo-new-url').attr('url');
+        var data = {
+            order_id: order_id, working_id: working_id, design_id: design_id, sku: sku, worker_id: worker_id,
+            reason: reason, variation: variation
+        };
+
+        $.ajax({
+            method: "POST",
+            url: url,
+            data: data,
+            // dataType: 'JSON',
+            dataType: 'html',
+            success: function (data) {
+                // if (data.status === 'success') {
+                //     Materialize.toast(data.message, 5000);
+                //     //xóa hàng đã chọn
+                //     table_idea
+                //         .row('.js-remove-tr-'+order_id)
+                //         .remove()
+                //         .draw();
+                // } else {
+                //     $('.js-remove-table').removeClass('js-remove-table');
+                //     Materialize.toast(data.message, 5000);
+                // }
+                // console.log('success');
+                console.log(data);
+            },
+            error: function (error) {
+                // window.location.reload();
+                console.log(error);
+            }
+        })
+    });
+    /*End redo new sku*/
 
     $('#idea-job tbody').on('click', '.js-redo-button', function (e) {
         e.preventDefault();

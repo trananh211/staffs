@@ -1095,6 +1095,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     /*phản hồi khách hàng*/
     public function reviewCustomer()
     {
+        $workers = \DB::table('users')->select('id','name')->where('level',3)->get()->toArray();
         $where = [
             ['workings.status', '=', env('STATUS_WORKING_CUSTOMER')],
         ];
@@ -1105,7 +1106,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         ];
         $images = $this->getWorkingFile($where_working_file);
         $data = infoShop();
-        return view('/admin/review_customer', compact('lists', 'images', 'data'));
+        return view('/admin/review_customer', compact('lists', 'images', 'data', 'workers'));
     }
 
     public function supplier()
@@ -1114,6 +1115,148 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             ['workings.status', '=', env('STATUS_WORKING_DONE')],
         ];
         return $this->reviewWork($where);
+    }
+
+    public function axRedoNewSKU($request)
+    {
+        $uid = $this->checkAuth();
+        if ($uid) {
+            $rq = $request->all();
+            $order_id = $rq['order_id'];
+            $working_id = $rq['working_id'];
+            $design_id = $rq['design_id'];
+            $variation = $rq['variation'];
+            $sku = $rq['sku'];
+            $worker_id = $rq['worker_id'];
+            $reason = htmlentities(str_replace("\n", "<br />", trim($rq['reason'])));
+
+            //kiem tra xem day la 1 hay nhieu design
+            $checks = \DB::table('woo_orders')->select('id')->where('design_id',$design_id)->count();
+            /** Kiểm tra xem đã tồn tại SKU và variation đấy hay chưa**/
+            $check_exist_design = \DB::table('designs')->select('id')
+                ->where('sku', $sku)
+                ->where('variation', $variation)
+                ->first();
+            // nếu tồn tại rồi. Đổi sang design tồn tại
+            if ($check_exist_design != NULL)
+            {
+                $message =  "Tồn tại rồi.";
+                // nếu chỉ có 1 designs. Xóa design hiện tai. working hiện tại. working file hiện tại
+                if ($checks == 1)
+                {
+                    $message .= ". còn 1";
+                    \DB::table('designs')->where('id',$design_id)->delete();
+                    \DB::table('workings')->where('id',$working_id)->delete();
+                    // xoa working_files
+                    $files = \DB::table('working_files')
+                        ->select('name', 'path', 'thumb')
+                        ->where('working_id', $working_id)
+                        ->get();
+                    $deleted = array();
+                    foreach ($files as $file) {
+                        $deleted[] = public_path($file->path . $file->name);
+                        $deleted[] = public_path($file->thumb);
+                    }
+                    \File::delete($deleted);
+                    \DB::table('working_files')->where('working_id', $working_id)->delete();
+                }
+                // Update thong tin new design_id vao woo_orders
+                \DB::table('woo_orders')->where('id',$order_id)->update([
+                    'sku' => $sku,
+                    'design_id' => $check_exist_design->id,
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+            } else {
+                $message = "chưa tồn tại"."\n";
+                /** Tao design id moi **/
+                // lay thong tin design cu
+                $design_old = \DB::table('designs')->select('*')->where('id',$design_id)->first();
+                $new_data_design = [
+                    'product_name' => $design_old->product_name,
+                    'product_id' => $design_old->product_id,
+                    'store_id' => $design_old->store_id,
+                    'sku' => $sku,
+                    'variation' => $design_old->variation,
+                    'status' => env('STATUS_WORKING_NEW'),
+                    'created_at' => date("Y-m-d H:i:s"),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ];
+
+                $new_design_id = 1;
+                $new_design_id = \DB::table('designs')->insertGetId($new_data_design);
+                //update vao woo_orders va workings
+                if ($new_design_id)
+                {
+                    // lay du lieu cua working_old
+                    $workings_old = \DB::table('workings')->select('store_id','product_id','reason')->where('id',$working_id)->first();
+
+                    // neu con nhieu design
+                    if ($checks > 1)
+                    {
+                        echo 'vao day la con nhieu.'."\n";
+                        //tao moi working
+                        $data_workings = [
+                            'design_id' => $new_design_id,
+                            'store_id' => $workings_old->store_id,
+                            'product_id' => $workings_old->product_id,
+                            'worker_id' => $worker_id,
+                            'qc_id' => $uid,
+                            'status' => env('STATUS_WORKING_NEW'),
+                            'redo' => 1,
+                            'reason' => $workings_old->reason.'<br>'.$reason,
+                            'created_at' => date("Y-m-d H:i:s"),
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
+                        \DB::table('workings')->insert($data_workings);
+                    } else {
+                        echo 'vao day la con 1'."\n";
+                        // cap nhat working id cu
+                        \DB::table('workings')->where('id',$working_id)->update([
+                            'design_id' => $new_design_id,
+                            'worker_id' => $worker_id,
+                            'qc_id' => $uid,
+                            'redo' => 1,
+                            'status' => env('STATUS_WORKING_NEW'),
+                            'reason' => $workings_old->reason.'<br>'.$reason,
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ]);
+                        // xoa working_files
+                        $files = \DB::table('working_files')
+                            ->select('name', 'path', 'thumb')
+                            ->where('working_id', $order_id)
+                            ->get();
+                        $deleted = array();
+                        foreach ($files as $file) {
+                            $deleted[] = public_path($file->path . $file->name);
+                            $deleted[] = public_path($file->thumb);
+                        }
+                        \File::delete($deleted);
+                        \DB::table('working_files')->where('working_id', $working_id)->delete();
+                        // xoa designs
+                        \DB::table('designs')->where('id',$design_id)->delete();
+                    }
+                    // Update thong tin new design_id vao woo_orders
+                    \DB::table('woo_orders')->where('id',$order_id)->update([
+                        'sku' => $sku,
+                        'design_id' => $new_design_id,
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                    $alert = 'success';
+                    $message = '<small class="green-text"> Đã redo Job thành công. Mời bạn kiểm tra các Job tiếp theo.</small>';
+                } else {
+                    $alert = 'error';
+                    $message = '<small class="red-text"> Xảy ra lỗi nội bộ. Mời bạn tải lại trang và thử lại.</span>';
+                }
+            }
+        } else {
+            $alert = 'error';
+            $message = '<small class="red-text"> Đã hết phiên. Mời bạn đăng nhập và thử lại.</span>';
+        }
+        echo $message;
+//        return response()->json([
+//            'message' => $message,
+//            'result' => $alert
+//        ]);
     }
 
     /*Hàm hiển thị danh sách review của customer*/
@@ -1144,7 +1287,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             // lấy toàn bộ danh sách woo_orders ra để hiển thị ra ngoài
             $lst_orders = \DB::table('woo_orders')
                 ->select(
-                    'woo_orders.id as woo_order_id','woo_orders.number', 'woo_orders.email', 'woo_orders.fullname',
+                    'woo_orders.id','woo_orders.number', 'woo_orders.email', 'woo_orders.fullname',
                     'woo_orders.payment_method','woo_orders.sku','woo_orders.design_id', 'woo_orders.variation_full_detail'
                 )
                 ->whereIn('design_id',$lst_design_id)

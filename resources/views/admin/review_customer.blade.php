@@ -1,8 +1,8 @@
 @extends('master')
 @section('content')
 <div class="row">
-    <div class="col s12">
-        <div class="page-title">Job Tables</div>
+    <div class="col s12 js-redo-new-url" url="{{ url('ajax-redo-new-sku') }}">
+        <div class="page-title">Review Customer about Job</div>
     </div>
 <div class="col s12 m12 l12">
 <div class="card">
@@ -70,9 +70,9 @@
                                     <th data-field="action">Action</th>
                                 </tr>
                                 </thead>
-                                <tbody>
+                                <tbody style="font-size: 13px;">
                                 @foreach($list['orders'] as $order)
-                                <tr style="font-size: 13px;">
+                                <tr class="js-remove-tr-{{ $order['id'] }}">
                                     <td>{{ $order['number'] }}</td>
                                     <td>
                                         <?php
@@ -92,12 +92,63 @@
                                     <td>{{ $order['fullname'] }}</td>
                                     <td>{{ $order['email'] }}</td>
                                     <td>
-                                        <a class="waves-effect waves-light btn red m-b-xs"
-                                           order_id="{{ $list['info']['id'] }}"
+                                        <a class="js-show-redo-sku waves-effect waves-light btn red m-b-xs"
+                                           order_id="{{ $order['id'] }}"
                                            title="Yêu cầu Design làm lại thành một mẫu khác hoàn toàn với SKU mới"
                                         >Redo SKU</a>
                                     </td>
                                 </tr>
+                                {{-- Show redo sku --}}
+                                <tr class="js-show-redo-sku-{{ $order['id'] }} js-remove-tr-{{ $order['id'] }}" style="display: none;">
+                                    <td colspan="6" class="grey lighten-1">
+                                        <div class="row">
+                                            <div class="col s12 m4 l4">
+                                                <div class="card white">
+                                                    <div class="card-content center">
+                                                        <div class="row">
+                                                            <div class="card-content center">
+                                                                <input required placeholder="NameMLF1234" type="text" class="validate js-redo-new-sku-{{ $order['id'] }}">
+                                                                <label>New Sku</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <label>Designer</label>
+                                                            <select class="browser-default js-redo-new-designer-{{ $order['id'] }}">
+                                                                <option value="" disabled selected>Choose designer</option>
+                                                                @foreach($workers as $worker)
+                                                                    <option {{ ($list['info']['worker_id'] == $worker->id) ? 'selected' : '' }} value="{{$worker->id}}">
+                                                                        {{ $worker->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col s12 m4 l8">
+                                                <div class="card white">
+                                                    <div class="card-content center">
+                                                        <div class="row">
+                                                            <div class="input-field col s12">
+                                                                <textarea id="textarea1" class="materialize-textarea js-redo-new-reason-{{ $order['id'] }}" length="255"></textarea>
+                                                                <label for="textarea1">Lý do redo</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <span class="waves-effect waves-light btn red lighten-2 js-redo-new-submit"
+                                                                  order-id="{{ $order['id'] }}" working-id="{{ $list['info']['id'] }}"
+                                                                  design-id="{{ $list['info']['design_id'] }}" variation="{{ $list['info']['variation'] }}"
+                                                                      >
+                                                                Submit
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {{-- End Show redo SKU--}}
                                 @endforeach
                                 </tbody>
                             </table>
