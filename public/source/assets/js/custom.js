@@ -70,25 +70,26 @@ $(document).ready(function () {
             method: "POST",
             url: url,
             data: data,
-            // dataType: 'JSON',
-            dataType: 'html',
+            dataType: 'JSON',
+            // dataType: 'html',
             success: function (data) {
-                // if (data.status === 'success') {
-                //     Materialize.toast(data.message, 5000);
-                //     //xóa hàng đã chọn
-                //     table_idea
-                //         .row('.js-remove-tr-'+order_id)
-                //         .remove()
-                //         .draw();
-                // } else {
-                //     $('.js-remove-table').removeClass('js-remove-table');
-                //     Materialize.toast(data.message, 5000);
-                // }
-                // console.log('success');
-                console.log(data);
+                if (data.status === 'success') {
+                    Materialize.toast(data.message, 5000);
+                    //xóa hàng đã chọn
+                    $('.js-remove-tr-'+order_id).remove();
+                    if (data.layout === 'refresh')
+                    {
+                        window.location.reload();
+                    }
+                    // console.log('success');
+                } else {
+                    // console.log('error');
+                    Materialize.toast(data.message, 5000);
+                }
+                // console.log(data);
             },
             error: function (error) {
-                // window.location.reload();
+                window.location.reload();
                 console.log(error);
             }
         })
