@@ -414,22 +414,10 @@
                                     {!! (array_key_exists('private', $data)) ? notiSideBar($data['private']['order_review']) : '' !!}
                                 </a>
                             </li>
+                            <li><a href="{{ url('fulfill-category') }}">Fulfill Order</a></li>
                             <li><a href="{{ url('supplier') }}">Supplier</a></li>
                             <li><a href="{{ url('tracking') }}">Tracking</a></li>
                             <li><a href="{{ url('list-product') }}">Danh sách sản phẩm</a></li>
-                        </ul>
-                    </div>
-                </li>
-                <li class="no-padding">
-                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">ring_volume</i>
-                        Designed
-                        <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
-                    </a>
-                    <div class="collapsible-body">
-                        <ul>
-                            <li><a href="{{ url('list-design-new') }}">Chưa có thiết kế</a></li>
-                            <li><a href="{{ url('list-design-done') }}">Đã có thiết kế</a></li>
-
                         </ul>
                     </div>
                 </li>

@@ -494,11 +494,17 @@ class WooController extends Controller
         return $work->feedGetFile($google_feed_id);
     }
 
-    //show danh sach cac design chua duoc thiet ke
-    public function listDesignNew()
+    //fulfill order
+    public function autoFulfill()
     {
         $work = new Working();
-        return $work->listDesignNew();
+        return $work->autoFulfill();
+    }
+
+    public function fulfillCategory()
+    {
+        $work = new Working();
+        return $work->fulfillCategory();
     }
     /*End Admin + QC*/
 }

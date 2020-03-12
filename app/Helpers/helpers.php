@@ -544,18 +544,22 @@ function infoShop()
         ->where('id', \Auth::user()->id)
         ->first();
     $ar_qc = array(env('SADMIN'), env('ADMIN'), env('QC'));
-    $order_new = getNewOrder();
+    $order_new = getNewWorking();
     $order_working = getworkingOrder();
     $order_checking = getCheckingOrder();
 
     $idea_new = getIdeaNew();
     $idea_check = getIdeaCheck();
+
+    $new_orders = getNewOrder();
+
     $data['pub'] = [
         'new' => $order_new,
         'working' => $order_working,
         'order_checking' => $order_checking,
         'idea_new' => $idea_new,
-        'idea_check' => $idea_check
+        'idea_check' => $idea_check,
+        'new_order' => $new_orders
     ];
     /*Nếu là QC và Admin*/
     if (in_array($user->level, $ar_qc)) {
@@ -578,11 +582,20 @@ function infoShop()
     return $data;
 }
 
+function getNewWorking()
+{
+    $where = [
+        ['status', '=', env('STATUS_WORKING_NEW')]
+    ];
+    return \DB::table('workings')
+        ->where($where)
+        ->count();
+}
+
 function getNewOrder()
 {
     $where = [
-        ['status', '=', env('STATUS_WORKING_NEW')],
-        ['custom_status', '=', env('STATUS_P_CUSTOM_PRODUCT')],
+        ['status', '=', env('STATUS_WORKING_NEW')]
     ];
     return \DB::table('woo_orders')
         ->where($where)

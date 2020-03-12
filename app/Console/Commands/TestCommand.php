@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Http\Controllers\TrackingController;
 use App\Http\Controllers\ApiController;
+use App\Http\Controllers\WooController;
 use Illuminate\Console\Command;
 
 class TestCommand extends Command
@@ -43,8 +44,9 @@ class TestCommand extends Command
 //        $controller->autoUploadProduct();
 //        $controller->autoUploadImage();
 
-        $api_controller = new ApiController();
+//        $api_controller = new ApiController();
+        $woo_controller = new WooController();
         // up load product from google driver
-        $check = $api_controller->getDesignNew();
+        $check = $woo_controller->autoFulfill();
     }
 }

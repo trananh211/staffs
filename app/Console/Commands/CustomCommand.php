@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Http\Controllers\GoogleController;
 use Illuminate\Console\Command;
 use App\Http\Controllers\ApiController;
+use App\Http\Controllers\WooController;
 
 class CustomCommand extends Command
 {
@@ -32,7 +33,7 @@ class CustomCommand extends Command
         parent::__construct();
     }
 
-    protected $array_minute = [59, 6, 4, 1];
+    protected $array_minute = [59, 30, 6, 4, 1];
     /**
      * Execute the console command.
      *
@@ -68,6 +69,9 @@ class CustomCommand extends Command
             case 6:
                 $this->run6Minute();
                 break;
+            case 30:
+                $this->run30Minute();
+                break;
             case 59:
                 $this->run59Minute();
                 break;
@@ -99,10 +103,6 @@ class CustomCommand extends Command
     {
         echo 'run 2 phut';
     }
-    private function run3Minute()
-    {
-        echo 'run 3 phut';
-    }
 
     private function run4Minute()
     {
@@ -127,6 +127,13 @@ class CustomCommand extends Command
             // up load product fullfill from google driver
             $check2 = $google_controller->uploadFileDriver();
         }
+    }
+
+    private function run30Minute()
+    {
+        echo 'run 30 phut';
+        $woo_controller = new WooController();
+        $check = $woo_controller->autoFulfill();
     }
 
     private function run59Minute()
