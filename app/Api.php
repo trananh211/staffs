@@ -84,7 +84,15 @@ class Api extends Model
                 ->where('status', 3)
                 ->pluck('woo_product_id')
                 ->toArray();
+            $tmp_orders = array();
             foreach ($data['line_items'] as $key => $value) {
+                if (!in_array($data['number'], $tmp_orders))
+                {
+                    $shipping_cost = $data['shipping_total'];
+                    $tmp_orders[] = $data['number'];
+                } else {
+                    $shipping_cost = 0;
+                }
                 $str = "";
                 $variation_detail = '';
                 $variation_full_detail = '';
@@ -124,6 +132,7 @@ class Api extends Model
                     'customer_note' => trim(htmlentities($data['customer_note'])),
                     'transaction_id' => $data['transaction_id'],
                     'price' => $value['price'],
+                    'shipping_cost' => $shipping_cost,
                     'variation_id' => $value['variation_id'],
                     'variation_detail' => trim(substr($variation_detail, 0, -1)),
                     'variation_full_detail' => trim($variation_full_detail),
@@ -167,7 +176,7 @@ class Api extends Model
 
     public function getDesignNew()
     {
-        logfile_system('-- Tạo Design new');
+        logfile_system('== Tạo Design new');
         $list_orders = \DB::table('woo_orders')
             ->select('id', 'product_name', 'product_id', 'woo_info_id', 'sku', 'variation_detail')
             ->where([
@@ -250,9 +259,9 @@ class Api extends Model
                 }
             }
             $return = false;
-            logfile_system('--- Tạo thành công design');
+            logfile_system('-- Tạo thành công design');
         } else {
-            logfile_system('--- Không có order để tạo design');
+            logfile_system('-- Không có order để tạo design');
             $return = true;
         }
         return $return;
