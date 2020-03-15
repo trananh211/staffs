@@ -444,6 +444,36 @@ class WooController extends Controller
         return $work->listCategories();
     }
 
+    public function axChooseVariations(Request $request)
+    {
+        $work = new Working();
+        return $work->axChooseVariations($request);
+    }
+
+    public function addListVariation(Request $request)
+    {
+        $work = new Working();
+        return $work->addListVariation($request);
+    }
+
+    public function updateVariation()
+    {
+        $work = new Working();
+        return $work->updateVariation();
+    }
+
+    public function listVariationCategory()
+    {
+        $work = new Working();
+        return $work->listVariationCategory();
+    }
+
+    public function editVariations(Request $request)
+    {
+        $work = new Working();
+        return $work->editVariations($request);
+    }
+
     public function deleteWooCategory($woo_category_id)
     {
         $work = new Working();

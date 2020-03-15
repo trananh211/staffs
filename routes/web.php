@@ -70,6 +70,11 @@ Route::middleware('auth')->group(function () {
     Route::post('action-deleted-categories','WooController@actionDeletedCategories');
     Route::get('deleted-categories','WooController@deletedCategories');
     Route::get('fulfill-category','WooController@fulfillCategory');
+    Route::get('update-variation','WooController@updateVariation');
+    Route::get('list-variation-category','WooController@listVariationCategory');
+    Route::post('edit-variations','WooController@editVariations');
+    Route::post('ajax-choose-variations','WooController@axChooseVariations');
+    Route::post('add-list-variation','WooController@addListVariation');
 
     /** Paypal */
     Route::get('paypal-connect','PaypalController@index');

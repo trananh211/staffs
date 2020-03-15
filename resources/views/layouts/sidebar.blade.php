@@ -452,6 +452,7 @@
                             <li><a href="{{ url('woo-create-template') }}">Create Template</a></li>
                             <li><a href="{{ url('woo-supplier') }}">Supplier</a></li>
                             <li><a href="{{ url('woo-get-template') }}">Edit Template</a></li>
+                            <li><a href="{{ url('list-variation-category') }}">Category & Variation</a></li>
                             <li><a href="{{ url('woo-list-convert-variation') }}">Convert Variation</a></li>
                         </ul>
                     </div>

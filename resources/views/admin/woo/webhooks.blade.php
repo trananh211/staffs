@@ -98,6 +98,11 @@
                             <td><a href="{{ url('/deleted-categories/') }}">{{ url('/deleted-categories/') }}</a></td>
                             <td>Xóa Categories trong woocomerce</td>
                         </tr>
+                        <tr>
+                            <td>8.1</td>
+                            <td><a href="{{ url('/update-variation/') }}">{{ url('/update-variation/') }}</a></td>
+                            <td>Cập nhật mới variation vào 1 bảng để kiểm soát</td>
+                        </tr>
 
                         </tbody>
                     </table>

@@ -518,6 +518,73 @@ $(document).ready(function () {
         });
     });
 
+    $(".js-btn-variation-show-right").click(function(){
+        var url = $('#js-variation-category').attr('url');
+        var cat_name = $(this).attr('data-catname');
+        var cat_id = $(this).attr('data-catid');
+        var store_id = $(this).attr('data-store-id');
+        var dt = {'cat_name': cat_name, 'cat_id': cat_id, 'store_id': store_id};
+        $.ajax({
+            method: "POST",
+            url: url,
+            data: dt,
+            dataType: 'JSON',
+            // dataType: 'html',
+            success: function (data) {
+                Materialize.toast(data.message, 5000);
+                // window.location.reload();
+                // console.log('success');
+                console.log(data);
+                if (data.result == 'success') {
+                    showDataVariation(data)
+                    // console.log(data);
+                }
+            },
+            error: function (error) {
+                // window.location.reload();
+                // console.log('error');
+                // console.log(error);
+                Materialize.toast("Xảy ra lỗi. Mời bạn tải lại trang", 5000);
+            }
+        });
+    });
+
+    function showDataVariation(data) {
+        $('.js-show').removeClass('blue lighten-5');
+        $('.js-show-'+data.cat_id).addClass('blue lighten-5');
+        showRight();
+        addOptionVariation(data, 'js-select-variation');
+    }
+
+    function addOptionVariation(data, selectId) {
+        $('#js-category-name').html(data.cat_name);
+        $('input#js-cat_id').val(data.cat_id);
+        $('#'+selectId+' option').remove();
+        var items = data.variations;
+        var text;
+        $.each(items, function (i, item) {
+            if (item.woo_category_name != '')
+            {
+                text = item.variation_name+' ('+item.woo_category_name+')';
+            } else {
+                text = item.variation_name;
+            }
+            if (item.selected == 1)
+            {
+                $('#'+selectId).append($('<option>', {
+                    value: item.id,
+                    text : text,
+                    selected: true
+                }));
+            } else {
+                $('#'+selectId).append($('<option>', {
+                    value: item.id,
+                    text : text
+                }));
+            }
+        });
+    }
+
     function showDataKeyword(data)
     {
         $('#js-category-title').html(data.cat_name);
@@ -538,6 +605,7 @@ $(document).ready(function () {
     {
         $('.js-view-right').removeClass('s6').addClass('s12');
         $('.js-right-colum').removeClass('s6').addClass('hidden');
+        $('.js-show').removeClass('blue lighten-5');
     }
 
     $('.btn-right-close').on('click', function () {
