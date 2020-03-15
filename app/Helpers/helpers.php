@@ -587,7 +587,7 @@ function getNewWorking()
     $where = [
         ['status', '=', env('STATUS_WORKING_NEW')]
     ];
-    return \DB::table('workings')
+    return \DB::table('designs')
         ->where($where)
         ->count();
 }

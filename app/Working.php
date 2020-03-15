@@ -772,10 +772,6 @@ class Working extends Model
             ['working_files.status', '=', env('STATUS_WORKING_CHECK')]
         ];
         $images = $this->getWorkingFile($where_working_file);
-//        echo "<pre>";
-//        print_r($lists);
-//        print_r($images);
-//        die();
         $data = infoShop();
         return view('admin/checking')->with(compact('lists', 'images', 'data'));
     }
@@ -1101,9 +1097,25 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         $where = [
             ['workings.status', '=', env('STATUS_WORKING_CUSTOMER')],
         ];
-        $lists = $this->reviewWork($where);
+        $lists = $this->reviewWork($where, 0);
         $where_working_file = [
             ['working_files.status', '=', env('STATUS_WORKING_CUSTOMER')],
+            ['working_files.thumb', '!=', 'NULL']
+        ];
+        $images = $this->getWorkingFile($where_working_file);
+        $data = infoShop();
+        return view('/admin/review_customer', compact('lists', 'images', 'data', 'workers'));
+    }
+
+    public function listJobDone()
+    {
+        $workers = \DB::table('users')->select('id','name')->where('level',3)->get()->toArray();
+        $where = [
+            ['workings.status', '=', env('STATUS_WORKING_DONE')],
+        ];
+        $lists = $this->reviewWork($where, 1);
+        $where_working_file = [
+            ['working_files.status', '=', env('STATUS_WORKING_DONE')],
             ['working_files.thumb', '!=', 'NULL']
         ];
         $images = $this->getWorkingFile($where_working_file);
@@ -1269,7 +1281,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     }
 
     /*Hàm hiển thị danh sách review của customer*/
-    private static function reviewWork($where)
+    private static function reviewWork($where, $done = NULL)
     {
         $lists = array();
         $lsts = \DB::table('workings')
@@ -1294,13 +1306,24 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 $lst_design_id[$lst->design_id] = $lst->design_id;
             }
             // lấy toàn bộ danh sách woo_orders ra để hiển thị ra ngoài
+            if ($done == 0)
+            {
+                $where_order = [
+                    ['status', '<', env('STATUS_WORKING_DONE')]
+                ];
+            } else {
+                $where_order = [
+                    ['status', '>=', env('STATUS_WORKING_DONE')]
+                ];
+            }
+
             $lst_orders = \DB::table('woo_orders')
                 ->select(
                     'woo_orders.id','woo_orders.number', 'woo_orders.email', 'woo_orders.fullname',
                     'woo_orders.payment_method','woo_orders.sku','woo_orders.design_id', 'woo_orders.variation_full_detail'
                 )
                 ->whereIn('design_id',$lst_design_id)
-                ->where('status', '<', env('STATUS_WORKING_DONE'))
+                ->where($where_order)
                 ->get()->toArray();
             if (sizeof($lst_orders) > 0)
             {
@@ -1336,7 +1359,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     'updated_at' => date("Y-m-d H:i:s"),
                 ];
                 \DB::table('workings')->where('id', $working_id)->update($update);
-                \DB::table('woo_orders')->where('id', $design_id)->update($update);
+                \DB::table('designs')->where('id', $design_id)->update($update);
                 \DB::table('working_files')->where('working_id', $working_id)->update($update);
                 $status = 'success';
                 $message = "Yêu cầu chuyển cho supplier thành công. Tiếp tục kiểm tra các đơn hàng còn lại.";
@@ -2431,6 +2454,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
 
     public function editVariations($request)
     {
+        $alert = 'error';
         \DB::beginTransaction();
         try {
             $rq = $request->all();
@@ -2925,7 +2949,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                         $result = \DB::table('fulfills')->insert($data_fulfills);
                         if ($result) {
                             \DB::table('woo_orders')->whereIn('id', $order_fulfills)->update([
-                                'status' => env('STATUS_WORKING_MOVE'),
+                                'status' => env('STATUS_WORKING_DONE'),
                                 'updated_at' => date("Y-m-d H:i:s")
                             ]);
                             logfile_system('-- [SUCCESS] Fulfill thành công : ' . sizeof($data_fulfills) . ' orders');

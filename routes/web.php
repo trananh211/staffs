@@ -50,6 +50,7 @@ Route::middleware('auth')->group(function () {
     Route::get('send-customer/{order_id}','WooController@sendCustomer');
     Route::post('redo-designer','WooController@redoDesigner');
     Route::get('review-customer','WooController@reviewCustomer');
+    Route::get('list-job-done','WooController@listJobDone');
     Route::post('ajax_done_job/action', 'WooController@eventQcDone')->name('ajaxdonejob.action');
     Route::get('supplier','WooController@supplier');
     Route::get('tracking','TrackingController@tracking');

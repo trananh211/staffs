@@ -167,6 +167,12 @@ class WooController extends Controller
         return $work->reviewCustomer();
     }
 
+    public function listJobDone()
+    {
+        $work = new Working();
+        return $work->listJobDone();
+    }
+
     public function eventQcDone(Request $request)
     {
         $work = new Working();

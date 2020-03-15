@@ -96,8 +96,10 @@
                                                                 <div class="card white">
                                                                     <span class="card-title">Ảnh Gốc</span>
                                                                     <div class="card-content center">
-                                                                        @foreach(explode(",",$list->image) as $image)
-                                                                            {!! thumb_c($image, env('THUMB'), basename($image)) !!}
+                                                                        @foreach(explode(",",$list->image) as $key => $image)
+                                                                            @if ($key < 1)
+                                                                                {!! thumb_c($image, env('THUMB'), basename($image)) !!}
+                                                                            @endif
                                                                         @endforeach
                                                                     </div>
                                                                 </div>

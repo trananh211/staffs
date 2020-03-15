@@ -156,6 +156,7 @@
                         {{-- End Table toàn bộ order của khách trong Job này--}}
 
                         {{-- Redo toan bộ job--}}
+                        @if ($list['info']['status'] == env('STATUS_WORKING_CUSTOMER'))
                         <div class="row">
                             <a title="Yêu cầu Designer làm lại design đã thiết kế. Cần đưa thêm lý do để Designer làm lại."
                                 class="waves-effect waves-light btn red m-b-xs js-btn-redo" order_id="{{ $list['info']['id'] }}">
@@ -179,6 +180,7 @@
                                 </form>
                             </div>
                         </div>
+                        @endif
                         {{-- End Redo toàn bộ job--}}
 
                         {{-- Hiển thị ảnh, thông tin redo và các thông tin khác--}}
@@ -234,19 +236,24 @@
             </div>
         </div>
     </div>
+    @if ($list['info']['status'] == env('STATUS_WORKING_CUSTOMER'))
+        <a working_id="{{ $list['info']['id'] }}" design_id="{{ $list['info']['design_id'] }}"
+           data-url="{{ url('ajax-re-send-email') }}"
+           onclick="return confirm('Bạn có chắc chắn muốn gửi lại email cho khách hàng này?');"
+           class="waves-effect waves-light btn blue m-b-xs js-re-send-email">
+            Gửi lại email
+        </a>
+    @endif
 
-    <a working_id="{{ $list['info']['id'] }}" design_id="{{ $list['info']['design_id'] }}"
-       data-url="{{ url('ajax-re-send-email') }}"
-       onclick="return confirm('Bạn có chắc chắn muốn gửi lại email cho khách hàng này?');"
-       class="waves-effect waves-light btn blue m-b-xs js-re-send-email">
-        Gửi lại email
-    </a>
 </td>
                     <td>
-                        <a working_id="{{ $list['info']['id'] }}" design_id="{{ $list['info']['design_id'] }}"
-                           class="waves-effect waves-light btn green m-b-xs js-done-job">
-                            Supplier
-                        </a>
+                        @if ($list['info']['status'] == env('STATUS_WORKING_CUSTOMER'))
+                            <a working_id="{{ $list['info']['id'] }}" design_id="{{ $list['info']['design_id'] }}"
+                               class="waves-effect waves-light btn green m-b-xs js-done-job">
+                                Supplier
+                            </a>
+                        @endif
+
                     </td>
                 </tr>
             @endforeach
