@@ -44,9 +44,10 @@ class TestCommand extends Command
 //        $controller->autoUploadProduct();
 //        $controller->autoUploadImage();
 
-//        $api_controller = new ApiController();
-        $woo_controller = new WooController();
+        $api_controller = new ApiController();
+//        $woo_controller = new WooController();
         // up load product from google driver
-        $check = $woo_controller->autoFulfill();
+//        $check = $woo_controller->autoFulfill();
+        $check = $api_controller->getDesignNew();
     }
 }

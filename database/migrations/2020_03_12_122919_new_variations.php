@@ -15,11 +15,12 @@ class NewVariations extends Migration
     {
         Schema::create('variations', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->integer('store_id');
-            $table->text('variation_name');
-            $table->integer('category_id')->nullable(true);
+            $table->string('variation_name', 255);
+            $table->string('variation_real_name', 255);
+            $table->integer('tool_category_id')->nullable(true);
             $table->float('price')->default(0);
-            $table->string('variation_sku')->nullable(true);
+            $table->string('variation_sku',100)->nullable(true);
+            $table->string('factory_sku',100)->nullable(true);
             $table->timestamps();
         });
     }

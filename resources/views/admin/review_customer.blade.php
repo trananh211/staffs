@@ -12,6 +12,7 @@
         <tr>
             <th class="center">#</th>
             <th class="center">Job</th>
+            <th class="center">Variation</th>
             <th class="center">Time</th>
             <th class="center">Status</th>
             <th class="center">Designer</th>
@@ -24,6 +25,7 @@
         <tr>
             <th class="center">#</th>
             <th class="center">Job</th>
+            <th class="center">Variation</th>
             <th class="center">Time</th>
             <th class="center">Status</th>
             <th class="center">Designer</th>
@@ -36,8 +38,9 @@
         @if(sizeof($lists) > 0)
             @foreach($lists as $key => $list)
                 <tr>
-                    <td class="center">{{ $key+1 }}</td>
+                    <td class="center">{{ $key }}</td>
                     <td class="center"> {{ $list['info']['sku'].'-PID-'.$list['info']['id'] }}</td>
+                    <td class="center"> {{ $list['info']['variation'] }}</td>
                     <td class="center">{!! compareTime($list['info']['updated_at'], date("Y-m-d H:i:s")) !!}</td>
                     <td class="center">{!! statusJob($list['info']['status'], $list['info']['redo'], $list['info']['reason']) !!}</td>
                     <td class="center">{{ $list['info']['worker_name'] }}</td>

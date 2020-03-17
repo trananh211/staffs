@@ -522,8 +522,7 @@ $(document).ready(function () {
         var url = $('#js-variation-category').attr('url');
         var cat_name = $(this).attr('data-catname');
         var cat_id = $(this).attr('data-catid');
-        var store_id = $(this).attr('data-store-id');
-        var dt = {'cat_name': cat_name, 'cat_id': cat_id, 'store_id': store_id};
+        var dt = {'cat_name': cat_name, 'cat_id': cat_id};
         $.ajax({
             method: "POST",
             url: url,
@@ -532,9 +531,7 @@ $(document).ready(function () {
             // dataType: 'html',
             success: function (data) {
                 Materialize.toast(data.message, 5000);
-                // window.location.reload();
-                // console.log('success');
-                console.log(data);
+                console.log(data)
                 if (data.result == 'success') {
                     showDataVariation(data)
                     // console.log(data);
@@ -543,7 +540,7 @@ $(document).ready(function () {
             error: function (error) {
                 // window.location.reload();
                 // console.log('error');
-                // console.log(error);
+                console.log(error);
                 Materialize.toast("Xảy ra lỗi. Mời bạn tải lại trang", 5000);
             }
         });
@@ -553,7 +550,10 @@ $(document).ready(function () {
         $('.js-show').removeClass('blue lighten-5');
         $('.js-show-'+data.cat_id).addClass('blue lighten-5');
         showRight();
-        addOptionVariation(data, 'js-select-variation');
+        if (data.variations.length > 0)
+        {
+            addOptionVariation(data, 'js-select-variation');
+        }
     }
 
     function addOptionVariation(data, selectId) {
@@ -563,9 +563,9 @@ $(document).ready(function () {
         var items = data.variations;
         var text;
         $.each(items, function (i, item) {
-            if (item.woo_category_name != '')
+            if (item.tool_category_name != '')
             {
-                text = item.variation_name+' ('+item.woo_category_name+')';
+                text = item.variation_name+'('+item.tool_category_name+')';
             } else {
                 text = item.variation_name;
             }

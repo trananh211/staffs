@@ -7,72 +7,130 @@
         <div class="col s12 m12 l12">
             <div class="card">
                 <div class="card-content">
-                    <span class="card-title">Multiple Selection</span>
-                    <p>Select2 also supports multi-value select boxes. The select below is declared with the <code>multiple</code> attribute.</p><br>
-                    <select class="js-states browser-default" multiple="multiple" tabindex="-1" style="width: 100%" id="multiple">
-                        <optgroup label="Alaskan/Hawaiian Time Zone">
-                            <option value="AK">Alaska</option>
-                            <option value="HI">Hawaii</option>
-                        </optgroup>
-                        <optgroup label="Pacific Time Zone">
-                            <option value="CA">California</option>
-                            <option value="NV">Nevada</option>
-                            <option value="OR">Oregon</option>
-                            <option value="WA">Washington</option>
-                        </optgroup>
-                        <optgroup label="Mountain Time Zone">
-                            <option value="AZ">Arizona</option>
-                            <option value="CO">Colorado</option>
-                            <option value="ID">Idaho</option>
-                            <option value="MT">Montana</option>
-                            <option value="NE">Nebraska</option>
-                            <option value="NM">New Mexico</option>
-                            <option value="ND">North Dakota</option>
-                            <option value="UT">Utah</option>
-                            <option value="WY">Wyoming</option>
-                        </optgroup>
-                        <optgroup label="Central Time Zone">
-                            <option value="AL">Alabama</option>
-                            <option value="AR">Arkansas</option>
-                            <option value="IL">Illinois</option>
-                            <option value="IA">Iowa</option>
-                            <option value="KS">Kansas</option>
-                            <option value="KY">Kentucky</option>
-                            <option value="LA">Louisiana</option>
-                            <option value="MN">Minnesota</option>
-                            <option value="MS">Mississippi</option>
-                            <option value="MO">Missouri</option>
-                            <option value="OK">Oklahoma</option>
-                            <option value="SD">South Dakota</option>
-                            <option value="TX">Texas</option>
-                            <option value="TN">Tennessee</option>
-                            <option value="WI">Wisconsin</option>
-                        </optgroup>
-                        <optgroup label="Eastern Time Zone">
-                            <option value="CT">Connecticut</option>
-                            <option value="DE">Delaware</option>
-                            <option value="FL">Florida</option>
-                            <option value="GA">Georgia</option>
-                            <option value="IN">Indiana</option>
-                            <option value="ME">Maine</option>
-                            <option value="MD">Maryland</option>
-                            <option value="MA">Massachusetts</option>
-                            <option value="MI">Michigan</option>
-                            <option value="NH">New Hampshire</option>
-                            <option value="NJ">New Jersey</option>
-                            <option value="NY">New York</option>
-                            <option value="NC">North Carolina</option>
-                            <option value="OH">Ohio</option>
-                            <option value="PA">Pennsylvania</option>
-                            <option value="RI">Rhode Island</option>
-                            <option value="SC">South Carolina</option>
-                            <option value="VT">Vermont</option>
-                            <option value="VA">Virginia</option>
-                            <option value="WV">West Virginia</option>
-                        </optgroup>
-                    </select>
+                    <table id="review-job" class="display responsive-table datatable-example">
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Order</th>
+                            <th>Sku</th>
+                            <th>Variation</th>
+                            <th>Name</th>
+                            <th>Date</th>
+                            <th>Tracking</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tfoot>
+                        <tr>
+                            <th>#</th>
+                            <th>Order</th>
+                            <th>Sku</th>
+                            <th>Variation</th>
+                            <th>Name</th>
+                            <th>Date</th>
+                            <th>Tracking</th>
+                            <th>Action</th>
+                        </tr>
+                        </tfoot>
+                        <tbody>
+                        @foreach ($fulfills as $key => $fulfill)
+                        <tr>
+                            <th>{{ ++$key }}</th>
+                            <th>{{ $fulfill->number }}</th>
+                            <th>{{ $fulfill->sku }}</th>
+                            <th>{{ $fulfill->variation_detail }}</th>
+                            <th>
+                                {{ $fulfill->fullname }}
+                                <span class="hidden">
+                                    {{ $fulfill->email }}
+                                </span>
+                            </th>
+                            <th>{!! compareTime($fulfill->created_at, date("Y-m-d H:i:s")) !!}</th>
+                            <th>Tracking</th>
+                            <th>
+                                <!-- Modal Trigger -->
+                                <a class="waves-effect waves-light btn modal-trigger" href="#modal{{ $fulfill->id }}">Edit</a>
+
+                                <!-- Modal Structure -->
+                                <div id="modal{{ $fulfill->id }}" class="modal">
+                                    <div class="modal-content">
+                                        {{-- Form edit info customer --}}
+                                        <form class="col s12" action="{{url('edit-info-fulfills')}}" method="post">
+                                            {{ csrf_field() }}
+                                            <div class="row">
+                                                <div class="input-field col s2 hidden">
+                                                    <input name="fulfill_id" type="text" value="{{ $fulfill->id }}" class="validate" required>
+                                                    <label for="fulfill_id">Fulfill ID</label>
+                                                </div>
+                                                <div class="input-field col s2 hidden">
+                                                    <input name="woo_order_id" type="text" value="{{ $fulfill->woo_order_id }}" class="validate" required>
+                                                    <label for="woo_order_id">Woo Order ID Name</label>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="input-field col s6">
+                                                    <input  id="fullname" name="fullname"  type="text" class="validate" required value="{{ $fulfill->fullname }}">
+                                                    <label for="fullname" class="active">Full Name</label>
+                                                </div>
+                                                <div class="input-field col s6">
+                                                    <input  id="email" name="email"  type="email" class="validate" required value="{{ $fulfill->email }}">
+                                                    <label for="email" class="active">Email</label>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="input-field col s8">
+                                                    <input id="address" name="address" type="text" required value="{{ $fulfill->address }}" class="validate">
+                                                    <label for="address" class="active">Address</label>
+                                                </div>
+                                                <div class="input-field col s4">
+                                                    <input id="phone" name="phone" value="{{ $fulfill->phone }}" type="text" required class="validate">
+                                                    <label for="phone" class="">Phone</label>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="input-field col s3">
+                                                    <input id="city" name="city" required value="{{ $fulfill->city }}" type="text" class="validate">
+                                                    <label for="city" class="">City</label>
+                                                </div>
+                                                <div class="input-field col s3">
+                                                    <input id="state" name="state" value="{{ $fulfill->state }}" type="text" class="validate">
+                                                    <label for="state" class="">State</label>
+                                                </div>
+                                                <div class="input-field col s3">
+                                                    <input id="country" name="country" required value="{{ $fulfill->country }}" type="text" class="validate">
+                                                    <label for="country" class="">Country</label>
+                                                </div>
+                                                <div class="input-field col s3">
+                                                    <input id="postcode" name="postcode" required value="{{ $fulfill->postcode }}" type="text" class="validate">
+                                                    <label for="postcode" class="">Zip Code</label>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="input-field col s12">
+                                                    <textarea id="customer_note" name="customer_note" style="height: 80px;" value="{{ $fulfill->customer_note }}"></textarea>
+                                                    <label for="customer_note" class="">Customer Note</label>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col s12">
+                                                    <button type="submit" class="right waves-effect waves-light btn blue">Update</button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                        {{-- End Form edit info customer --}}
+                                    </div>
+                                </div>
+                            </th>
+                        </tr>
+                        @endforeach
+                        </tbody>
+                    </table>
+                    <pre>
+                        <?php print_r($fulfills); ?>
+                    </pre>
                 </div>
             </div>
         </div>
     </div>
+
 @endsection

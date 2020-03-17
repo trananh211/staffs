@@ -119,12 +119,13 @@
                                             </form>
                                         </div>
                                     </div>
-                                    <a onclick="return confirm('Bạn có chắc chắn muốn cập nhật template này?');"
-                                       href="{{ url('woo-scan-template/'.$list->id) }}"
-                                       class="waves-effect waves-light btn green">
-                                        ReScan
-                                    </a>
-
+                                    @if ($list->website_id != '')
+                                        <a onclick="return confirm('Bạn có chắc chắn muốn cập nhật template này?');"
+                                           href="{{ url('woo-scan-template/'.$list->id) }}"
+                                           class="waves-effect waves-light btn green">
+                                            ReScan
+                                        </a>
+                                    @endif
                                 </td>
                                 <td>
                                     @if (! in_array($list->status, $deleted))

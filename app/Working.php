@@ -1297,6 +1297,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 'woo_products.name', 'woo_products.permalink', 'woo_products.image'
             )
             ->where($where)
+            ->orderBy('designs.sku','ASC')
             ->get()->toArray();
         if (sizeof($lsts) > 0)
         {
@@ -1313,7 +1314,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 ];
             } else {
                 $where_order = [
-                    ['status', '>=', env('STATUS_WORKING_DONE')]
+                    ['status', '>=', env('STATUS_WORKING_NEW')]
                 ];
             }
 
@@ -1609,24 +1610,20 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         $message = '';
         if ($uid) {
             $rq = $request->all();
-            $category_id = $rq['cat_id'];
+            $tool_category_id = $rq['cat_id'];
             $category_name = $rq['cat_name'];
-            $store_id = $rq['store_id'];
 
             //lấy toàn bộ danh sách category ra ngoài
-            $categories = \DB::table('woo_categories')->where('store_id', $store_id)->pluck('name','id')->toArray();
+            $categories = \DB::table('tool_categories')->pluck('name','id')->toArray();
             //lấy toàn bộ danh sách variation chưa được chọn trong 1 store id
             $variations = \DB::table('variations')
-                ->select('id','variation_name', 'category_id')
-                ->where('store_id', $store_id)
-                ->orderBy('category_id','ASC')
+                ->select('id','variation_name', 'tool_category_id')
+                ->orderBy('tool_category_id','ASC')
                 ->orderBy('variation_name')
                 ->get()->toArray();
-
             // lấy danh sách variations được chọn trong category này
             $variations_choosed = \DB::table('variations')
-                ->where('store_id', $store_id)
-                ->where('category_id', $category_id)
+                ->where('tool_category_id', $tool_category_id)
                 ->pluck('id','variation_name')
                 ->toArray();
             $list_variations = array();
@@ -1637,16 +1634,16 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 {
                     $selected = 1;
                 }
-                $woo_category_name = '';
-                if (array_key_exists($item->category_id, $categories))
+                $tool_category_name = '';
+                if (array_key_exists($item->tool_category_id, $categories))
                 {
-                    $woo_category_name = $categories[$item->category_id];
+                    $tool_category_name = $categories[$item->tool_category_id];
                 }
                 $list_variations[] = [
                     'id' => $item->id,
                     'variation_name' => $item->variation_name,
                     'selected' => $selected,
-                    'woo_category_name' => $woo_category_name
+                    'tool_category_name' => $tool_category_name
                 ];
             }
 
@@ -1658,14 +1655,26 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 $status = 'success';
                 $message .= 'Category : '.$category_name.' chưa được chọn variations lần nào. Mời bạn chọn';
             }
-            return response()->json([
+            if (sizeof($variations) == 0)
+            {
+                $status = 'error';
+                $message = 'Chưa có variations nào. Mời bạn tạo variation ở dưới trước nhé.';
+            }
+            $response = [
                 'result' => $status,
                 'message' => $message,
                 'variations' => $list_variations,
-                'cat_id' => $category_id,
+                'cat_id' => $tool_category_id,
                 'cat_name' => $category_name
-            ]);
+            ];
+        } else {
+            $response = [
+                'result' => 'error',
+                'message' => 'Đã hết phiên làm việc. Mời bạn đăng nhập lại.',
+                'variations' => []
+            ];
         }
+        return response()->json($response);
     }
 
     public function addListVariation($request)
@@ -1673,28 +1682,63 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         $rq = $request->all();
         \DB::beginTransaction();
         try {
-            $category_id = $rq['category_id'];
+            $tool_category_id = $rq['tool_category_id'];
+            \DB::table('designs')->where('tool_category_id', $tool_category_id)->update(['tool_category_id' => null]);
             if (array_key_exists('variations', $rq))
             {
                 $variations = $rq['variations'];
-                \DB::table('variations')->where('category_id', $category_id)
+                \DB::table('variations')->where('tool_category_id', $tool_category_id)
                     ->update([
-                        'category_id' => null
+                        'tool_category_id' => null
                     ]);
                 \DB::table('variations')->whereIn('id', $variations)
                     ->update([
-                        'category_id' => $category_id,
+                        'tool_category_id' => $tool_category_id,
                         'updated_at' => date("Y-m-d H:i:s")
                     ]);
+                //update tool_variation_id to design
+                $lst_variations = \DB::table('variations')->whereIn('id', $variations)->pluck('variation_name')->toArray();
+                \DB::table('designs')->whereIn('variation', $lst_variations)->update(['tool_category_id' => $tool_category_id]);
                 $message = 'Thêm Variation vào Category thành công.';
             } else {
-                \DB::table('variations')->where('category_id', $category_id)
+                \DB::table('variations')->where('tool_category_id', $tool_category_id)
                     ->update([
-                        'category_id' => null
+                        'tool_category_id' => null
                     ]);
                 $message = 'Xóa Variation thành công.';
             }
             $status = 'success';
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $status = 'error';
+            $message = 'Xảy ra lỗi. Hãy thử lại.';
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($status, $message);
+    }
+
+    public function editInfoFulfills($request)
+    {
+        $status = 'error';
+        $rq = $request->all();
+        \DB::beginTransaction();
+        try {
+            $fulfill_id = $rq['fulfill_id'];
+            $woo_order_id = $rq['woo_order_id'];
+            $data = $rq;
+            unset($data['fulfill_id']);
+            unset($data['woo_order_id']);
+            unset($data['_token']);
+            $result = \DB::table('fulfills')->where('id', $fulfill_id)->update($data);
+            \DB::table('woo_orders')->where('id', $woo_order_id)->update($data);
+            if ($result)
+            {
+                $status = 'success';
+                $message = 'Cập nhật thông tin order thành công.';
+            } else {
+                $message = 'Xảy ra lỗi. Không thể cập nhật thông tin order bây giờ. Mời bạn tải lại trang và thử lại.';
+            }
+
             \DB::commit(); // if there was no errors, your query will be executed
         } catch (\Exception $e) {
             $status = 'error';
@@ -2391,20 +2435,20 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     public function listVariationCategory()
     {
         $data = array();
-        $categories = $this->getCategory();
-        $woo_infos = \DB::table('woo_infos')->select('id','name')->get()->toArray();
+        $categories = \DB::table('tool_categories as tot')
+            ->select('tot.id','tot.name as category_name','tot.note')->orderBy('tot.name','DESC')->get()->toArray();
         $variations = \DB::table('variations')
-            ->leftjoin('woo_infos', 'variations.store_id', '=', 'woo_infos.id')
-            ->leftjoin('woo_categories', 'variations.category_id', '=', 'woo_categories.id')
+            ->leftjoin('tool_categories', 'variations.tool_category_id', '=', 'tool_categories.id')
             ->select(
-                'variations.id', 'variations.variation_name','variations.price','variations.variation_sku',
-                'woo_infos.name as store_name',
-                'woo_categories.name as category_name'
+                'variations.id', 'variations.variation_name', 'variations.price', 'variations.variation_sku',
+                'variations.variation_real_name', 'variations.factory_sku',
+                'tool_categories.name as category_name'
             )
+            ->orderBy('id', 'DESC')
             ->orderBy('variations.store_id')
             ->get()->toArray();
         return view('/admin/woo/list_category_variation', compact(
-            'data', 'categories', 'woo_infos', 'variations'));
+            'data', 'categories', 'variations'));
     }
 
     public function updateVariation()
@@ -2412,19 +2456,14 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         $alert = 'error';
         \DB::beginTransaction();
         try {
-            $variations = \DB::table('woo_orders')->select('woo_info_id', 'variation_detail')->distinct('variation_detail')->get()->toArray();
-            $variation_exist = \DB::table('variations')->select('store_id', 'variation_name')->get()->toArray();
-            $tmp_variations = array();
-            foreach ($variation_exist as $item) {
-                $tmp_variations[] = $item->store_id . "_" . $item->variation_name;
-            }
+            $variations = \DB::table('woo_orders')->select('variation_detail')->distinct('variation_detail')->get()->toArray();
+            $variation_exist = \DB::table('variations')->pluck('variation_name')->toArray();
             $data_variations = array();
             // so sanh
-            foreach ($variations as $item) {
-                $value = $item->woo_info_id . "_" . $item->variation_detail;
-                if (!in_array($value, $tmp_variations)) {
+            foreach ($variations as $item)
+            {
+                if (!in_array($item->variation_detail, $variation_exist)) {
                     $data_variations[] = [
-                        'store_id' => $item->woo_info_id,
                         'variation_name' => $item->variation_detail,
                         'created_at' => date("Y-m-d H:i:s"),
                         'updated_at' => date("Y-m-d H:i:s")
@@ -2452,6 +2491,102 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         return \Redirect::back()->with($alert, $message);
     }
 
+    public function addNewToolCategory($request)
+    {
+        $alert = 'error';
+        \DB::beginTransaction();
+        try {
+            $rq = $request->all();
+            $tool_category_name = $rq['tool_category_name'];
+            $note = $rq['note'];
+            $check = \DB::table('tool_categories')->select('id')->where('name',$tool_category_name)->count();
+            if ($check > 0)
+            {
+                $message = 'Đã tồn tại category : '.$tool_category_name.' trong hệ thống rồi. Mời bạn chọn tên khác';
+            } else {
+                $result = \DB::table('tool_categories')->insert([
+                    'name' => $tool_category_name,
+                    'note' => htmlentities(str_replace("\n", ". ", $note)),
+                    'created_at' => date("Y-m-d H:i:s"),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+                if ($result) {
+                    $alert = 'success';
+                    $message = 'Tạo mới thành công category: '.$tool_category_name;
+                } else {
+                    $message = 'Xảy ra lỗi. Mời bạn thử lại';
+                }
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            logfile($e->getMessage());
+            $message = 'Cập nhật variations thất bại. Mời bạn thử lại' . $e->getMessage();
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($alert, $message);
+    }
+
+    public function editToolCategory($request)
+    {
+        $alert = 'error';
+        \DB::beginTransaction();
+        try {
+            $rq = $request->all();
+            $tool_category_id = $rq['tool_category_id'];
+            $tool_category_name = $rq['tool_category_name'];
+            $note = $rq['note'];
+            $result = \DB::table('tool_categories')->where('id',$tool_category_id)->update([
+                'name' => $tool_category_name,
+                'note' => htmlentities(str_replace("\n", ". ", $note)),
+                'updated_at' => date("Y-m-d H:i:s")
+            ]);
+            if ($result) {
+                $alert = 'success';
+                $message = 'Sửa thành công category: '.$tool_category_name;
+            } else {
+                $message = 'Xảy ra lỗi. Mời bạn thử lại';
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            logfile($e->getMessage());
+            $message = 'Xảy ra lỗi nội bộ. Mời bạn thử lại' . $e->getMessage();
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($alert, $message);
+    }
+
+    public function deleteToolCategory($tool_category_id)
+    {
+        $alert = 'error';
+        \DB::beginTransaction();
+        try {
+            $where = [
+                ['tool_category_id', '=', $tool_category_id]
+            ];
+            $check = \DB::table('variations')->select('id')->where($where)->count();
+            if ($check > 0)
+            {
+                \DB::table('variations')->where($where)->update([
+                    'tool_category_id' => null
+                ]);
+            }
+            $result = \DB::table('tool_categories')->where('id',$tool_category_id)->delete();
+            if ($result) {
+                $alert = 'success';
+                $message = 'Xoá thành công category';
+            } else {
+                $message = 'Xảy ra lỗi. Mời bạn thử lại';
+            }
+
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            logfile($e->getMessage());
+            $message = 'Xảy ra lỗi nội bộ. Mời bạn thử lại' . $e->getMessage();
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($alert, $message);
+    }
+
     public function editVariations($request)
     {
         $alert = 'error';
@@ -2460,19 +2595,13 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             $rq = $request->all();
             if ($rq['price'] != '')
             {
-                if ($rq['variation_sku'] != '')
-                {
-                    $data_update = [
-                        'price' => $rq['price'],
-                        'variation_sku' => $rq['variation_sku'],
-                        'updated_at' => date("Y-m-d H:i:s")
-                    ];
-                } else {
-                    $data_update = [
-                        'price' => $rq['price'],
-                        'updated_at' => date("Y-m-d H:i:s")
-                    ];
-                }
+                $data_update = [
+                    'variation_real_name' => $rq['variation_real_name'],
+                    'price' => $rq['price'],
+                    'variation_sku' => ($rq['variation_sku'] != '')? $rq['variation_sku'] : null,
+                    'factory_sku' => ($rq['factory_sku'] != '')? $rq['factory_sku'] : null,
+                    'updated_at' => date("Y-m-d H:i:s")
+                ];
                 $result = \DB::table('variations')->where('id', $rq['id'])->update($data_update);
                 if ($result)
                 {
@@ -2892,6 +3021,15 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     ->where('working_files.is_mockup', 1)
                     ->get()->toArray();
                 if (sizeof($designs) > 0) {
+                    //lấy toàn bộ variations ra ngoài
+                    $tmp_variations = \DB::table('variations')->select('store_id', 'variation_name','price','variation_sku')->get()->toArray();
+                    //phân loại variations
+                    $lst_variations = array();
+                    foreach ($tmp_variations as $variation)
+                    {
+                        $key = $variation->store_id."_".$variation->variation_name;
+                        $lst_variations[$key] = json_decode(json_encode($variation, true),true);
+                    }
                     $woo_orders = \DB::table('woo_orders')->select('*')->where($where_woo_orders)->get()->toArray();
                     logfile_system('-- Phát hiện ' . sizeof($woo_orders) . ' orders. Bắt đầu fulfill');
                     $tmp_designs = array();
@@ -2903,38 +3041,48 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     $order_fulfills = array();
                     foreach ($woo_orders as $order) {
                         $works = '';
+                        $key_order = $order->woo_info_id."_".$order->variation_detail;
+                        $sku = $order->sku;
+                        $base_price = 0;
+                        if (array_key_exists($key_order, $lst_variations))
+                        {
+                            $vari = $lst_variations[$key_order];
+                            $sku = trim($order->sku.$vari['variation_sku']);
+                            $base_price = $vari['price'];
+                        }
                         if (array_key_exists($order->design_id, $tmp_designs)) {
                             $works = $tmp_designs[$order->design_id];
                             $order_fulfills[$order->id] = $order->id;
                             $data_fulfills[$order->id] = [
-                                'order_id' => $order->id,
-                                'sku' => $order->sku,
+                                'woo_order_id' => $order->id,
+                                'number' => $order->number,
+                                'sku' => $sku,
                                 'product_name' => $order->product_name,
                                 'design_id' => $order->design_id,
                                 'product_id' => $order->product_id,
                                 'working_id' => $works['working_id'],
                                 'store_id' => $order->woo_info_id,
-                                'variation' => $works['variation'],
+                                'variation_detail' => $works['variation'],
                                 'size' => $order->variation_detail,
                                 'product_image' => $works['path'] . $works['name'],
                                 'quantity' => $order->quantity,
                                 'color' => '',
                                 'currency' => '$',
-                                'base_price' => '',
+                                'base_price' => $base_price,
                                 'item_price' => $order->price,
-                                'full_name' => $order->fullname,
+                                'shipping_cost' => $order->shipping_cost,
+                                'fullname' => $order->fullname,
                                 'first_name' => '',
                                 'last_name' => '',
                                 'address' => $order->address,
                                 'city' => $order->city,
                                 'state' => $order->state,
                                 'country' => $order->country,
-                                'zip_code' => $order->postcode,
+                                'postcode' => $order->postcode,
                                 'phone' => $order->phone,
                                 'shipping' => '',
                                 'customer_note' => $order->customer_note,
-                                'customer_email' => $order->email,
-                                'design_url' => '',
+                                'email' => $order->email,
                                 'exact_art_work' => '',
                                 'back_inscription' => '',
                                 'memo' => '',
@@ -2977,7 +3125,8 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     public function fulfillCategory()
     {
         $data = infoShop();
-        return view('/admin/fulfill_category', compact('data'));
+        $fulfills = \DB::table('fulfills')->select('*')->get()->toArray();
+        return view('/admin/fulfill_category', compact('data','fulfills'));
     }
     /*End Admin + QC*/
 }

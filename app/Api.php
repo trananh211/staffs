@@ -177,6 +177,7 @@ class Api extends Model
     public function getDesignNew()
     {
         logfile_system('== Tạo Design new');
+        //lấy danh sách order mới mà chưa có design id
         $list_orders = \DB::table('woo_orders')
             ->select('id', 'product_name', 'product_id', 'woo_info_id', 'sku', 'variation_detail')
             ->where([
@@ -209,7 +210,10 @@ class Api extends Model
                     $data_send_to_staff[] = $value->id;
                 }
             }
-
+            //lấy ra danh sách variations để thêm thông tin về tool_category_id
+            $lst_variations = \DB::table('variations')
+                ->whereNotNull('tool_category_id')
+                ->pluck('tool_category_id','variation_name')->toArray();
             // nếu tồn tại file chuyển cho staff thì cập nhật luôn
             if (sizeof($data_send_to_staff) > 0)
             {
@@ -220,6 +224,11 @@ class Api extends Model
                     //nếu id tồn tại trong data send to staff
                     if (in_array($order->id, $data_send_to_staff))
                     {
+                        $tool_category_id = null;
+                        if(array_key_exists($order->variation_detail, $lst_variations))
+                        {
+                            $tool_category_id = $lst_variations[$order->variation_detail];
+                        }
                         $key = $order->sku."___".$order->variation_detail;
                         $ar_orders[$key]['info'] = [
                             'product_name' => $order->product_name,
@@ -227,13 +236,13 @@ class Api extends Model
                             'store_id' => $order->woo_info_id,
                             'sku' => $order->sku,
                             'variation' => $order->variation_detail,
+                            'tool_category_id' => $tool_category_id,
                             'created_at' => date("Y-m-d H:i:s"),
                             'updated_at' => date("Y-m-d H:i:s")
                         ];
                         $ar_orders[$key]['list_id'][] = $order->id;
                     }
                 }
-
                 // bắt đầu tạo data cho design
                 if (sizeof($ar_orders) > 0)
                 {

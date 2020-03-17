@@ -462,6 +462,12 @@ class WooController extends Controller
         return $work->addListVariation($request);
     }
 
+    public function editInfoFulfills(Request $request)
+    {
+        $work = new Working();
+        return $work->editInfoFulfills($request);
+    }
+
     public function updateVariation()
     {
         $work = new Working();
@@ -472,6 +478,24 @@ class WooController extends Controller
     {
         $work = new Working();
         return $work->listVariationCategory();
+    }
+
+    public function addNewToolCategory(Request $request)
+    {
+        $work = new Working();
+        return $work->addNewToolCategory($request);
+    }
+
+    public function editToolCategory(Request $request)
+    {
+        $work = new Working();
+        return $work->editToolCategory($request);
+    }
+
+    public function deleteToolCategory($tool_category_id)
+    {
+        $work = new Working();
+        return $work->deleteToolCategory($tool_category_id);
     }
 
     public function editVariations(Request $request)

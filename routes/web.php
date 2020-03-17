@@ -76,6 +76,10 @@ Route::middleware('auth')->group(function () {
     Route::post('edit-variations','WooController@editVariations');
     Route::post('ajax-choose-variations','WooController@axChooseVariations');
     Route::post('add-list-variation','WooController@addListVariation');
+    Route::post('edit-info-fulfills','WooController@editInfoFulfills');
+    Route::post('add-new-tool-category','WooController@addNewToolCategory');
+    Route::post('edit-tool-category','WooController@editToolCategory');
+    Route::get('delete-tool-category/{id}','WooController@deleteToolCategory');
 
     /** Paypal */
     Route::get('paypal-connect','PaypalController@index');

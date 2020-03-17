@@ -426,6 +426,38 @@
                 </li>
             @endif
 
+            @if( in_array( Auth::user()->level, array( env('ADMIN'),env('QC'),env('SADMIN')) ) )
+                <li class="no-padding">
+                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">work</i>
+                        Products
+                        <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
+                    </a>
+                    <div class="collapsible-body">
+                        <ul>
+                            <li><a href="{{ url('woo-supplier') }}">Supplier</a></li>
+                            <li><a href="{{ url('list-variation-category') }}">Category & Variation</a></li>
+                            <li><a href="{{ url('woo-list-convert-variation') }}">Convert Variation</a></li>
+                        </ul>
+                    </div>
+                </li>
+                <li class="no-padding">
+                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">vpn_key</i>
+                        Tools
+                        <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
+                    </a>
+                    <div class="collapsible-body">
+                        <ul>
+                            <li><a href="{{ url('woo-get-template') }}">Edit Template</a></li>
+                            <li><a href="{{ url('woo-processing-product') }}">Processing Template</a></li>
+                            <li><a href="{{ url('woo-create-template') }}">Create Template</a></li>
+                            <li><a href="{{ url('scrap-create-template') }}">Web Scraper</a></li>
+                            <li><a href="{{ url('list-categories') }}">Keyword Categories</a></li>
+                            <li><a href="{{ url('get-store') }}">Feed Results</a></li>
+                        </ul>
+                    </div>
+                </li>
+            @endif
+
             @if( Auth::user()->level == env('SADMIN'))
                 <li class="no-padding">
                     <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">apps</i>
@@ -438,48 +470,6 @@
                             <li><a href="{{ url('woo_connect') }}">Connect</a></li>
                             <li><a href="{{ url('paypal-connect') }}">Paypal Account</a></li>
                             <li><a href="{{ url('woo-webhooks') }}">Webhooks</a></li>
-                        </ul>
-                    </div>
-                </li>
-            @endif
-
-            @if( in_array( Auth::user()->level, array( env('ADMIN'),env('QC'),env('SADMIN')) ) )
-                <li class="no-padding">
-                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">work</i>
-                        Products
-                        <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
-                    </a>
-                    <div class="collapsible-body">
-                        <ul>
-                            <li><a href="{{ url('woo-processing-product') }}">Processing Template</a></li>
-                            <li><a href="{{ url('woo-create-template') }}">Create Template</a></li>
-                            <li><a href="{{ url('woo-supplier') }}">Supplier</a></li>
-                            <li><a href="{{ url('woo-get-template') }}">Edit Template</a></li>
-                            <li><a href="{{ url('list-variation-category') }}">Category & Variation</a></li>
-                            <li><a href="{{ url('woo-list-convert-variation') }}">Convert Variation</a></li>
-                        </ul>
-                    </div>
-                </li>
-                <li class="no-padding">
-                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">search</i>
-                        Web Scraper
-                        <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
-                    </a>
-                    <div class="collapsible-body">
-                        <ul>
-                            <li><a href="{{ url('scrap-create-template') }}">Connect Template</a></li>
-                        </ul>
-                    </div>
-                </li>
-                <li class="no-padding">
-                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">vpn_key</i>
-                        Keyword
-                        <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
-                    </a>
-                    <div class="collapsible-body">
-                        <ul>
-                            <li><a href="{{ url('list-categories') }}">List Categories</a></li>
-                            <li><a href="{{ url('get-store') }}">Feed Results </a></li>
                         </ul>
                     </div>
                 </li>
