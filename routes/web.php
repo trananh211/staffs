@@ -41,8 +41,8 @@ Route::middleware('auth')->group(function () {
 
     /*QC + Admin*/
     Route::get('edit-store/{id_store}','WooController@editStore');
-    Route::get('checking','WooController@checking');
-    Route::get('working','WooController@working');
+    Route::get('checking','WooController@getChecking');
+    Route::get('working','WooController@checkWorking');
     Route::get('fulfillment','GoogleController@fulFillByHand');
     Route::get('see-log','ApiController@seeLog');
     Route::get('detail-log/{logfile}','ApiController@detailLog');
@@ -132,7 +132,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('staff-done-job/{up_id}','WooController@staffDoneJob');
     Route::post('staff-upload', 'WooController@staffUpload')->name('staff.upload');
-    Route::post('ajax_upload/action', 'WooController@action')->name('ajaxupload.action');
+    Route::post('ajax_upload/action', 'WooController@staffAction')->name('ajaxupload.action');
     Route::get('new-idea','WooController@doNewIdea');
     Route::post('ideaUpload', 'WooController@uploadIdea')->name('ajaxIdeaUpload.action');
     Route::get('redoing-job/{working_id}','WooController@redoingJobStaff');

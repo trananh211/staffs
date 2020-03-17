@@ -56,14 +56,14 @@ $(document).ready(function () {
         var order_id = $(this).attr('order-id');
         var working_id = $(this).attr('working-id');
         var design_id = $(this).attr('design-id');
-        var variation = $(this).attr('variation');
         var sku = $('.js-redo-new-sku-'+order_id).val();
         var worker_id = $('select.js-redo-new-designer-'+order_id).val();
+        var new_variation = $('select.js-redo-new-variation-'+order_id).val();
         var reason = $('.js-redo-new-reason-'+order_id).val();
         var url = $('.js-redo-new-url').attr('url');
         var data = {
             order_id: order_id, working_id: working_id, design_id: design_id, sku: sku, worker_id: worker_id,
-            reason: reason, variation: variation
+            reason: reason, new_variation: new_variation
         };
 
         $.ajax({

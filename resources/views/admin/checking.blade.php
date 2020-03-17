@@ -117,6 +117,15 @@
                                                                         </div>
                                                                     @endif
                                                                     {{-- End Redo--}}
+                                                                    @if ($list->customer_note != '')
+                                                                        <div class="card light-green lighten-3">
+                                                                            <div class="card-content">
+                                                                                <p class="card-title">Customer Note</p>
+                                                                                {!! html_entity_decode($list->customer_note) !!}
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                    @endif
                                                                     <span class="card-title">Ảnh thiết kế</span>
                                                                     <div class="card-content center">
                                                                         @if(array_key_exists($list->id, $images))

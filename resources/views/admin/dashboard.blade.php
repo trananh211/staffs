@@ -56,7 +56,7 @@
                             <th>Order</th>
                             <th>Name</th>
                             <th>Sku</th>
-                            <th>Variation</th>
+                            <th>Custom</th>
                             <th>Email</th>
                             <th>Status</th>
                             <th>Qty</th>
@@ -73,7 +73,7 @@
                             <th>Order</th>
                             <th>Name</th>
                             <th>Sku</th>
-                            <th>Variation</th>
+                            <th>Custom</th>
                             <th>Email</th>
                             <th>Status</th>
                             <th>Qty</th>

@@ -91,6 +91,15 @@
                                                                 </div>
                                                             </div>
                                                         @endif
+                                                            @if ($list->customer_note != '')
+                                                                <div class="card light-green lighten-3">
+                                                                    <div class="card-content">
+                                                                        <p class="card-title">Customer Note</p>
+                                                                        {!! html_entity_decode($list->customer_note) !!}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            @endif
                                                         <div class="card">
                                                             <div class="card-content">
                                                                 <p class="card-title">Note</p>

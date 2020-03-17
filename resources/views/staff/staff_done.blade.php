@@ -32,7 +32,7 @@
                                     <tr>
                                         <td colspan="3" class="center">
                                             <div class="yellow lighten-5">
-                                                Chỉ chấp nhận định dạng jpg, png và nhỏ hơn 10MB
+                                                Chỉ chấp nhận định dạng jpg, png và nhỏ hơn 30MB
                                             </div>
                                         </td>
                                     </tr>

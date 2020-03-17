@@ -71,9 +71,9 @@
                 <div class="card">
                     <div class="card-content">
                         <ul>
-                            <li>Bạn phải lưu file Mockup với tên : <b>{{ $list->sku.'-PID-'.$list->id }}
+                            <li>1. Bạn phải lưu file Mockup với tên : <b>{{ $list->sku.'-PID-'.$list->id }}
                                     _mockup </b></li>
-                            <li>Bạn phải lưu file Design với tên : <b>{{ $list->sku.'-PID-'.$list->id }}_1, _L, _Left, _Front, _Back, _B
+                            <li>2. Bạn phải lưu file Design với tên : <b>{{ $list->sku.'-PID-'.$list->id }}_1, _L, _Left, _Front, _Back, _B
                                     ... </b></li>
                             <li>Tên sản phẩm : {{ $list->name }}</li>
                             <li>Link gốc sản phẩm : {{ $list->permalink }}</li>
@@ -96,7 +96,7 @@
             </div>
             <div class="col s16 m12 l6">
                 @if ($list->redo == 1)
-                    <div class="card red lighten-1">
+                    <div class="card red lighten-2">
                         <div class="card-content">
                             <p class="card-title">Redo</p>
                             {!! html_entity_decode($list->reason) !!}
@@ -104,6 +104,15 @@
                         </div>
                     </div>
                 @endif
+                    @if ($list->customer_note != '')
+                        <div class="card light-green lighten-3">
+                            <div class="card-content">
+                                <p class="card-title">Customer Note</p>
+                                {!! html_entity_decode($list->customer_note) !!}
+                                </p>
+                            </div>
+                        </div>
+                    @endif
                 <div class="card">
                     <div class="card-content">
                         <p class="card-title">Note</p>

@@ -12,7 +12,7 @@
         <tr>
             <th class="center">#</th>
             <th class="center">Job</th>
-            <th class="center">Variation</th>
+            <th class="center">Size</th>
             <th class="center">Time</th>
             <th class="center">Status</th>
             <th class="center">Designer</th>
@@ -25,7 +25,7 @@
         <tr>
             <th class="center">#</th>
             <th class="center">Job</th>
-            <th class="center">Variation</th>
+            <th class="center">Size</th>
             <th class="center">Time</th>
             <th class="center">Status</th>
             <th class="center">Designer</th>
@@ -38,7 +38,7 @@
         @if(sizeof($lists) > 0)
             @foreach($lists as $key => $list)
                 <tr>
-                    <td class="center">{{ $key }}</td>
+                    <td class="center">{{ ++$key }}</td>
                     <td class="center"> {{ $list['info']['sku'].'-PID-'.$list['info']['id'] }}</td>
                     <td class="center"> {{ $list['info']['variation'] }}</td>
                     <td class="center">{!! compareTime($list['info']['updated_at'], date("Y-m-d H:i:s")) !!}</td>
@@ -105,13 +105,46 @@
                                 <tr class="js-show-redo-sku-{{ $order['id'] }} js-remove-tr-{{ $order['id'] }}" style="display: none;">
                                     <td colspan="6" class="grey lighten-1">
                                         <div class="row">
-                                            <div class="col s12 m4 l4">
+                                            <div class="col s12 m6 l6">
                                                 <div class="card white">
                                                     <div class="card-content center">
                                                         <div class="row">
                                                             <div class="card-content center">
                                                                 <input required placeholder="NameMLF1234" type="text" class="validate js-redo-new-sku-{{ $order['id'] }}">
                                                                 <label>New Sku</label>
+                                                            </div>
+                                                        </div>
+
+                                                        <?php
+                                                        if ($list['info']['tool_category_id'] != '' && array_key_exists($list['info']['tool_category_id'], $variations)){
+                                                            $lst_variations = $variations[$list['info']['tool_category_id']];
+                                                        } else {
+                                                            $lst_variations = $all_variations;
+                                                        }
+                                                        ?>
+                                                        <div class="row">
+                                                            <label>Size - {{ $list['info']['variation'] }}</label>
+                                                            <select
+                                                                class="browser-default js-redo-new-variation-{{ $order['id'] }}">
+                                                                @foreach($lst_variations as $key_variation => $val)
+                                                                    <option
+                                                                        {{ ($list['info']['variation'] == $key_variation) ? 'selected' : '' }} value="{{$key_variation}}">
+                                                                        {{ $val }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col s12 m6 l6">
+                                                <div class="card white">
+                                                    <div class="card-content center">
+                                                        <div class="row">
+                                                            <div class="input-field col s12">
+                                                                <textarea id="textarea1" class="materialize-textarea js-redo-new-reason-{{ $order['id'] }}" length="255"></textarea>
+                                                                <label for="textarea1">Lý do redo</label>
                                                             </div>
                                                         </div>
                                                         <div class="row">
@@ -125,18 +158,7 @@
                                                                 @endforeach
                                                             </select>
                                                         </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col s12 m4 l8">
-                                                <div class="card white">
-                                                    <div class="card-content center">
-                                                        <div class="row">
-                                                            <div class="input-field col s12">
-                                                                <textarea id="textarea1" class="materialize-textarea js-redo-new-reason-{{ $order['id'] }}" length="255"></textarea>
-                                                                <label for="textarea1">Lý do redo</label>
-                                                            </div>
-                                                        </div>
+
                                                         <div class="row">
                                                             <span class="waves-effect waves-light btn red lighten-2 js-redo-new-submit"
                                                                   order-id="{{ $order['id'] }}" working-id="{{ $list['info']['id'] }}"

@@ -101,9 +101,9 @@
                                                         <div class="card">
                                                             <div class="card-content">
                                                                 <ul>
-                                                                    <li>Bạn phải lưu file Mockup với tên : <b>{{ $details->sku.'-PID-'.$details->id }}
+                                                                    <li>1. Bạn phải lưu file Mockup với tên : <b>{{ $details->sku.'-PID-'.$details->id }}
                                                                             _mockup </b></li>
-                                                                    <li>Bạn phải lưu file Design với tên : <b>{{ $details->sku.'-PID-'.$details->id }}_1, _L, _Left, _Front, _Back, _B
+                                                                    <li>2. Bạn phải lưu file Design với tên : <b>{{ $details->sku.'-PID-'.$details->id }}_1, _L, _Left, _Front, _Back, _B
                                                                             ... </b></li>
                                                                     <li>Tên sản phẩm : {{ $details->name }}</li>
                                                                     <li>Link gốc sản phẩm : {{ $details->permalink }}</li>
@@ -136,6 +136,15 @@
                                                                 </div>
                                                             </div>
                                                         @endif
+                                                            @if ($details->customer_note != '')
+                                                                <div class="card light-green lighten-3">
+                                                                    <div class="card-content">
+                                                                        <p class="card-title">Customer Note</p>
+                                                                        {!! html_entity_decode($details->customer_note) !!}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            @endif
                                                         <div class="card">
                                                             <div class="card-content">
                                                                 <p class="card-title">Note</p>

@@ -183,7 +183,7 @@ class Working extends Model
                 'workings.id', 'workings.status', 'workings.updated_at',
                 'workings.qc_id', 'workings.worker_id', 'workings.reason', 'workings.redo',
                 'designs.id as design_id', 'designs.sku', 'designs.variation',
-                'woo_orders.detail',
+                'woo_orders.detail', 'woo_orders.customer_note',
                 'worker.id as worker_id', 'worker.name as worker_name',
                 'qc.name as qc_name',
                 'woo_products.name', 'woo_products.permalink', 'woo_products.image'
@@ -721,7 +721,7 @@ class Working extends Model
         foreach ($files as $file) {
             $extension = strtolower($file->getClientOriginalExtension());
             $filename = $file->getClientOriginalName();
-            if ($file->getSize() <= 10000000) {
+            if ($file->getSize() <= env('UPLOAD_SIZE_MAX')) {
                 if (in_array(strtolower($extension), $ext)) {
                     if (strlen($str_compare) > 0 && strpos($filename, $str_compare) === false) {
                         $message .= getErrorMessage('File ' . $filename . ' sai định dạng tên. Mời đổi lại tên.');
@@ -762,7 +762,7 @@ class Working extends Model
         }
     }
 
-    public function checking()
+    public function getChecking()
     {
         $where = [
             ['workings.status', '=', env('STATUS_WORKING_CHECK')]
@@ -776,7 +776,7 @@ class Working extends Model
         return view('admin/checking')->with(compact('lists', 'images', 'data'));
     }
 
-    public function working()
+    public function checkWorking()
     {
         $where = [
             ['workings.status', '=', env('STATUS_WORKING_NEW')]
@@ -1103,8 +1103,12 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             ['working_files.thumb', '!=', 'NULL']
         ];
         $images = $this->getWorkingFile($where_working_file);
+        $tmp_variations = $this->getVariation();
+        $variations = $tmp_variations['variations'];
+        $all_variations = $tmp_variations['all_variations'];
         $data = infoShop();
-        return view('/admin/review_customer', compact('lists', 'images', 'data', 'workers'));
+        return view('/admin/review_customer',
+            compact('lists', 'images', 'data', 'workers', 'variations', 'all_variations'));
     }
 
     public function listJobDone()
@@ -1119,8 +1123,32 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             ['working_files.thumb', '!=', 'NULL']
         ];
         $images = $this->getWorkingFile($where_working_file);
+        $tmp_variations = $this->getVariation();
+        $variations = $tmp_variations['variations'];
+        $all_variations = $tmp_variations['all_variations'];
         $data = infoShop();
-        return view('/admin/review_customer', compact('lists', 'images', 'data', 'workers'));
+        return view('/admin/review_customer',
+            compact('lists', 'images', 'data', 'workers', 'variations', 'all_variations'));
+    }
+
+    private function getVariation()
+    {
+        $lst = \DB::table('variations')->select('variation_name','variation_real_name','tool_category_id')->get()->toArray();
+        $variations = array();
+        $all_variations = array();
+        foreach ($lst as $item)
+        {
+            $dt = ($item->variation_real_name != '')? $item->variation_real_name : $item->variation_name;
+            $all_variations[$item->variation_name] = $dt;
+            if ($item->tool_category_id != '')
+            {
+                $variations[$item->tool_category_id][$item->variation_name] = $dt;
+            }
+        }
+        return array(
+            'variations' => $variations,
+            'all_variations' => $all_variations
+        );
     }
 
     public function supplier()
@@ -1142,17 +1170,19 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 $order_id = $rq['order_id'];
                 $working_id = $rq['working_id'];
                 $design_id = $rq['design_id'];
-                $variation = $rq['variation'];
+                $new_variation = trim($rq['new_variation']);
                 $sku = $rq['sku'];
                 $worker_id = $rq['worker_id'];
-                $reason = htmlentities(str_replace("\n", "<br />", trim($rq['reason'])));
+                $reason = '1. Khách đổi sku thành : '.$sku."<br />";
+                $reason .= '2. Khách đổi size thành : '.$new_variation."<br />";
+                $reason .= '3.'.htmlentities(str_replace("\n", "<br />", trim($rq['reason'])));
 
                 //kiem tra xem day la 1 hay nhieu design
                 $checks = \DB::table('woo_orders')->select('id')->where('design_id', $design_id)->count();
                 /** Kiểm tra xem đã tồn tại SKU và variation đấy hay chưa**/
                 $check_exist_design = \DB::table('designs')->select('id')
                     ->where('sku', $sku)
-                    ->where('variation', $variation)
+                    ->where('variation', $new_variation)
                     ->first();
                 // nếu tồn tại rồi. Đổi sang design tồn tại
                 if ($check_exist_design != NULL) {
@@ -1179,6 +1209,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     // Update thong tin new design_id vao woo_orders
                     \DB::table('woo_orders')->where('id', $order_id)->update([
                         'sku' => $sku,
+                        'variation_detail' => $new_variation,
                         'design_id' => $check_exist_design->id,
                         'updated_at' => date("Y-m-d H:i:s")
                     ]);
@@ -1193,7 +1224,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                         'product_id' => $design_old->product_id,
                         'store_id' => $design_old->store_id,
                         'sku' => $sku,
-                        'variation' => $design_old->variation,
+                        'variation' => $new_variation,
                         'status' => env('STATUS_WORKING_NEW'),
                         'created_at' => date("Y-m-d H:i:s"),
                         'updated_at' => date("Y-m-d H:i:s")
@@ -1253,6 +1284,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                         // Update thong tin new design_id vao woo_orders
                         \DB::table('woo_orders')->where('id', $order_id)->update([
                             'sku' => $sku,
+                            'variation_detail' => $new_variation,
                             'design_id' => $new_design_id,
                             'updated_at' => date("Y-m-d H:i:s")
                         ]);
@@ -1292,7 +1324,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             ->select(
                 'workings.id', 'workings.status', 'workings.updated_at', 'workings.design_id',
                 'workings.qc_id', 'workings.worker_id', 'workings.reason', 'workings.redo','workings.updated_at',
-                'designs.sku','designs.variation', 'designs.status',
+                'designs.sku','designs.variation', 'designs.status', 'designs.tool_category_id',
                 'worker.id as worker_id', 'worker.name as worker_name', 'qc.id as qc_id', 'qc.name as qc_name',
                 'woo_products.name', 'woo_products.permalink', 'woo_products.image'
             )

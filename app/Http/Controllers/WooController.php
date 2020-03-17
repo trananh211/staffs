@@ -105,7 +105,7 @@ class WooController extends Controller
         return $work->staffUpload();
     }
 
-    public function action(Request $request)
+    public function staffAction(Request $request)
     {
         $work = new Working();
         return $work->staffUpload($request);
@@ -125,16 +125,16 @@ class WooController extends Controller
     /*End Staff*/
 
     /*Admin + QC*/
-    public function checking()
+    public function getChecking()
     {
         $work = new Working();
-        return $work->checking();
+        return $work->getChecking();
     }
 
-    public function working()
+    public function checkWorking()
     {
         $work = new Working();
-        return $work->working();
+        return $work->checkWorking();
     }
 
     public function sendCustomer($order_id)

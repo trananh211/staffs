@@ -214,6 +214,7 @@ class Api extends Model
             $lst_variations = \DB::table('variations')
                 ->whereNotNull('tool_category_id')
                 ->pluck('tool_category_id','variation_name')->toArray();
+            $data_new_variations = array();
             // nếu tồn tại file chuyển cho staff thì cập nhật luôn
             if (sizeof($data_send_to_staff) > 0)
             {
@@ -228,6 +229,12 @@ class Api extends Model
                         if(array_key_exists($order->variation_detail, $lst_variations))
                         {
                             $tool_category_id = $lst_variations[$order->variation_detail];
+                        } else {
+                            $data_new_variations[] = [
+                                'variation_name' => $order->variation_detail,
+                                'created_at' => date("Y-m-d H:i:s"),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
                         }
                         $key = $order->sku."___".$order->variation_detail;
                         $ar_orders[$key]['info'] = [
@@ -266,6 +273,12 @@ class Api extends Model
                             'woo_orders.updated_at' => date("Y-m-d H:i:s")
                         ]);
                 }
+            }
+
+            // nếu phát hiện 1 variation mới. lưu vào variations
+            if (sizeof($data_new_variations) > 0)
+            {
+                $result = \DB::table('variations')->insert($data_new_variations);
             }
             $return = false;
             logfile_system('-- Tạo thành công design');
