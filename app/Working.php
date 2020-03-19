@@ -2587,6 +2587,63 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         return \Redirect::back()->with($alert, $message);
     }
 
+    public function NewTemplateCategory($request)
+    {
+        $uid = $this->checkAuth();
+        $alert = 'error';
+        if ($uid) {
+            $rq = $request->all();
+            $data = $rq['data_title'];
+            $tool_category_id = trim($rq['tool_category_id']);
+            if ($tool_category_id != '') {
+                \DB::beginTransaction();
+                try {
+                    $tmps = explode(";", $data);
+                    $insert_data = array();
+                    $i = 1;
+                    foreach ($tmps as $tmp) {
+                        if ($tmp != '') {
+                            $title_data = explode('-', $tmp);
+                            $insert_data[] = [
+                                'key_title' => trim($title_data[0]),
+                                'title' => trim($title_data[1]),
+                                'fixed' => (trim($title_data[2]) != '.') ? trim($title_data[2]) : '',
+                                'tool_category_id' => $tool_category_id,
+                                'sort' => $i,
+                                'created_at' => date("Y-m-d H:i:s"),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                            $i++;
+                        }
+                    }
+                    if (sizeof($insert_data) > 0) {
+                        // xóa dữ liệu cũ trước
+                        \DB::table('template_excels')->where('tool_category_id', $tool_category_id)->delete();
+                        $result = \DB::table('template_excels')->insert($insert_data);
+                        if ($result) {
+                            $alert = 'success';
+                            $message = 'Đã tạo template cho category này thành công';
+                        } else {
+                            $message = 'Xảy ra lỗi khi cập nhật vào database. Mời bạn thử lại.';
+                        }
+                    } else {
+                        $message = 'Bạn cần phải điền ít nhất là 1 trường để có thể thay đổi';
+                    }
+                    \DB::commit(); // if there was no errors, your query will be executed
+                } catch (\Exception $e) {
+                    logfile($e->getMessage());
+                    $message = 'Xảy ra lỗi nội bộ. Mời bạn thử lại' . $e->getMessage();
+                    \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+                }
+            } else {
+                $message = 'Bạn cần phải điền ít nhất là 1 trường để có thể thay đổi';
+            }
+        } else {
+            $message = 'Đã hết phiên đăng nhập. Mời bạn đăng nhập và thử lại';
+        }
+        return \Redirect::back()->with($alert, $message);
+    }
+
     public function deleteToolCategory($tool_category_id)
     {
         $alert = 'error';
@@ -2629,8 +2686,19 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     public function makeTemplateCategory($tool_category_id)
     {
         $data = infoShop();
-        $categories = \DB::table('tool_categories')->select('id','name')->get()->toArray();
-        return view('popup/make_template_category',compact('data','categories'));
+        $lst_titles = getListTitle();
+        $template_excel = \DB::table('template_excels')
+            ->select('key_title','title','fixed')
+            ->where('tool_category_id',$tool_category_id)
+            ->orderBy('sort', 'ASC')
+            ->get()->toArray();
+        $excel_titles = array();
+        foreach ($template_excel as $item)
+        {
+            $excel_titles[$item->key_title] = json_decode(json_encode($item, true), true);
+        }
+        return view('popup/make_template_category',
+            compact('data', 'lst_titles','tool_category_id','excel_titles'));
     }
 
     public function editVariations($request)

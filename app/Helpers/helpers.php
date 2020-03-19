@@ -49,6 +49,67 @@ function website()
     return $website;
 }
 
+function getListTitle()
+{
+    $common = [
+        'order_id' => '12345',
+        'order_number' => 'MLF-6868-USA',
+        'transaction_id' => '1Xefdidcdf',
+        'currency' => '$'
+    ];
+    $customer = [
+        'full_name' => 'David Jame',
+        'email' => 'david@gmail.com',
+        'first_name' => 'Jame',
+        'last_name' => 'David',
+        'address' => '828 Gerlitz Road',
+        'city' => 'Southwest',
+        'state' => 'FL ',
+        'country' => 'US',
+        'postcode' => '32908',
+        'phone' => '(321) 460-9218',
+        'shipping' => '',
+        'customer_note' => 'I wanna xyz'
+    ];
+    $product = [
+        'variation_detail' => 'US6 (EU 41)',
+        'product_image' => 'https://mol...',
+        'product_name' => 'Jame Low Top',
+        'sku' => 'JameZA003B41',
+        'design_id' => '12345',
+        'size' => 'size'
+    ];
+    $order = [
+        'quantity' => '1',
+        'color' => 'On Color',
+        'base_price' => '20.99',
+        'item_price' => '59.99',
+        'shipping_cost' => '5.99',
+    ];
+
+    $others = [
+        'exact_art_work' => '',
+        'back_inscription' => '',
+        'memo' => '',
+        'design_position' => '',
+        'desing_url' => 'https://dropbox.com/...',
+        'tracking_number' => 'LS123459KD'
+    ];
+    ksort($common);
+    ksort($customer);
+    ksort($product);
+    ksort($order);
+    ksort($others);
+    $lists = [
+        'Common' => $common,
+        'Product' => $product,
+        'Customer' => $customer,
+        'Order' => $order,
+        'Others' => $others
+    ];
+    return $lists;
+}
+
 function dynamic_website()
 {
     $website = [

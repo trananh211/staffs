@@ -82,6 +82,7 @@ Route::middleware('auth')->group(function () {
     Route::get('delete-tool-category/{id}','WooController@deleteToolCategory');
     Route::get('make-template-category/{id}','WooController@makeTemplateCategory');
     Route::get('list-template-category','WooController@listTemplateCategory');
+    Route::post('new-template-category','WooController@NewTemplateCategory');
 
     /** Paypal */
     Route::get('paypal-connect','PaypalController@index');
