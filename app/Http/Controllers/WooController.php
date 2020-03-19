@@ -498,6 +498,18 @@ class WooController extends Controller
         return $work->deleteToolCategory($tool_category_id);
     }
 
+    public function listTemplateCategory()
+    {
+        $work = new Working();
+        return $work->listTemplateCategory();
+    }
+
+    public function makeTemplateCategory($tool_category_id)
+    {
+        $work = new Working();
+        return $work->makeTemplateCategory($tool_category_id);
+    }
+
     public function editVariations(Request $request)
     {
         $work = new Working();

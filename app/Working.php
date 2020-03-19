@@ -2619,6 +2619,20 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         return \Redirect::back()->with($alert, $message);
     }
 
+    public function listTemplateCategory()
+    {
+        $data = infoShop();
+        $categories = \DB::table('tool_categories')->select('id','name')->get()->toArray();
+        return view('admin/list_tool_category',compact('data','categories'));
+    }
+
+    public function makeTemplateCategory($tool_category_id)
+    {
+        $data = infoShop();
+        $categories = \DB::table('tool_categories')->select('id','name')->get()->toArray();
+        return view('popup/make_template_category',compact('data','categories'));
+    }
+
     public function editVariations($request)
     {
         $alert = 'error';

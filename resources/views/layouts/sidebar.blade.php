@@ -436,6 +436,7 @@
                         <ul>
                             <li><a href="{{ url('woo-supplier') }}">Supplier</a></li>
                             <li><a href="{{ url('list-variation-category') }}">Category & Variation</a></li>
+                            <li><a href="{{ url('list-template-category') }}">Category Template Fulfill</a></li>
                             <li><a href="{{ url('woo-list-convert-variation') }}">Convert Variation</a></li>
                         </ul>
                     </div>

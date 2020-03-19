@@ -18,7 +18,7 @@
     <!-- Theme Styles -->
     <link href="{{ asset('source/assets/css/alpha.min.css') }}" rel="stylesheet" type="text/css"/>
     <link href="{{ asset('source/assets/css/custom.css') }}" rel="stylesheet" type="text/css"/>
-
+    <link href="{{ asset('source/assets/css/jquery-sortable.css') }}" rel="stylesheet" type="text/css"/>
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -30,5 +30,7 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" />
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <![endif]-->
+
+
 
 </head>
