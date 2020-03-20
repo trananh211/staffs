@@ -3,6 +3,9 @@
     <div class="row">
         <div class="col s12">
             <div class="page-title">Fulfill Orders</div>
+            <div class="right">
+                <a href="{{ url('action-fulfill-now') }}" class="waves-effect waves-light btn green">Fullfill Now</a>
+            </div>
         </div>
         <div class="col s12 m12 l12">
             <div class="card">

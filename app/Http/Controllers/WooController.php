@@ -510,6 +510,12 @@ class WooController extends Controller
         return $work->listTemplateCategory();
     }
 
+    public function actionFulfillNow()
+    {
+        $work = new Working();
+        return $work->actionFulfillNow();
+    }
+
     public function makeTemplateCategory($tool_category_id)
     {
         $work = new Working();
