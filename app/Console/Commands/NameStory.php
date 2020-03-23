@@ -92,6 +92,10 @@ class NameStory extends Command
                         $text_exclude = 'B6L2AF01';
                         $this->scanMerchKing_getTag_excludeText($website_id, $template_id, $store_id, $woo_template_id, $text_exclude);
                         break;
+                    case 19:
+                        $text_exclude = 'B450';
+                        $this->scanMerchKing_getTag_excludeText($website_id, $template_id, $store_id, $woo_template_id, $text_exclude);
+                        break;
                     default:
                         $str = "-- Không có website nào cần được cào.";
                         logfile_system($str);

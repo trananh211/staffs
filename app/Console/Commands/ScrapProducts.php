@@ -145,6 +145,9 @@ class ScrapProducts extends Command
                     case 18:
                         $text_exclude = 'B6L2AF01';
                         $this->getProductMerchKing_excludeText($dt, array(2,3,4,7), $text_exclude);
+                    case 19:
+                        $text_exclude = ' - PREMIUM - BLANKET - B450';
+                        $this->getProductMerchKing_excludeText($dt, array(2,3,4,7), $text_exclude);
                     default:
                         $str = "-- Không có website nào cần được up sản phẩm.";
                         logfile_system($str);
@@ -1139,7 +1142,6 @@ class ScrapProducts extends Command
                 $name = $crawler->filter('h3.selected-campaign-mockup-title')->text();
                 $name = str_replace($text_exclude,'', $name);
                 $product_name = ucwords(strtolower(trim($name)));
-
                 $data[$key]['product_name'] = trim(preg_replace('/[^a-z\d ]/i', '', $product_name));
                 // get description
                 $description = $crawler->filter('div.campaign-description .sizing-specs-desk')->text();
