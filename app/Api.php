@@ -212,8 +212,8 @@ class Api extends Model
             }
             //lấy ra danh sách variations để thêm thông tin về tool_category_id
             $lst_variations = \DB::table('variations')
-                ->whereNotNull('tool_category_id')
-                ->pluck('tool_category_id','variation_name')->toArray();
+                ->pluck('tool_category_id', 'variation_name')
+                ->toArray();
             $data_new_variations = array();
             // nếu tồn tại file chuyển cho staff thì cập nhật luôn
             if (sizeof($data_send_to_staff) > 0)
@@ -226,7 +226,7 @@ class Api extends Model
                     if (in_array($order->id, $data_send_to_staff))
                     {
                         $tool_category_id = null;
-                        if(array_key_exists($order->variation_detail, $lst_variations))
+                        if(array_key_exists(trim($order->variation_detail), $lst_variations))
                         {
                             $tool_category_id = $lst_variations[$order->variation_detail];
                         } else {

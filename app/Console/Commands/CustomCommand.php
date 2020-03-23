@@ -69,9 +69,6 @@ class CustomCommand extends Command
             case 6:
                 $this->run6Minute();
                 break;
-            case 30:
-                $this->run30Minute();
-                break;
             case 59:
                 $this->run59Minute();
                 break;
@@ -127,13 +124,6 @@ class CustomCommand extends Command
             // up load product fullfill from google driver
             $check2 = $google_controller->uploadFileDriver();
         }
-    }
-
-    private function run30Minute()
-    {
-        echo 'run 30 phut';
-        $woo_controller = new WooController();
-        $check = $woo_controller->autoFulfill();
     }
 
     private function run59Minute()

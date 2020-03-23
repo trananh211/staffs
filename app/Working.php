@@ -11,6 +11,7 @@ use Illuminate\Http\UploadFile;
 use Carbon\Carbon;
 Use App\Jobs\SendPostEmail;
 use Image;
+use Excel;
 
 class Working extends Model
 {
@@ -177,12 +178,17 @@ class Working extends Model
                     ->on('workings.product_id', '=', 'woo_orders.product_id')
                     ->on('workings.store_id', '=', 'woo_orders.woo_info_id');
             })
+            ->leftjoin('tool_categories', function ($join) {
+                $join->on('workings.design_id', '=', 'designs.id')
+                    ->on('designs.tool_category_id', '=', 'tool_categories.id');
+            })
             ->leftjoin('users as worker', 'workings.worker_id', '=', 'worker.id')
             ->leftjoin('users as qc', 'workings.qc_id', '=', 'qc.id')
             ->select(
                 'workings.id', 'workings.status', 'workings.updated_at',
                 'workings.qc_id', 'workings.worker_id', 'workings.reason', 'workings.redo',
-                'designs.id as design_id', 'designs.sku', 'designs.variation',
+                'designs.id as design_id', 'designs.sku', 'designs.variation', 'designs.tool_category_id',
+                'tool_categories.name as tool_category_name',
                 'woo_orders.detail', 'woo_orders.customer_note',
                 'worker.id as worker_id', 'worker.name as worker_name',
                 'qc.name as qc_name',
@@ -3106,146 +3112,15 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     }
 
     // fulfill order
-    public function autoFulfill()
-    {
-        $return = false;
-        \DB::beginTransaction();
-        try {
-            logfile_system('== Auto Fulfill New Order ============================');
-            $order_status = ['processing', 'on-hold'];
-            //lấy toàn bộ order new ra ngoài
-            $where_woo_orders = [
-                ['status', '=', env('STATUS_WORKING_NEW')],
-                ['order_status', '=', $order_status],
-            ];
-            $lst_design_id = \DB::table('woo_orders')->where($where_woo_orders)->distinct()->pluck('design_id')->toArray();
-            if (sizeof($lst_design_id) > 0) {
-                $designs = \DB::table('workings')
-                    ->leftjoin('designs', 'workings.design_id', '=', 'designs.id')
-                    ->leftjoin('working_files', function ($join) {
-                        $join->on('working_files.working_id', '=', 'workings.id');
-                    })
-                    ->select(
-                        'workings.id as working_id', 'workings.store_id',
-                        'designs.id as design_id', 'designs.sku', 'designs.variation',
-                        'working_files.name', 'working_files.path', 'working_files.thumb'
-                    )
-                    ->whereIn('design_id', $lst_design_id)
-                    ->where('workings.status', env('STATUS_WORKING_DONE'))
-                    ->where('working_files.is_mockup', 1)
-                    ->get()->toArray();
-                if (sizeof($designs) > 0) {
-                    //lấy toàn bộ variations ra ngoài
-                    $tmp_variations = \DB::table('variations')->select('store_id', 'variation_name','price','variation_sku')->get()->toArray();
-                    //phân loại variations
-                    $lst_variations = array();
-                    foreach ($tmp_variations as $variation)
-                    {
-                        $key = $variation->store_id."_".$variation->variation_name;
-                        $lst_variations[$key] = json_decode(json_encode($variation, true),true);
-                    }
-                    $woo_orders = \DB::table('woo_orders')->select('*')->where($where_woo_orders)->get()->toArray();
-                    logfile_system('-- Phát hiện ' . sizeof($woo_orders) . ' orders. Bắt đầu fulfill');
-                    $tmp_designs = array();
-                    foreach ($designs as $design) {
-                        $tmp_designs[$design->design_id] = json_decode(json_encode($design, true), true);
-                    }
-                    // thu thap data lưu vào database
-                    $data_fulfills = array();
-                    $order_fulfills = array();
-                    foreach ($woo_orders as $order) {
-                        $works = '';
-                        $key_order = $order->woo_info_id."_".$order->variation_detail;
-                        $sku = $order->sku;
-                        $base_price = 0;
-                        if (array_key_exists($key_order, $lst_variations))
-                        {
-                            $vari = $lst_variations[$key_order];
-                            $sku = trim($order->sku.$vari['variation_sku']);
-                            $base_price = $vari['price'];
-                        }
-                        if (array_key_exists($order->design_id, $tmp_designs)) {
-                            $works = $tmp_designs[$order->design_id];
-                            $order_fulfills[$order->id] = $order->id;
-                            $data_fulfills[$order->id] = [
-                                'woo_order_id' => $order->id,
-                                'number' => $order->number,
-                                'sku' => $sku,
-                                'product_name' => $order->product_name,
-                                'design_id' => $order->design_id,
-                                'product_id' => $order->product_id,
-                                'working_id' => $works['working_id'],
-                                'store_id' => $order->woo_info_id,
-                                'variation_detail' => $works['variation'],
-                                'size' => $order->variation_detail,
-                                'product_image' => $works['path'] . $works['name'],
-                                'quantity' => $order->quantity,
-                                'color' => '',
-                                'currency' => '$',
-                                'base_price' => $base_price,
-                                'item_price' => $order->price,
-                                'shipping_cost' => $order->shipping_cost,
-                                'fullname' => $order->fullname,
-                                'first_name' => '',
-                                'last_name' => '',
-                                'address' => $order->address,
-                                'city' => $order->city,
-                                'state' => $order->state,
-                                'country' => $order->country,
-                                'postcode' => $order->postcode,
-                                'phone' => $order->phone,
-                                'shipping' => '',
-                                'customer_note' => $order->customer_note,
-                                'email' => $order->email,
-                                'exact_art_work' => '',
-                                'back_inscription' => '',
-                                'memo' => '',
-                                'design_position' => '',
-                                'created_at' => date("Y-m-d H:i:s"),
-                                'updated_at' => date("Y-m-d H:i:s")
-                            ];
-                        }
-                    }
-                    // lưu vào data base
-                    if (sizeof($data_fulfills) > 0) {
-                        $result = \DB::table('fulfills')->insert($data_fulfills);
-                        if ($result) {
-                            \DB::table('woo_orders')->whereIn('id', $order_fulfills)->update([
-                                'status' => env('STATUS_WORKING_DONE'),
-                                'updated_at' => date("Y-m-d H:i:s")
-                            ]);
-                            logfile_system('-- [SUCCESS] Fulfill thành công : ' . sizeof($data_fulfills) . ' orders');
-                        } else {
-                            logfile_system('-- [ERROR] Fulfill thất bại: ' . sizeof($data_fulfills) . ' orders');
-                        }
-                    }
-                } else {
-                    logfile_system('-- Chưa có design. Yêu cầu nhân viên làm design gấp.');
-                }
-            } else {
-                $return = true;
-                logfile_system('-- Đã hết new order để fulfill');
-            }
-            \DB::commit(); // if there was no errors, your query will be executed
-        } catch (\Exception $e) {
-            $alert = 'error';
-            logfile($e->getMessage());
-            $message = 'Thêm từ khóa thất bại. Mời bạn thử lại' . $e->getMessage();
-            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
-        }
-        return $return;
-    }
-
     private function preDataFulfill()
     {
-        $order_status = ['processing', 'on-hold'];
-        //lấy toàn bộ order new ra ngoài
-        $where_woo_orders = [
-            ['status', '=', env('STATUS_WORKING_NEW')],
-            ['order_status', '=', $order_status],
-        ];
+        $data_fulfills = array();
+        $order_status = order_status();
         // lấy danh sách design id
-        $lst_design_id = \DB::table('woo_orders')->where($where_woo_orders)->distinct()->pluck('design_id')->toArray();
+        $lst_design_id = \DB::table('woo_orders')
+            ->where('status', env('STATUS_WORKING_NEW'))
+            ->whereIn('order_status', $order_status)
+            ->distinct()->pluck('design_id')->toArray();
         if (sizeof($lst_design_id) > 0) {
             $designs = \DB::table('workings')
                 ->leftjoin('designs', 'workings.design_id', '=', 'designs.id')
@@ -3261,123 +3136,349 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 ->where('workings.status', env('STATUS_WORKING_DONE'))
                 ->where('working_files.is_mockup', 1)
                 ->get()->toArray();
+
+
             if (sizeof($designs) > 0) {
-                //lấy toàn bộ variations ra ngoài
-                $tmp_variations = \DB::table('variations')->select('store_id', 'variation_name','price','variation_sku')->get()->toArray();
-                //phân loại variations
-                $lst_variations = array();
-                foreach ($tmp_variations as $variation)
-                {
-                    $key = $variation->store_id."_".$variation->variation_name;
-                    $lst_variations[$key] = json_decode(json_encode($variation, true),true);
-                }
-                $woo_orders = \DB::table('woo_orders')->select('*')->where($where_woo_orders)->get()->toArray();
-                logfile('-- Phát hiện ' . sizeof($woo_orders) . ' orders. Bắt đầu fulfill');
-                $tmp_designs = array();
-                foreach ($designs as $design) {
-                    $tmp_designs[$design->design_id] = json_decode(json_encode($design, true), true);
-                }
-                // thu thap data lưu vào database
-                $data_fulfills = array();
-                $order_fulfills = array();
-                foreach ($woo_orders as $order) {
-                    $works = '';
-                    $key_order = $order->woo_info_id."_".$order->variation_detail;
-                    $sku = $order->sku;
-                    $base_price = 0;
-                    if (array_key_exists($key_order, $lst_variations))
-                    {
-                        $vari = $lst_variations[$key_order];
-                        $sku = trim($order->sku.$vari['variation_sku']);
-                        $base_price = $vari['price'];
-                    }
-                    if (array_key_exists($order->design_id, $tmp_designs)) {
-                        $works = $tmp_designs[$order->design_id];
-                        $order_fulfills[$order->id] = $order->id;
-                        $data_fulfills[$order->id] = [
-                            'woo_order_id' => $order->id,
-                            'number' => $order->number,
-                            'sku' => $sku,
-                            'product_name' => $order->product_name,
-                            'design_id' => $order->design_id,
-                            'product_id' => $order->product_id,
-                            'working_id' => $works['working_id'],
-                            'store_id' => $order->woo_info_id,
-                            'variation_detail' => $works['variation'],
-                            'size' => $order->variation_detail,
-                            'product_image' => $works['path'] . $works['name'],
-                            'quantity' => $order->quantity,
-                            'color' => '',
-                            'currency' => '$',
-                            'base_price' => $base_price,
-                            'item_price' => $order->price,
-                            'shipping_cost' => $order->shipping_cost,
-                            'fullname' => $order->fullname,
-                            'first_name' => '',
-                            'last_name' => '',
-                            'address' => $order->address,
-                            'city' => $order->city,
-                            'state' => $order->state,
-                            'country' => $order->country,
-                            'postcode' => $order->postcode,
-                            'phone' => $order->phone,
-                            'shipping' => '',
-                            'customer_note' => $order->customer_note,
-                            'email' => $order->email,
-                            'exact_art_work' => '',
-                            'back_inscription' => '',
-                            'memo' => '',
-                            'design_position' => '',
-                            'created_at' => date("Y-m-d H:i:s"),
-                            'updated_at' => date("Y-m-d H:i:s")
-                        ];
-                    }
-                }
-                // lưu vào data base
-                if (sizeof($data_fulfills) > 0) {
-                    $result = \DB::table('fulfills')->insert($data_fulfills);
-                    if ($result) {
-                        \DB::table('woo_orders')->whereIn('id', $order_fulfills)->update([
-                            'status' => env('STATUS_WORKING_DONE'),
-                            'updated_at' => date("Y-m-d H:i:s")
-                        ]);
-                        logfile('-- [SUCCESS] Fulfill thành công : ' . sizeof($data_fulfills) . ' orders');
-                    } else {
-                        logfile('-- [ERROR] Fulfill thất bại: ' . sizeof($data_fulfills) . ' orders');
-                    }
-                }
-            } else {
-                logfile('-- Chưa có design. Yêu cầu nhân viên làm design gấp.');
+                $woo_orders = \DB::table('woo_orders')->select('*')
+                    ->where('status', env('STATUS_WORKING_NEW'))
+                    ->whereIn('order_status', $order_status)
+                    ->get()->toArray();
+                $data_fulfills = $this->sortDataFulfill($designs, $woo_orders);
             }
         } else {
             $alert = 'success';
             $message = '-- Đã hết new order để fulfill';
         }
+        return $data_fulfills;
+    }
+
+    private function preDataFulfillScan($list_woo_order_id)
+    {
+        $data_fulfills = array();
+        // lấy danh sách design id
+        $lst_design_id = \DB::table('woo_orders')->whereIn('id',$list_woo_order_id)->distinct()->pluck('design_id')->toArray();
+        if (sizeof($lst_design_id) > 0) {
+            $designs = \DB::table('workings')
+                ->leftjoin('designs', 'workings.design_id', '=', 'designs.id')
+                ->leftjoin('working_files', function ($join) {
+                    $join->on('working_files.working_id', '=', 'workings.id');
+                })
+                ->select(
+                    'workings.id as working_id', 'workings.store_id',
+                    'designs.id as design_id', 'designs.sku', 'designs.variation',
+                    'working_files.name', 'working_files.path', 'working_files.thumb'
+                )
+                ->whereIn('design_id', $lst_design_id)
+                ->where('workings.status', env('STATUS_WORKING_DONE'))
+                ->where('working_files.is_mockup', 1)
+                ->get()->toArray();
+
+            if (sizeof($designs) > 0) {
+                $woo_orders = \DB::table('woo_orders')->select('*')->whereIn('id',$list_woo_order_id)->get()->toArray();
+                $data_fulfills = $this->sortDataFulfill($designs, $woo_orders);
+            }
+        }
+        return $data_fulfills;
+    }
+
+    private function sortDataFulfill($designs, $woo_orders)
+    {
+        $data_fulfills = array();
+        //lấy toàn bộ variations ra ngoài
+        $tmp_variations = \DB::table('variations')
+            ->select('variation_name', 'variation_real_name','price','variation_sku','tool_category_id','factory_sku')
+            ->get()->toArray();
+        //phân loại variations
+        $lst_variations = array();
+        foreach ($tmp_variations as $variation)
+        {
+            $key = $variation->variation_name;
+            $lst_variations[$key] = json_decode(json_encode($variation, true),true);
+        }
+
+        $tmp_designs = array();
+        foreach ($designs as $design) {
+            $tmp_designs[$design->design_id] = json_decode(json_encode($design, true), true);
+        }
+        // thu thap data lưu vào database
+
+        $order_fulfills = array();
+        foreach ($woo_orders as $order) {
+            $works = '';
+            $key_order = $order->variation_detail;
+            $sku = $order->sku;
+            $base_price = 0;
+            $factory_sku = '';
+            $tool_category_id = 0;
+            if (array_key_exists($key_order, $lst_variations))
+            {
+                $vari = $lst_variations[$key_order];
+                $sku = trim($order->sku.$vari['variation_sku']);
+                $base_price = $vari['price'];
+                $variation_detail = ($vari['variation_real_name'] != '')? $vari['variation_real_name'] : $vari['variation_name'];
+                $factory_sku = $vari['factory_sku'];
+                $tool_category_id = $vari['tool_category_id'];
+            }
+            if (array_key_exists($order->design_id, $tmp_designs)) {
+                $works = $tmp_designs[$order->design_id];
+                $order_fulfills[$order->id] = $order->id;
+                $data_fulfills[$tool_category_id][$order->id] = [
+                    'order_id' => $order->id,
+                    'order_number' => $order->number,
+                    'transaction_id' => $order->transaction_id,
+                    'currency' => '$',
+                    'full_name' => $order->fullname,
+                    'email' => $order->email,
+                    'first_name' => '',
+                    'last_name' => '',
+                    'address' => $order->address,
+                    'city' => $order->city,
+                    'state' => $order->state,
+                    'country' => $order->country,
+                    'postcode' => $order->postcode,
+                    'phone' => $order->phone,
+                    'shipping' => '',
+                    'customer_note' => $order->customer_note,
+                    'variation_detail' => $variation_detail,
+                    'product_name' => $order->product_name,
+                    'sku' => $sku,
+                    'design_id' => $order->design_id,
+                    'size' => $order->variation_detail,
+                    'quantity' => $order->quantity,
+                    'color' => '',
+                    'base_price' => $base_price,
+                    'item_price' => $order->price,
+                    'shipping_cost' => $order->shipping_cost,
+                    'factory_sku' => $factory_sku,
+
+                    'exact_art_work' => '',
+                    'back_inscription' => '',
+                    'memo' => '',
+                    'design_position' => '',
+
+                    'product_image' => $works['path'] . $works['name'],
+                    'product_id' => $order->product_id,
+                    'working_id' => $works['working_id'],
+                    'store_id' => $order->woo_info_id,
+                ];
+            }
+        }
+        return $data_fulfills;
+    }
+
+    private function preDataTemplateExcel()
+    {
+        $excels = \DB::table('template_excels as tec')
+            ->leftjoin('tool_categories','tec.tool_category_id', '=', 'tool_categories.id')
+            ->select(
+                'tec.key_title','tec.title', 'tec.fixed',
+                'tool_categories.name as tool_category_name', 'tool_categories.id as tool_category_id'
+            )
+            ->orderBy('tec.sort','ASC')
+            ->get()->toArray();
+        $tmp_excels = array();
+        if (sizeof($excels) > 0)
+        {
+            foreach ($excels as $item)
+            {
+                $tmp_excels[$item->tool_category_id]['info'] = [
+                    'tool_category_name' => $item->tool_category_name,
+                    'tool_category_id' => $item->tool_category_id
+                ];
+                $tmp_excels[$item->tool_category_id]['sort'][$item->key_title] = [
+                    'key_title' => $item->key_title,
+                    'title' => $item->title,
+                    'fixed' => $item->fixed,
+                ];
+            }
+        }
+        return $tmp_excels;
+    }
+
+    private function actionDataFulfill($data, $excels, $type, $excel_fulfill_id = null)
+    {
+        $files = array();
+        $message = '';
+        //lọc file excel trước
+        foreach ($excels as $tool_category_id => $item_excel)
+        {
+            // kiểm tra xem có category không
+            if(array_key_exists($tool_category_id, $data))
+            {
+                // lưu thông tin cơ bản tên và id của category từ excel vào files
+                $files[$tool_category_id]['info'] = $item_excel['info'];
+
+                // bắt đầu lặp data woo order cần fulfill
+                foreach ($data[$tool_category_id] as $woo_order_id => $item_data)
+                {
+                    // refresh dữ liệu tạm để sang dữ liệu mới.
+                    $tmp = array();
+                    //Sắp xếp thứ tự order theo thứ tự file excel
+                    foreach ($item_excel['sort'] as $key_title => $template_excel)
+                    {
+                        // nếu fixed cứng dữ liệu từ trước thì gửi ra dữ liệu fix cứng
+                        $tmp[$template_excel['title']] = ($template_excel['fixed'] != '') ? $template_excel['fixed'] : $item_data[$key_title];
+                    }
+                    $files[$tool_category_id]['data'][$woo_order_id] = $tmp;
+                }
+            }
+        }
+        $time = date("Ymd_Hms");
+        //nếu là tạo mới lần đầu tiên
+        if ($type == env('FULFILL_TYPE_CREATE'))
+        {
+            foreach ($files as $item)
+            {
+                $name_file = str_replace(" ", "_", strtolower($item['info']['tool_category_name'])).'_'.$time;
+                $make_excel = createFileExcel($name_file, $item['data'], storage_path('feed'), $name_file);
+                if ($make_excel)
+                {
+                    $excel_fulfill_id = \DB::table('excel_fulfills')->insertGetId([
+                        'date_fulfill' => $name_file.'.csv',
+                        'tool_category_id' => $item['info']['tool_category_id'],
+                        'path' => storage_path('feed'),
+                        'created_at' => date("Y-m-d H:i:s"),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                    $list_woo_order_id = array_keys($item['data']);
+                    // cập nhật excel fulfill id vào woo orders
+                    $result = \DB::table('woo_orders')->whereIn('id',$list_woo_order_id)->update([
+                        'status' => env('STATUS_WORKING_MOVE'),
+                        'excel_fulfill_id' => $excel_fulfill_id,
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                    if ($result && $excel_fulfill_id)
+                    {
+                        $message .= 'Tạo file excel '.$item['info']['tool_category_name'].' thành công'."\n";
+                    } else {
+                        $message .= 'Tạo file excel '.$item['info']['tool_category_name'].' thất bại'."\n";
+                    }
+                }
+            }
+
+        } else if($type == env('FULFILL_TYPE_UPDATE')) {
+            foreach ($files as $item)
+            {
+                $excel_fulfil_data = \DB::table('excel_fulfills')->select('id','date_fulfill', 'path')
+                    ->where('id', $excel_fulfill_id)
+                    ->where('tool_category_id', $item['info']['tool_category_id'])
+                    ->first();
+                if ($excel_fulfil_data != NULL)
+                {
+                    $name_file = str_replace(" ", "_", strtolower($item['info']['tool_category_name'])).'_'.$time;
+                    $make_excel = createFileExcel($name_file, $item['data'], storage_path('feed'), $name_file);
+                    if ($make_excel)
+                    {
+                        \File::delete($excel_fulfil_data->path.'/'.$excel_fulfil_data->date_fulfill);
+                        $result = \DB::table('excel_fulfills')->where('id', $excel_fulfill_id)->update([
+                            'date_fulfill' => $name_file.'.csv',
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ]);
+                        if ($result)
+                        {
+                            $message .= 'Tạo lại file excel '.$item['info']['tool_category_name'].' thành công';
+                        } else {
+                            $message .= 'Tạo lại file excel '.$item['info']['tool_category_name'].' thất bại';
+                        }
+                    }
+                }
+            }
+        }
+        return $message;
     }
 
     public function actionFulfillNow()
     {
         $alert = 'error';
-//        \DB::beginTransaction();
-//        try {
-
-        $data = $this->preDataFulfill();
-
-//            \DB::commit(); // if there was no errors, your query will be executed
-//        } catch (\Exception $e) {
-//            logfile($e->getMessage());
-//            $message = 'Xảy ra lỗi nội bộ. Mời bạn thử lại' . $e->getMessage();
-//            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
-//        }
-//        return \Redirect::back()->with($alert, $message);
+        \DB::beginTransaction();
+        try {
+            // lấy data để save ra file excel
+            $data = $this->preDataFulfill();
+            if (sizeof($data) > 0) {
+                // lấy cấu trúc file excel
+                $excels = $this->preDataTemplateExcel();
+                if (sizeof($excels) > 0) {
+                    // đủ dữ liệu yêu cầu thì bắt đầu tạo file excel
+                    $message = $this->actionDataFulfill($data, $excels, env('FULFILL_TYPE_CREATE'));
+                } else {
+                    $message = 'Bạn chưa chọn cấu trúc để export file fulfill. Mời bạn chọn ở mục "Category Template Fulfill" trước khi thực hiện hành động này';
+                }
+            } else {
+                $alert = 'success';
+                $message = 'Đã hết đơn hàng để fulfill';
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            logfile($e->getMessage());
+            $message = 'Xảy ra lỗi nội bộ. Mời bạn thử lại' . $e->getMessage();
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($alert, $message);
     }
 
+    public function fulfillRescanFile($excel_fulfill_id)
+    {
+        $alert = 'error';
+        $message = '';
+        \DB::beginTransaction();
+        try {
+            $list_woo_order_id = \DB::table('woo_orders')->where('excel_fulfill_id', $excel_fulfill_id)->pluck('id')->toArray();
+            if (sizeof($list_woo_order_id) > 0) {
+                // lấy data để save ra file excel
+                $data = $this->preDataFulfillScan($list_woo_order_id);
+                if (sizeof($data) > 0) {
+                    // lấy cấu trúc file excel
+                    $excels = $this->preDataTemplateExcel();
+                    if (sizeof($excels) > 0) {
+                        // đủ dữ liệu yêu cầu thì bắt đầu tạo file excel
+                        $message = $this->actionDataFulfill($data, $excels, env('FULFILL_TYPE_UPDATE'), $excel_fulfill_id);
+                    } else {
+                        $message = 'Bạn chưa chọn cấu trúc để export file fulfill. Mời bạn chọn ở mục "Category Template Fulfill" trước khi thực hiện hành động này';
+                    }
+                } else {
+                    $alert = 'success';
+                    $message = 'Không có order nào thuộc file fulfill này. Mời bạn kiểm tra lại.';
+                }
+            } else {
+                $message = 'Không có order nào thuộc file fulfill này.';
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            logfile($e->getMessage());
+            $message = 'Xảy ra lỗi nội bộ. Mời bạn thử lại' . $e->getMessage();
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($alert, $message);
+    }
 
+    public function fulfilGetFile($excel_fulfill_id)
+    {
+        $excel_fulfill = \DB::table('excel_fulfills')->select('date_fulfill','path')->where('id',$excel_fulfill_id)->first();
+        if ($excel_fulfill != NULL)
+        {
+            $path = $excel_fulfill->path.'/'.$excel_fulfill->date_fulfill;
+            return response()->download($path);
+        } else {
+            $alert = 'error';
+            $message = 'Không tồn tại file fulfill này. Mời bạn kiểm tra lại.';
+            return redirect('fulfill-category')->with($alert, $message);
+        }
+    }
 
     public function fulfillCategory()
     {
         $data = infoShop();
-        $fulfills = \DB::table('fulfills')->select('*')->get()->toArray();
+        $fulfills = \DB::table('excel_fulfills as exf')
+            ->join('tool_categories', 'exf.tool_category_id', '=', 'tool_categories.id')
+            ->join('woo_orders', 'exf.id', '=', 'woo_orders.excel_fulfill_id')
+            ->select(
+                'exf.id', 'exf.date_fulfill', 'exf.path', 'exf.status', 'exf.created_at', 'exf.updated_at',
+                'tool_categories.name',
+                DB::raw("count(woo_orders.excel_fulfill_id) as count")
+            )
+            ->groupBy('woo_orders.excel_fulfill_id')
+            ->orderBy('exf.created_at', 'DESC')
+            ->get()->toArray();
         return view('/admin/fulfill_category', compact('data','fulfills'));
     }
     /*End Admin + QC*/

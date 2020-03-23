@@ -578,11 +578,16 @@ class WooController extends Controller
         return $work->feedGetFile($google_feed_id);
     }
 
-    //fulfill order
-    public function autoFulfill()
+    public function fulfilGetFile($excel_fulfill_id)
     {
         $work = new Working();
-        return $work->autoFulfill();
+        return $work->fulfilGetFile($excel_fulfill_id);
+    }
+
+    public function fulfillRescanFile($excel_fulfill_id)
+    {
+        $work = new Working();
+        return $work->fulfillRescanFile($excel_fulfill_id);
     }
 
     public function fulfillCategory()

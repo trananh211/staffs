@@ -93,7 +93,8 @@ function getListTitle()
         'memo' => '',
         'design_position' => '',
         'desing_url' => 'https://dropbox.com/...',
-        'tracking_number' => 'LS123459KD'
+        'tracking_number' => 'LS123459KD',
+        'factory_sku' => 'SHB'
     ];
     ksort($common);
     ksort($customer);
@@ -399,6 +400,11 @@ function sanitizer($file)
 // Remove any runs of periods (thanks falstro!)
     $file = mb_ereg_replace("([\.]{2,})", '', $file);
     return $file;
+}
+function order_status()
+{
+    $order_status = ['on-hold', 'processing'];
+    return $order_status;
 }
 
 /*GOOGLE API*/

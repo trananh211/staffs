@@ -84,6 +84,8 @@ Route::middleware('auth')->group(function () {
     Route::get('list-template-category','WooController@listTemplateCategory');
     Route::post('new-template-category','WooController@NewTemplateCategory');
     Route::get('action-fulfill-now','WooController@actionFulfillNow');
+    Route::get('fulfill-get-file/{id}','WooController@fulfilGetFile');
+    Route::get('fulfill-rescan-file/{id}','WooController@fulfillRescanFile');
 
     /** Paypal */
     Route::get('paypal-connect','PaypalController@index');
