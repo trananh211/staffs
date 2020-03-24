@@ -1152,8 +1152,7 @@ class ScrapProducts extends Command
                 if ($crawler->filter('h3.selected-campaign-mockup-title')->count() > 0) {
                     //get name
                     $name = $crawler->filter('h3.selected-campaign-mockup-title')->text();
-                    var_dump($name);die();
-                    $name = str_replace($text_exclude,'', $name);
+                    $name = str_replace(strtolower($text_exclude),'', strtolower($name));
                     $product_name = ucwords(strtolower(trim($name)));
                     $data[$key]['product_name'] = trim(preg_replace('/[^a-z\d ]/i', '', $product_name));
                     // get description
