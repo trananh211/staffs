@@ -1135,7 +1135,6 @@ class ScrapProducts extends Command
             $link = $dt['link'];
             $tmp_http = parse_url($link);
             $http = $tmp_http['scheme'];
-            $link = 'https://icefrogshoe.com/icefrogshoe/angela-ss3';
             $response = $client->request('GET', $link);
             $crawler = $response;
             try {

@@ -43,8 +43,24 @@ class TestCommand extends Command
 //        $controller->autoUploadProduct();
 //        $controller->autoUploadImage();
 
-        $api_controller = new ApiController();
-        // up load product from google driver
-        $check = $api_controller->autoUploadProduct();
+//        $api_controller = new ApiController();
+//        $api_controller->checkTemplateScrap();
+        $this->checkTemplateScrap();
+    }
+
+    private function checkTemplateScrap()
+    {
+        logfile_system('=== [Cập nhật các store scrap có sản phẩm mới hay không] ===============================');
+        $result = \DB::table('woo_templates')->where('website_id',19)->update([
+            'status' => 0,
+            'updated_at' => date("Y-m-d H:i:s")
+        ]);
+        if($result)
+        {
+            // Cào website
+            $this->call('scan:website');
+        } else {
+            logfile_system('-- [Error] Xảy ra lỗi không thể cập nhật lại template về new');
+        }
     }
 }

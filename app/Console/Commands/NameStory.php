@@ -645,6 +645,7 @@ class NameStory extends Command
         $domain = $website[$website_id];
         $domain_origin = explode('/search', $domain)[0];
         $link = $domain.'&page=';
+        echo $link."\n";
         $page = 1;
         $data = array();
         $text_exclude = ucwords($text_exclude);
@@ -652,7 +653,6 @@ class NameStory extends Command
             echo $page . '-page' . "\n";
             $url = $link . $page;
             $curent_page = $page;
-
             $client = new \Goutte\Client();
             $response = $client->request('GET', $url);
             $crawler = $response;
