@@ -33,7 +33,7 @@ class CustomCommand extends Command
         parent::__construct();
     }
 
-    protected $array_minute = [59, 30, 6, 4, 1];
+    protected $array_minute = [59, 19, 6, 4, 1];
     /**
      * Execute the console command.
      *
@@ -68,6 +68,9 @@ class CustomCommand extends Command
                 break;
             case 6:
                 $this->run6Minute();
+                break;
+            case 19:
+                $this->run19Minute();
                 break;
             case 59:
                 $this->run59Minute();
@@ -126,9 +129,31 @@ class CustomCommand extends Command
         }
     }
 
+    private function run19Minute()
+    {
+        $this->checkTemplateScrap();
+    }
+
     private function run59Minute()
     {
         // Cào website
         $this->call('scan:website');
+    }
+
+
+    private function checkTemplateScrap()
+    {
+        logfile_system('=== [Cập nhật các store scrap có sản phẩm mới hay không] ===============================');
+        $result = \DB::table('woo_templates')->where('website_id',19)->update([
+            'status' => 0,
+            'updated_at' => date("Y-m-d H:i:s")
+        ]);
+        if($result)
+        {
+            // Cào website
+            $this->call('scan:website');
+        } else {
+            logfile_system('-- [Error] Xảy ra lỗi không thể cập nhật lại template về new');
+        }
     }
 }

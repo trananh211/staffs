@@ -234,5 +234,11 @@ class ApiController extends Controller
         $api = new Api();
         return $api->getMoreWooCategory($request);
     }
+
+    public function checkTemplateScrap()
+    {
+        $api = new Api();
+        return $api->checkTemplateScrap();
+    }
 }
 
