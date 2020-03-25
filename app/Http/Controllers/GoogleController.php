@@ -836,4 +836,83 @@ class GoogleController extends Controller
         }
     }
     /*End Fulfillment*/
+
+    public function uploadFileWorkingGoogle()
+    {
+        logfile_system("======= Upload file design to Google Driver  =========================");
+        $return = false;
+        $files = \DB::table('workings')
+            ->leftjoin('working_files as wf', 'workings.id', '=', 'wf.working_id')
+            ->select(
+                'workings.id as working_id',
+                'wf.id as working_file_id', 'wf.name', 'wf.path'
+            )
+            ->where([
+                ['workings.status', '=', env('STATUS_WORKING_DONE')]
+            ])
+            ->limit(env('GOOGLE_LIMIT_UPLOAD_FILE'))
+            ->get()->toArray();
+        $query_update = '';
+        if (sizeof($files) > 0)
+        {
+            $working_file_error = array(); $working_error = array();
+            $working_file_update = array(); $working_update = array();
+            $file_delete = array();
+            logfile_system('-- Tồn tại '.sizeof($files). ' files cần upload');
+            foreach ($files as $file){
+                $path = public_path($file->path.$file->name);
+                if (\File::exists($path)) {
+                    $extentions = pathinfo($path)['extension'];
+                    try {
+                        $info = upFile_FullInfo($path, env('GOOGLE_DRIVER_FOLDER_JOB'));
+                        $result = true;
+                    } catch (\Exception $e) {
+                        $result = false;
+                        logfile_system(' -- Xảy ra lỗi nội bộ : '.$e->getMessage());
+                    }
+                    if ($result) {
+                        // xóa file local đi cho đỡ nặng
+                        $file_delete[] = $path;
+                        // tao data working file google driver cap nhat vao database
+                        $base_name = $info['basename'];
+                        $base_path = $info['path'];
+                        $base_dirname = $info['dirname'];
+                        $working_file_update[$file->working_file_id] = [
+                            'base_name' => $base_name,
+                            'base_path' => $base_path,
+                            'base_dirname' => $base_dirname,
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
+                        $working_update[$file->working_id] = $file->working_id;
+                    } else {
+                        $working_file_error[] = $file->working_file_id;
+                        $working_error[] = $file->working_id;
+                    }
+                }
+            }
+            if (sizeof($file_delete) > 0)
+            {
+                \File::delete($file_delete);
+            }
+            if(sizeof($working_file_update) > 0)
+            {
+                foreach ($working_file_update as $working_file_id => $data_update)
+                {
+                    \DB::table('working_files')->where('id',$working_file_id)->update($data_update);
+                }
+                \DB::table('workings')->whereIn('id',$working_update)->update(['status' => env('STATUS_WORKING_MOVE')]);
+                logfile_system('-- Upload thành công '.sizeof($working_file_update).' files lên google driver');
+            }
+            if (sizeof($working_file_error) > 0)
+            {
+                logfile_system(' -- Xảy ra '.sizeof($working_file_error).' job bị lỗi. Không thể up lên google driver');
+                \DB::table('working_files')->whereIn('id',$working_file_error)->update(['status' => env('STATUS_WORKING_ERROR')]);
+                \DB::table('workings')->whereIn('id',$working_error)->update(['status' => env('STATUS_WORKING_ERROR')]);
+            }
+        } else {
+            $return = true;
+            logfile_system('-- Đã hết file cần upload lên google driver. Chuyển sang việc tiếp theo');
+        }
+        return $return;
+    }
 }

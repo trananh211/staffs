@@ -14,7 +14,7 @@ function logfile_system($str)
 {
     $datetime = Carbon::now('Asia/Ho_Chi_Minh');
     $log_str = $datetime . '==> ' . $str;
-    \Log::channel('hasu')->info($log_str);
+//    \Log::channel('hasu')->info($log_str);
     echo $log_str."\n";
 }
 
@@ -545,6 +545,27 @@ function upFile($path_info, $path = null, $new_name = null)
                 ->sortBy('timestamp')
                 ->last();
             $return = $file['path'];
+        }
+    }
+    return $return;
+}
+
+function upFile_FullInfo($path_info, $path = null, $new_name = null)
+{
+    $return = false;
+    if (\File::exists($path_info)) {
+        $filename = pathinfo($path_info)['basename'];
+        $contents = File::get($path_info);
+        $new_name = (strlen($new_name) > 0) ? $new_name : $filename;
+        if (Storage::cloud()->put($path . '/' . $new_name, $contents)) {
+            $recursive = false; // Get subdirectories also?
+            $file = collect(Storage::cloud()->listContents($path, $recursive))
+                ->where('type', '=', 'file')
+                ->where('filename', '=', pathinfo($new_name, PATHINFO_FILENAME))
+                ->where('extension', '=', pathinfo($new_name, PATHINFO_EXTENSION))
+                ->sortBy('timestamp')
+                ->last();
+            $return = $file;
         }
     }
     return $return;

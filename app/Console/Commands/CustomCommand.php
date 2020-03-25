@@ -84,17 +84,20 @@ class CustomCommand extends Command
     private function run1Minute()
     {
         $api_controller = new ApiController(); // make sure to import the controller
-        $check = true;
-        // upload image from google driver to product
-        $check = $api_controller->autoUploadImage();
-//        $check = $api_controller->getCategoryChecking();
-        if ($check) {
-            // tạo feed check feed đầu tiên
-            $check2 = $api_controller->reCheckProductInfo();
-            if ($check2)
-            {
-                //Cào sản phẩm
-                $this->call('scrap:product');
+        $google_controller = new GoogleController(); // make sure to import the controller
+        $check0 = $google_controller->uploadFileWorkingGoogle(); // tải file working lên google driver
+        if ($check0)
+        {
+            // upload image from google driver to product
+            $check = $api_controller->autoUploadImage();
+            if ($check) {
+                // tạo feed check feed đầu tiên
+                $check2 = $api_controller->reCheckProductInfo();
+                if ($check2)
+                {
+                    //Cào sản phẩm
+                    $this->call('scrap:product');
+                }
             }
         }
     }
