@@ -3118,7 +3118,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         $order_status = order_status();
         // lấy danh sách design id
         $lst_design_id = \DB::table('woo_orders')
-            ->where('status', env('STATUS_WORKING_NEW'))
+            ->where('status', env('STATUS_WORKING_DONE'))
             ->whereIn('order_status', $order_status)
             ->distinct()->pluck('design_id')->toArray();
         if (sizeof($lst_design_id) > 0) {
@@ -3133,14 +3133,11 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     'working_files.name', 'working_files.path', 'working_files.thumb'
                 )
                 ->whereIn('design_id', $lst_design_id)
-                ->where('workings.status', env('STATUS_WORKING_DONE'))
                 ->where('working_files.is_mockup', 1)
                 ->get()->toArray();
-
-
             if (sizeof($designs) > 0) {
                 $woo_orders = \DB::table('woo_orders')->select('*')
-                    ->where('status', env('STATUS_WORKING_NEW'))
+                    ->where('status', env('STATUS_WORKING_DONE'))
                     ->whereIn('order_status', $order_status)
                     ->get()->toArray();
                 $data_fulfills = $this->sortDataFulfill($designs, $woo_orders);

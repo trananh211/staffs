@@ -49,7 +49,10 @@ class TestCommand extends Command
 //        $api_controller->checkTemplateScrap();
         $google_controller = new GoogleController();
         $check = $google_controller->uploadFileWorkingGoogle();
-        var_dump($check);
+        if($check)
+        {
+            $check2 = $google_controller->getFileFulfill();
+        }
 //        $this->checkTemplateScrap();
     }
 
