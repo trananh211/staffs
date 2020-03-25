@@ -144,10 +144,10 @@ class ScrapProducts extends Command
                         break;
                     case 18:
                         $text_exclude = 'B6L2AF01';
-                        $this->getProductMerchKing_excludeText($dt, array(2,3,4,7), $text_exclude);
+                        $this->getProductMerchKing_excludeText($dt, array(1,2,3,4,7), $text_exclude);
                     case 19:
                         $text_exclude = ' - PREMIUM - BLANKET - B450';
-                        $this->getProductMerchKing_excludeText($dt, array(2,3,4,7), $text_exclude);
+                        $this->getProductMerchKing_excludeText($dt, array(1,2,3,4,7), $text_exclude);
                     default:
                         $str = "-- Không có website nào cần được up sản phẩm.";
                         logfile_system($str);
