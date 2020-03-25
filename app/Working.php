@@ -3136,9 +3136,11 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 ->where('working_files.is_mockup', 1)
                 ->get()->toArray();
             if (sizeof($designs) > 0) {
-                $woo_orders = \DB::table('woo_orders')->select('*')
-                    ->where('status', env('STATUS_WORKING_DONE'))
-                    ->whereIn('order_status', $order_status)
+                $woo_orders = \DB::table('woo_orders')
+                    ->leftjoin('file_fulfills as ff','woo_orders.id','=', 'ff.woo_order_id')
+                    ->select('woo_orders.*', 'ff.web_path')
+                    ->where('woo_orders.status', env('STATUS_WORKING_DONE'))
+                    ->whereIn('woo_orders.order_status', $order_status)
                     ->get()->toArray();
                 $data_fulfills = $this->sortDataFulfill($designs, $woo_orders);
             }
@@ -3166,12 +3168,14 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     'working_files.name', 'working_files.path', 'working_files.thumb'
                 )
                 ->whereIn('design_id', $lst_design_id)
-                ->where('workings.status', env('STATUS_WORKING_DONE'))
                 ->where('working_files.is_mockup', 1)
                 ->get()->toArray();
 
             if (sizeof($designs) > 0) {
-                $woo_orders = \DB::table('woo_orders')->select('*')->whereIn('id',$list_woo_order_id)->get()->toArray();
+                $woo_orders = \DB::table('woo_orders')
+                    ->leftjoin('file_fulfills as ff','woo_orders.id','=', 'ff.woo_order_id')
+                    ->select('woo_orders.*', 'ff.web_path')
+                    ->whereIn('woo_orders.id',$list_woo_order_id)->get()->toArray();
                 $data_fulfills = $this->sortDataFulfill($designs, $woo_orders);
             }
         }
@@ -3252,6 +3256,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     'back_inscription' => '',
                     'memo' => '',
                     'design_position' => '',
+                    'design_url' => env('URL_LOCAL').$order->web_path,
 
                     'product_image' => $works['path'] . $works['name'],
                     'product_id' => $order->product_id,

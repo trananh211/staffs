@@ -19,6 +19,7 @@ class NewFileFulfills extends Migration
             $table->integer('woo_order_id');
             $table->integer('working_file_id');
             $table->text('path');
+            $table->text('web_path');
             $table->integer('status')->default(0);
             $table->timestamps();
         });

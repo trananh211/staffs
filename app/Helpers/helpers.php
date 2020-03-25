@@ -93,7 +93,7 @@ function getListTitle()
         'back_inscription' => '',
         'memo' => '',
         'design_position' => '',
-        'desing_url' => 'https://dropbox.com/...',
+        'design_url' => 'https://dropbox.com/...',
         'tracking_number' => 'LS123459KD',
         'factory_sku' => 'SHB'
     ];

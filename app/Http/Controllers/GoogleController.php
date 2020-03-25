@@ -966,6 +966,7 @@ class GoogleController extends Controller
                             'woo_order_id' => $file->id,
                             'working_file_id' => $file->working_file_id,
                             'path' => $path,
+                            'web_path' => $name_dirfulfill.'/'.$new_name,
                             'created_at' => date("Y-m-d H:i:s"),
                             'updated_at' => date("Y-m-d H:i:s")
                         ];
