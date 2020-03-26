@@ -80,18 +80,12 @@ class WooController extends Controller
     /*End S Admin*/
 
     /*Staff */
-    public function staffDashboard()
+    public function workingDashboard()
     {
         $work = new Working();
         $lists = $work->listOrder();
         $data = infoShop();
         return view('staff/staff', compact('data', 'lists'));
-    }
-
-    public function detailOrder($order_id)
-    {
-        $work = new Working();
-        return view('staff/detail_order', ['details' => $work->detailOrder($order_id)]);
     }
 
     public function staffGetJob()
@@ -111,7 +105,7 @@ class WooController extends Controller
         return $work->staffUpload();
     }
 
-    public function action(Request $request)
+    public function staffAction(Request $request)
     {
         $work = new Working();
         return $work->staffUpload($request);
@@ -131,16 +125,16 @@ class WooController extends Controller
     /*End Staff*/
 
     /*Admin + QC*/
-    public function checking()
+    public function getChecking()
     {
         $work = new Working();
-        return $work->checking();
+        return $work->getChecking();
     }
 
-    public function working()
+    public function checkWorking()
     {
         $work = new Working();
-        return $work->working();
+        return $work->checkWorking();
     }
 
     public function sendCustomer($order_id)
@@ -155,10 +149,28 @@ class WooController extends Controller
         return $work->redoDesigner($request);
     }
 
+    public function redoingJobStaff($working_id)
+    {
+        $work = new Working();
+        return $work->redoingJobStaff($working_id);
+    }
+
+    public function axRedoNewSKU(Request $request)
+    {
+        $work = new Working();
+        return $work->axRedoNewSKU($request);
+    }
+
     public function reviewCustomer()
     {
         $work = new Working();
         return $work->reviewCustomer();
+    }
+
+    public function listJobDone()
+    {
+        $work = new Working();
+        return $work->listJobDone();
     }
 
     public function eventQcDone(Request $request)
@@ -368,24 +380,16 @@ class WooController extends Controller
             ->leftjoin('woo_infos', 'w_temp.store_id', '=', 'woo_infos.id')
             ->leftjoin('suppliers as sup', 'w_temp.supplier_id', '=', 'sup.id')
             ->select(
-                'w_temp.id', 'w_temp.product_name', 'w_temp.supplier_id', 'w_temp.store_id', 'w_temp.template_id',
-                'w_temp.base_price', 'w_temp.variation_change_id', 'w_temp.website_id', 'w_temp.status',
+                'w_temp.id', 'w_temp.product_name', 'w_temp.store_id', 'w_temp.template_id',
+                'w_temp.website_id', 'w_temp.status', 'w_temp.product_code',
+                'w_temp.product_name_change', 'w_temp.product_name_exclude', 'w_temp.origin_price', 'w_temp.sale_price',
                 'woo_infos.name as store_name',
                 'sup.name as sup_name'
             )
             ->orderBy('w_temp.store_id')
             ->get()->toArray();
-        $suppliers = \DB::table('suppliers')->select('id', 'name')->get()->toArray();
-        $variation_changes = \DB::table('variation_changes')->select('id','name')->get()->toArray();
         $data = array();
-        return view('/admin/woo/list_templates')
-            ->with(compact('lists', 'suppliers','variation_changes', 'data'));
-    }
-
-    public function editWooTemplate(Request $request)
-    {
-        $work = new Working();
-        return $work->editWooTemplate($request);
+        return view('/admin/woo/list_templates')->with(compact('lists', 'data'));
     }
 
     public function scanAgainTemplate($woo_template_id)
@@ -438,6 +442,84 @@ class WooController extends Controller
         return $work->listCategories();
     }
 
+    public function axChooseVariations(Request $request)
+    {
+        $work = new Working();
+        return $work->axChooseVariations($request);
+    }
+
+    public function addListVariation(Request $request)
+    {
+        $work = new Working();
+        return $work->addListVariation($request);
+    }
+
+    public function editInfoFulfills(Request $request)
+    {
+        $work = new Working();
+        return $work->editInfoFulfills($request);
+    }
+
+    public function updateVariation()
+    {
+        $work = new Working();
+        return $work->updateVariation();
+    }
+
+    public function listVariationCategory()
+    {
+        $work = new Working();
+        return $work->listVariationCategory();
+    }
+
+    public function addNewToolCategory(Request $request)
+    {
+        $work = new Working();
+        return $work->addNewToolCategory($request);
+    }
+
+    public function editToolCategory(Request $request)
+    {
+        $work = new Working();
+        return $work->editToolCategory($request);
+    }
+
+    public function NewTemplateCategory(Request $request)
+    {
+        $work = new Working();
+        return $work->NewTemplateCategory($request);
+    }
+
+    public function deleteToolCategory($tool_category_id)
+    {
+        $work = new Working();
+        return $work->deleteToolCategory($tool_category_id);
+    }
+
+    public function listTemplateCategory()
+    {
+        $work = new Working();
+        return $work->listTemplateCategory();
+    }
+
+    public function actionFulfillNow()
+    {
+        $work = new Working();
+        return $work->actionFulfillNow();
+    }
+
+    public function makeTemplateCategory($tool_category_id)
+    {
+        $work = new Working();
+        return $work->makeTemplateCategory($tool_category_id);
+    }
+
+    public function editVariations(Request $request)
+    {
+        $work = new Working();
+        return $work->editVariations($request);
+    }
+
     public function deleteWooCategory($woo_category_id)
     {
         $work = new Working();
@@ -488,6 +570,22 @@ class WooController extends Controller
         return $work->feedGetFile($google_feed_id);
     }
 
+    public function fulfilGetFile($excel_fulfill_id)
+    {
+        $work = new Working();
+        return $work->fulfilGetFile($excel_fulfill_id);
+    }
 
+    public function fulfillRescanFile($excel_fulfill_id)
+    {
+        $work = new Working();
+        return $work->fulfillRescanFile($excel_fulfill_id);
+    }
+
+    public function fulfillCategory()
+    {
+        $work = new Working();
+        return $work->fulfillCategory();
+    }
     /*End Admin + QC*/
 }

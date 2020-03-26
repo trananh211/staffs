@@ -58,3 +58,12 @@
 #list-order tr td, #list-order tr th {
     font-size: 12px;
 }
+
+.example-table tr, .example-table td {
+    border: 1px solid #ccc;
+    font-size: 10px;
+}
+
+.example-table {
+    overflow: scroll;
+}

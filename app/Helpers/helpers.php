@@ -14,8 +14,14 @@ function logfile_system($str)
 {
     $datetime = Carbon::now('Asia/Ho_Chi_Minh');
     $log_str = $datetime . '==> ' . $str;
-    \Log::channel('hasu')->info($log_str);
+//    \Log::channel('hasu')->info($log_str);
     echo $log_str."\n";
+}
+
+// sub day là ngày muốn dời về phía trước, 10 ngày trước, 15 ngày trước, 30 ngày trước
+function getTimeAgo($subday)
+{
+    return Carbon::now()->subDays($subday)->toDateString();
 }
 
 function website()
@@ -42,6 +48,68 @@ function website()
         '19' => 'http://icefrogshoe.com/search?q=B450'
     ];
     return $website;
+}
+
+function getListTitle()
+{
+    $common = [
+        'order_id' => '12345',
+        'order_number' => 'MLF-6868-USA',
+        'transaction_id' => '1Xefdidcdf',
+        'currency' => '$'
+    ];
+    $customer = [
+        'full_name' => 'David Jame',
+        'email' => 'david@gmail.com',
+        'first_name' => 'Jame',
+        'last_name' => 'David',
+        'address' => '828 Gerlitz Road',
+        'city' => 'Southwest',
+        'state' => 'FL ',
+        'country' => 'US',
+        'postcode' => '32908',
+        'phone' => '(321) 460-9218',
+        'shipping' => '',
+        'customer_note' => 'I wanna xyz'
+    ];
+    $product = [
+        'variation_detail' => 'US6 (EU 41)',
+        'product_image' => 'https://mol...',
+        'product_name' => 'Jame Low Top',
+        'sku' => 'JameZA003B41',
+        'design_id' => '12345',
+        'size' => 'size'
+    ];
+    $order = [
+        'quantity' => '1',
+        'color' => 'On Color',
+        'base_price' => '20.99',
+        'item_price' => '59.99',
+        'shipping_cost' => '5.99',
+    ];
+
+    $others = [
+        'exact_art_work' => '',
+        'back_inscription' => '',
+        'memo' => '',
+        'design_position' => '',
+        'design_url' => 'https://dropbox.com/...',
+        'tracking_number' => 'LS123459KD',
+        'factory_sku' => 'SHB'
+    ];
+    ksort($common);
+    ksort($customer);
+    ksort($product);
+    ksort($order);
+    ksort($others);
+    $lists = [
+        'Common' => $common,
+        'Product' => $product,
+        'Customer' => $customer,
+        'Order' => $order,
+        'Others' => $others
+    ];
+    return $lists;
 }
 
 function dynamic_website()
@@ -169,7 +237,7 @@ function statusJob($status, $redo, $reason)
 {
     $class = '' . $status;
     $st = '' . $reason;
-    if ($status == env('STATUS_WORKING_NEW')) {
+    if ($status == '' || $status == env('STATUS_WORKING_NEW')) {
         $class = 'blue lighten-3';
         $st = 'New';
     } else if ($status == env('STATUS_WORKING_CHECK')) {
@@ -334,6 +402,11 @@ function sanitizer($file)
     $file = mb_ereg_replace("([\.]{2,})", '', $file);
     return $file;
 }
+function order_status()
+{
+    $order_status = ['on-hold', 'processing'];
+    return $order_status;
+}
 
 /*GOOGLE API*/
 function createDir($name, $parent_path = null)
@@ -477,6 +550,27 @@ function upFile($path_info, $path = null, $new_name = null)
     return $return;
 }
 
+function upFile_FullInfo($path_info, $path = null, $new_name = null)
+{
+    $return = false;
+    if (\File::exists($path_info)) {
+        $filename = pathinfo($path_info)['basename'];
+        $contents = File::get($path_info);
+        $new_name = (strlen($new_name) > 0) ? $new_name : $filename;
+        if (Storage::cloud()->put($path . '/' . $new_name, $contents)) {
+            $recursive = false; // Get subdirectories also?
+            $file = collect(Storage::cloud()->listContents($path, $recursive))
+                ->where('type', '=', 'file')
+                ->where('filename', '=', pathinfo($new_name, PATHINFO_FILENAME))
+                ->where('extension', '=', pathinfo($new_name, PATHINFO_EXTENSION))
+                ->sortBy('timestamp')
+                ->last();
+            $return = $file;
+        }
+    }
+    return $return;
+}
+
 function deleteFile($filename, $path, $parent_path = null)
 {
     $return = false;
@@ -539,18 +633,22 @@ function infoShop()
         ->where('id', \Auth::user()->id)
         ->first();
     $ar_qc = array(env('SADMIN'), env('ADMIN'), env('QC'));
-    $order_new = getNewOrder();
+    $order_new = getNewWorking();
     $order_working = getworkingOrder();
     $order_checking = getCheckingOrder();
 
     $idea_new = getIdeaNew();
     $idea_check = getIdeaCheck();
+
+    $new_orders = getNewOrder();
+
     $data['pub'] = [
         'new' => $order_new,
         'working' => $order_working,
         'order_checking' => $order_checking,
         'idea_new' => $idea_new,
-        'idea_check' => $idea_check
+        'idea_check' => $idea_check,
+        'new_order' => $new_orders
     ];
     /*Nếu là QC và Admin*/
     if (in_array($user->level, $ar_qc)) {
@@ -573,11 +671,20 @@ function infoShop()
     return $data;
 }
 
+function getNewWorking()
+{
+    $where = [
+        ['status', '=', env('STATUS_WORKING_NEW')]
+    ];
+    return \DB::table('designs')
+        ->where($where)
+        ->count();
+}
+
 function getNewOrder()
 {
     $where = [
-        ['status', '=', env('STATUS_WORKING_NEW')],
-        ['custom_status', '=', env('STATUS_P_CUSTOM_PRODUCT')],
+        ['status', '=', env('STATUS_WORKING_NEW')]
     ];
     return \DB::table('woo_orders')
         ->where($where)

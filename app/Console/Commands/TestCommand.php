@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use App\Http\Controllers\TrackingController;
 use App\Http\Controllers\ApiController;
+use App\Http\Controllers\WooController;
+use App\Http\Controllers\GoogleController;
 use Illuminate\Console\Command;
 
 class TestCommand extends Command
@@ -43,9 +45,11 @@ class TestCommand extends Command
 //        $controller->autoUploadProduct();
 //        $controller->autoUploadImage();
 
-//        $api_controller = new ApiController();
+        $api_controller = new ApiController();
 //        $api_controller->checkTemplateScrap();
-        $this->checkTemplateScrap();
+//        $google_controller = new GoogleController();
+        $check = $api_controller->changeInfoProduct();
+//        $this->checkTemplateScrap();
     }
 
     private function checkTemplateScrap()

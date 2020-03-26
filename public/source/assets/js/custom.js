@@ -40,10 +40,61 @@ $(document).ready(function () {
                 $('#loading').fadeOut();
                 window.location.reload();
                 // console.log('error');
-                // console.log(error);
             }
         })
     });
+
+    /* Redo new Sku*/
+    $('.js-show-redo-sku').on('click',function (e) {
+        e.preventDefault();
+        var order_id = $(this).attr('order_id');
+        $( ".js-show-redo-sku-"+order_id ).toggle();
+    });
+
+    $('.js-redo-new-submit').on('click',function (e) {
+        e.preventDefault();
+        var order_id = $(this).attr('order-id');
+        var working_id = $(this).attr('working-id');
+        var design_id = $(this).attr('design-id');
+        var sku = $('.js-redo-new-sku-'+order_id).val();
+        var worker_id = $('select.js-redo-new-designer-'+order_id).val();
+        var new_variation = $('select.js-redo-new-variation-'+order_id).val();
+        var reason = $('.js-redo-new-reason-'+order_id).val();
+        var url = $('.js-redo-new-url').attr('url');
+        var data = {
+            order_id: order_id, working_id: working_id, design_id: design_id, sku: sku, worker_id: worker_id,
+            reason: reason, new_variation: new_variation
+        };
+
+        $.ajax({
+            method: "POST",
+            url: url,
+            data: data,
+            dataType: 'JSON',
+            // dataType: 'html',
+            success: function (data) {
+                if (data.status === 'success') {
+                    Materialize.toast(data.message, 5000);
+                    //xóa hàng đã chọn
+                    $('.js-remove-tr-'+order_id).remove();
+                    if (data.layout === 'refresh')
+                    {
+                        window.location.reload();
+                    }
+                    // console.log('success');
+                } else {
+                    // console.log('error');
+                    Materialize.toast(data.message, 5000);
+                }
+                // console.log(data);
+            },
+            error: function (error) {
+                window.location.reload();
+                console.log(error);
+            }
+        })
+    });
+    /*End redo new sku*/
 
     $('#idea-job tbody').on('click', '.js-redo-button', function (e) {
         e.preventDefault();
@@ -129,37 +180,39 @@ $(document).ready(function () {
 
     $('#idea-job tbody').on('click', '.js-take-job', function (e) {
         e.preventDefault();
-        var url = $(this).attr('data-url');
-        var working_id = $(this).attr('data-workingid');
-        var woo_order_id = $(this).attr('data-woo-order-id');
-        $(this).parents('tr').addClass('js-remove-table');
-        $.ajax({
-            method: "POST",
-            url: url,
-            data: {working_id: working_id, woo_order_id: woo_order_id},
-            dataType: 'JSON',
-            // dataType: 'html',
-            success: function (data) {
-                if (data.status === 'success') {
-                    Materialize.toast(data.message, 5000);
-                    //xóa hàng đã chọn
-                    table_idea
-                        .row('.js-remove-table')
-                        .remove()
-                        .draw();
-                } else {
-                    $('.js-remove-table').removeClass('js-remove-table');
-                    Materialize.toast(data.message, 5000);
+        if (confirm('Bạn có chắc chắn muốn thực hiện trả job này hay không?')) {
+            var url = $(this).attr('data-url');
+            var working_id = $(this).attr('data-workingid');
+            var design_id = $(this).attr('data-woo-order-id');
+            $(this).parents('tr').addClass('js-remove-table');
+            $.ajax({
+                method: "POST",
+                url: url,
+                data: {working_id: working_id, design_id: design_id},
+                dataType: 'JSON',
+                // dataType: 'html',
+                success: function (data) {
+                    if (data.status === 'success') {
+                        Materialize.toast(data.message, 5000);
+                        //xóa hàng đã chọn
+                        table_idea
+                            .row('.js-remove-table')
+                            .remove()
+                            .draw();
+                    } else {
+                        $('.js-remove-table').removeClass('js-remove-table');
+                        Materialize.toast(data.message, 5000);
+                    }
+                    // console.log('success');
+                    // console.log(data);
+                },
+                error: function (error) {
+                    window.location.reload();
+                    // console.log('error');
+                    // console.log(error);
                 }
-                // console.log('success');
-                // console.log(data);
-            },
-            error: function (error) {
-                window.location.reload();
-                // console.log('error');
-                // console.log(error);
-            }
-        })
+            })
+        }
     });
 
     $('#idea-job tbody').on('click', '.js-delete-log', function (e) {
@@ -241,13 +294,13 @@ $(document).ready(function () {
     $('.js-re-send-email').on( 'click', function (e) {
         e.preventDefault();
         var working_id = $(this).attr('working_id');
-        var order_id = $(this).attr('order_id');
+        var design_id = $(this).attr('design_id');
         var url = $(this).attr('data-url');
         $(this).parents('tr').addClass('js-remove-table');
         $.ajax({
             method: "POST",
             url: url,
-            data: {working_id : working_id, order_id: order_id},
+            data: {working_id : working_id, design_id: design_id},
             dataType: 'JSON',
             // dataType: 'html',
             success: function (data) {
@@ -465,6 +518,73 @@ $(document).ready(function () {
         });
     });
 
+    $(".js-btn-variation-show-right").click(function(){
+        var url = $('#js-variation-category').attr('url');
+        var cat_name = $(this).attr('data-catname');
+        var cat_id = $(this).attr('data-catid');
+        var dt = {'cat_name': cat_name, 'cat_id': cat_id};
+        $.ajax({
+            method: "POST",
+            url: url,
+            data: dt,
+            dataType: 'JSON',
+            // dataType: 'html',
+            success: function (data) {
+                Materialize.toast(data.message, 5000);
+                console.log(data)
+                if (data.result == 'success') {
+                    showDataVariation(data)
+                    // console.log(data);
+                }
+            },
+            error: function (error) {
+                // window.location.reload();
+                // console.log('error');
+                console.log(error);
+                Materialize.toast("Xảy ra lỗi. Mời bạn tải lại trang", 5000);
+            }
+        });
+    });
+
+    function showDataVariation(data) {
+        $('.js-show').removeClass('blue lighten-5');
+        $('.js-show-'+data.cat_id).addClass('blue lighten-5');
+        showRight();
+        if (data.variations.length > 0)
+        {
+            addOptionVariation(data, 'js-select-variation');
+        }
+    }
+
+    function addOptionVariation(data, selectId) {
+        $('#js-category-name').html(data.cat_name);
+        $('input#js-cat_id').val(data.cat_id);
+        $('#'+selectId+' option').remove();
+        var items = data.variations;
+        var text;
+        $.each(items, function (i, item) {
+            if (item.tool_category_name != '')
+            {
+                text = item.variation_name+'('+item.tool_category_name+')';
+            } else {
+                text = item.variation_name;
+            }
+            if (item.selected == 1)
+            {
+                $('#'+selectId).append($('<option>', {
+                    value: item.id,
+                    text : text,
+                    selected: true
+                }));
+            } else {
+                $('#'+selectId).append($('<option>', {
+                    value: item.id,
+                    text : text
+                }));
+            }
+        });
+    }
+
     function showDataKeyword(data)
     {
         $('#js-category-title').html(data.cat_name);
@@ -485,6 +605,7 @@ $(document).ready(function () {
     {
         $('.js-view-right').removeClass('s6').addClass('s12');
         $('.js-right-colum').removeClass('s6').addClass('hidden');
+        $('.js-show').removeClass('blue lighten-5');
     }
 
     $('.btn-right-close').on('click', function () {
