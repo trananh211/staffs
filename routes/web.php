@@ -41,8 +41,8 @@ Route::middleware('auth')->group(function () {
 
     /*QC + Admin*/
     Route::get('edit-store/{id_store}','WooController@editStore');
-    Route::get('checking','WooController@checking');
-    Route::get('working','WooController@working');
+    Route::get('checking','WooController@getChecking');
+    Route::get('working','WooController@checkWorking');
     Route::get('fulfillment','GoogleController@fulFillByHand');
     Route::get('see-log','ApiController@seeLog');
     Route::get('detail-log/{logfile}','ApiController@detailLog');
@@ -50,6 +50,7 @@ Route::middleware('auth')->group(function () {
     Route::get('send-customer/{order_id}','WooController@sendCustomer');
     Route::post('redo-designer','WooController@redoDesigner');
     Route::get('review-customer','WooController@reviewCustomer');
+    Route::get('list-job-done','WooController@listJobDone');
     Route::post('ajax_done_job/action', 'WooController@eventQcDone')->name('ajaxdonejob.action');
     Route::get('supplier','WooController@supplier');
     Route::get('tracking','TrackingController@tracking');
@@ -69,6 +70,22 @@ Route::middleware('auth')->group(function () {
     Route::post('ajax-re-send-email','WooController@axReSendEmail');
     Route::post('action-deleted-categories','WooController@actionDeletedCategories');
     Route::get('deleted-categories','WooController@deletedCategories');
+    Route::get('fulfill-category','WooController@fulfillCategory');
+    Route::get('update-variation','WooController@updateVariation');
+    Route::get('list-variation-category','WooController@listVariationCategory');
+    Route::post('edit-variations','WooController@editVariations');
+    Route::post('ajax-choose-variations','WooController@axChooseVariations');
+    Route::post('add-list-variation','WooController@addListVariation');
+    Route::post('edit-info-fulfills','WooController@editInfoFulfills');
+    Route::post('add-new-tool-category','WooController@addNewToolCategory');
+    Route::post('edit-tool-category','WooController@editToolCategory');
+    Route::get('delete-tool-category/{id}','WooController@deleteToolCategory');
+    Route::get('make-template-category/{id}','WooController@makeTemplateCategory');
+    Route::get('list-template-category','WooController@listTemplateCategory');
+    Route::post('new-template-category','WooController@NewTemplateCategory');
+    Route::get('action-fulfill-now','WooController@actionFulfillNow');
+    Route::get('fulfill-get-file/{id}','WooController@fulfilGetFile');
+    Route::get('fulfill-rescan-file/{id}','WooController@fulfillRescanFile');
 
     /** Paypal */
     Route::get('paypal-connect','PaypalController@index');
@@ -88,7 +105,7 @@ Route::middleware('auth')->group(function () {
     Route::post('woo-add-new-supplier','WooController@addNewSupplier');
     Route::get('woo-delete-supplier/{supplier_id}','WooController@deleteSupplier');
     Route::get('woo-get-template','WooController@getListTemplate');
-    Route::post('woo-update-template','WooController@editWooTemplate');
+    Route::post('woo-update-template','ApiController@editWooTemplate');
     Route::get('woo-scan-template/{woo_template_id}','WooController@scanAgainTemplate');
     Route::get('woo-list-convert-variation','WooController@getListConvertVariation');
     Route::get('woo-convert-variation','WooController@getConvertVariation');
@@ -99,6 +116,7 @@ Route::middleware('auth')->group(function () {
     Route::post('scrap-save-template','ApiController@scrapSaveTemplate');
     Route::get('woo-deleted-all-template/{woo_template_id}','WooController@deleteAllTemplate');
     Route::get('woo-deleted-all-product/{woo_template_id}&{type}','WooController@deleteAllProductTemplate');
+    Route::post('ajax-redo-new-sku','WooController@axRedoNewSKU');
 
     //lấy link về để cào lấy keyword
     Route::get('list-categories','WooController@listCategories');
@@ -114,15 +132,16 @@ Route::middleware('auth')->group(function () {
     /*End QC + Admin*/
 
     /*Staff*/
-    Route::get('staff-dashboard','WooController@staffDashboard');
+    Route::get('staff-dashboard','WooController@workingDashboard');
     Route::get('staff-get-job','WooController@staffGetJob');
     Route::get('detail-order/{order_id}','WooController@detailOrder');
 
     Route::get('staff-done-job/{up_id}','WooController@staffDoneJob');
     Route::post('staff-upload', 'WooController@staffUpload')->name('staff.upload');
-    Route::post('ajax_upload/action', 'WooController@action')->name('ajaxupload.action');
+    Route::post('ajax_upload/action', 'WooController@staffAction')->name('ajaxupload.action');
     Route::get('new-idea','WooController@doNewIdea');
     Route::post('ideaUpload', 'WooController@uploadIdea')->name('ajaxIdeaUpload.action');
+    Route::get('redoing-job/{working_id}','WooController@redoingJobStaff');
     /*End Staff*/
 });
 

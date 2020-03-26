@@ -95,7 +95,7 @@
                                     <label>Store Select</label>
                                 </div>
                                 <div class="input-field col s6">
-                                    <input type="text" name="category_name" required placeholder="high-top, low-top">
+                                    <input type="text" name="category_name" required placeholder="Gõ slug của category vào đây : high-top, low-top">
                                     <label for="icon_prefix2">Category Name</label>
                                 </div>
                             </div>

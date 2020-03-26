@@ -19,6 +19,8 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 });
 Route::post('/new-order/','ApiController@newOrder');
 
+Route::post('/update-order/','ApiController@updateOrderWoo');
+
 Route::get('/test-new-order/{filename}','ApiController@testNewOrder');
 
 Route::post('/update-product/','ApiController@updateProduct');

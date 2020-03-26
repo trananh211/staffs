@@ -3,39 +3,39 @@
     Staff
     <div class="row no-m-t no-m-b">
         <div class="col s12 m12 l4">
-            <div class="card stats-card">
+            <div class="card stats-card lime lighten-4">
                 <div class="card-content">
                     <div class="card-options">
                         <ul>
-                            <li class="red-text"><span class="badge cyan lighten-1">gross</span></li>
+                            <li class="red-text"><span class="badge cyan lighten-1">working</span></li>
                         </ul>
                     </div>
-                    <span class="card-title">Sales</span>
-                    <span class="stats-counter">$<span class="counter">48190</span><small>This week</small></span>
+                    <span class="card-title">Jobs</span>
+                    <span class="stats-counter"><span class="counter">{{ $reports['working'] }}</span><small>Đang làm</small></span>
                 </div>
                 <div id="sparkline-bar"></div>
             </div>
         </div>
         <div class="col s12 m12 l4">
-            <div class="card stats-card">
+            <div class="card stats-card green lighten-4">
                 <div class="card-content">
                     <div class="card-options">
                         <ul>
                             <li><a href="javascript:void(0)"><i class="material-icons">more_vert</i></a></li>
                         </ul>
                     </div>
-                    <span class="card-title">Page views</span>
-                    <span class="stats-counter"><span class="counter">83710</span><small>This month</small></span>
+                    <span class="card-title">Job Đã Làm Xong</span>
+                    <span class="stats-counter"><span class="counter">{{ $reports['work_in_week'] }}</span><small>Tuần Này</small></span>
                 </div>
                 <div id="sparkline-line"></div>
             </div>
         </div>
         <div class="col s12 m12 l4">
-            <div class="card stats-card">
+            <div class="card stats-card teal lighten-3">
                 <div class="card-content">
-                    <span class="card-title">Reports</span>
-                    <span class="stats-counter"><span class="counter">23230</span><small>Last week</small></span>
-                    <div class="percent-info green-text">8% <i class="material-icons">trending_up</i></div>
+                    <span class="card-title">Job hoàn thành</span>
+                    <span class="stats-counter"><span class="counter">{{ $reports['work_in_month'] }}</span><small>Tháng Này</small></span>
+                    <div class="percent-info green-text"><i class="material-icons">trending_up</i></div>
                 </div>
                 <div class="progress stats-card-progress">
                     <div class="determinate" style="width: 70%"></div>
@@ -44,122 +44,172 @@
         </div>
     </div>
     <div class="row no-m-t no-m-b">
-        <div class="col s12 m12 l8">
-            <div class="card visitors-card">
-                <div class="card-content">
-                    <div class="card-options">
-                        <ul>
-                            <li><a href="javascript:void(0)" class="card-refresh"><i class="material-icons">refresh</i></a></li>
-                        </ul>
-                    </div>
-                    <span class="card-title">Visitors<span class="secondary-title">Showing stats from the last week</span></span>
-                    <div id="flotchart1"></div>
-                </div>
-            </div>
-        </div>
-        <div class="col s12 m12 l4">
-            <div class="card server-card">
-                <div class="card-content">
-                    <div class="card-options">
-                        <ul>
-                            <li class="red-text"><span class="badge blue-grey lighten-3">optimal</span></li>
-                        </ul>
-                    </div>
-                    <span class="card-title">Server Load</span>
-                    <div class="server-load row">
-                        <div class="server-stat col s4">
-                            <p>167GB</p>
-                            <span>Usage</span>
-                        </div>
-                        <div class="server-stat col s4">
-                            <p>320GB</p>
-                            <span>Space</span>
-                        </div>
-                        <div class="server-stat col s4">
-                            <p>57.4%</p>
-                            <span>CPU</span>
-                        </div>
-                    </div>
-                    <div class="stats-info">
-                        <ul>
-                            <li>Google Chrome<div class="percent-info green-text right">32% <i class="material-icons">trending_up</i></div></li>
-                            <li>Safari<div class="percent-info red-text right">20% <i class="material-icons">trending_down</i></div></li>
-                            <li>Mozilla Firefox<div class="percent-info green-text right">18% <i class="material-icons">trending_up</i></div></li>
-                        </ul>
-                    </div>
-                    <div id="flotchart2"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="row no-m-t no-m-b">
         <div class="col s12 m12 l12">
-            <div class="card invoices-card">
+            <div class="card">
                 <div class="card-content">
-                    <div class="card-options">
-                        <input type="text" class="expand-search" placeholder="Search" autocomplete="off">
-                    </div>
-                    <span class="card-title">Invoices</span>
-                    <table class="responsive-table bordered">
+                    <span class="card-title">Danh sách Job bạn đã hoàn thành</span>
+                    <table id="review-job" class="display responsive-table datatable-example">
                         <thead>
                         <tr>
-                            <th data-field="id">ID</th>
-                            <th data-field="number">Payment Type</th>
-                            <th data-field="company">Company</th>
-                            <th data-field="date">Date</th>
-                            <th data-field="progress">Progress</th>
-                            <th data-field="total">Total</th>
+                            <th>#</th>
+                            <th>Job</th>
+                            <th>Status</th>
+                            <th>Qc</th>
+                            <th>Variation</th>
+                            <th>Action</th>
                         </tr>
                         </thead>
+                        <tfoot>
+                        <tr>
+                            <th>#</th>
+                            <th>Job</th>
+                            <th>Status</th>
+                            <th>Qc</th>
+                            <th>Time</th>
+                            <th>Action</th>
+                        </tr>
+                        </tfoot>
                         <tbody>
-                        <tr>
-                            <td>#203</td>
-                            <td>PayPal</td>
-                            <td>Curabitur Libero Corp</td>
-                            <td>Dec 16, 18:12</td>
-                            <td><span class="pie">3/8</span></td>
-                            <td>$5430</td>
-                        </tr>
-                        <tr>
-                            <td>#202</td>
-                            <td>American Express</td>
-                            <td>Integer Mattis Ltd</td>
-                            <td>Nov 29, 13:56</td>
-                            <td><span class="pie">5/8</span></td>
-                            <td>$1400</td>
-                        </tr>
-                        <tr>
-                            <td>#200</td>
-                            <td>Discover</td>
-                            <td>Pellentesque Inc</td>
-                            <td>Nov 17, 19:14</td>
-                            <td><span class="pie">3/8</span></td>
-                            <td>$1250</td>
-                        </tr>
-                        <tr>
-                            <td>#199</td>
-                            <td>MasterCard</td>
-                            <td>Curabitur Libero Corp</td>
-                            <td>Oct 21, 12:16</td>
-                            <td><span class="pie">5/8</span></td>
-                            <td>$1349</td>
-                        </tr>
-                        <tr>
-                            <td>#198</td>
-                            <td>Amex</td>
-                            <td>Integer Mattis Ltd</td>
-                            <td>Oct 14, 22:43</td>
-                            <td><span class="pie">3/8</span></td>
-                            <td>$980</td>
-                        </tr>
-                        <tr>
-                            <td>#197</td>
-                            <td>PayPal</td>
-                            <td>Pellentesque Inc</td>
-                            <td>Sept 29, 10:33</td>
-                            <td><span class="pie">5/8</span></td>
-                            <td>$679</td>
-                        </tr>
+                        <?php $i=0; ?>
+                        @if (sizeof($lst_jobs) > 0)
+                            @foreach( $lst_jobs as $job)
+                                <?php $i++; ?>
+                                <tr>
+                                    <td>{{ $i }}</td>
+                                    <td>{{ $job->sku.'-PID-'.$job->id }}</td>
+                                    <td>{!! statusJob($job->status, $job->redo, $job->reason) !!}</td>
+                                    <td>{{ $job->qc_name }}</td>
+                                    <td class="center">
+                                        {!! compareTime($job->updated_at, date("Y-m-d H:i:s")) !!}
+                                    </td>
+                                    <td>
+                                        <!-- Modal Trigger -->
+                                        <a class="waves-effect waves-light btn blue lighten-2 modal-trigger" href="#modal{{ $job->id }}">
+                                            Chi Tiết
+                                        </a>
+                                        <!-- Modal Structure -->
+                                        <div id="modal{{ $job->id }}" class="modal">
+                                            <div class="modal-content">
+                                                <!-- Chi tiết-->
+                                                <div class="row">
+                                                    <?php
+                                                    $details = $job;
+                                                    $images = explode(',', $job->image);
+                                                    $del = explode('-;-;-', $job->detail);
+                                                    ?>
+                                                    <div class="col s12 m12 l12">
+                                                        <div class="card">
+                                                            <div class="card-content">
+                                                                <ul>
+                                                                    <li>1. Bạn phải lưu file Mockup với tên : <b>{{ $details->sku.'-PID-'.$details->id }}
+                                                                            _mockup </b></li>
+                                                                    <li>2. Bạn phải lưu file Design với tên : <b>{{ $details->sku.'-PID-'.$details->id }}_1, _L, _Left, _Front, _Back, _B
+                                                                            ... </b></li>
+                                                                    <li>Tên sản phẩm : {{ $details->name }}</li>
+                                                                    <li>Link gốc sản phẩm : {{ $details->permalink }}</li>
+                                                                    <li>Và sử dụng những yêu cầu dưới đây để làm file sản xuất.</li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col s6 m12 l6">
+                                                        <div class="card">
+                                                            <div class="card-content">
+                                                                <p class="card-title">Image</p>
+                                                                <div class="material-placeholder" style="">
+                                                                    @foreach($images as $key => $image)
+                                                                        @if ($key < 1)
+                                                                            <img class="materialboxed responsive-img initialized" src="{{ $image }}" alt="" style="">
+                                                                        @endif
+                                                                    @endforeach
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col s16 m12 l6">
+                                                        @if ($details->redo == 1)
+                                                            <div class="card red lighten-1">
+                                                                <div class="card-content">
+                                                                    <p class="card-title">Redo</p>
+                                                                    {!! html_entity_decode($details->reason) !!}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        @endif
+                                                            @if ($details->customer_note != '')
+                                                                <div class="card light-green lighten-3">
+                                                                    <div class="card-content">
+                                                                        <p class="card-title">Customer Note</p>
+                                                                        {!! html_entity_decode($details->customer_note) !!}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            @endif
+                                                        <div class="card">
+                                                            <div class="card-content">
+                                                                <p class="card-title">Note</p>
+                                                                <table class="responsive-table">
+                                                                    <thead>
+                                                                    <tr>
+                                                                        <th data-field="id">Title</th>
+                                                                        <th data-field="name">Value</th>
+                                                                    </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                    @foreach($del as $value)
+                                                                        <?php
+
+                                                                        $tmp = explode(' :', $value);
+                                                                        $title = $tmp[0];
+                                                                        $tmp2 = (isset($tmp[1]) ? $tmp[1] : '');
+                                                                        if (strlen($tmp2) > 0) {
+                                                                            $tmp2 = explode(",", $tmp2);
+                                                                        }
+                                                                        ?>
+                                                                        <tr>
+                                                                            <td><?php echo $tmp[0]; ?></td>
+                                                                            <td>
+                                                                                @if (is_array($tmp2))
+                                                                                    @foreach ($tmp2 as $k => $val)
+                                                                                        <?php
+                                                                                        $k++;
+                                                                                        if (strpos($val, 'http') !== false) {
+                                                                                            echo "<div><a href='$val' target='_blank' download='$val'>
+                                                                Image $k
+                                                            </a></div>";
+                                                                                        } else {
+                                                                                            echo $val;
+                                                                                        }
+                                                                                        ?>
+                                                                                    @endforeach
+                                                                                @endif
+                                                                            </td>
+                                                                        </tr>
+                                                                    @endforeach
+
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <!-- End Chi tiết-->
+                                            </div>
+                                        </div>
+                                        @if ($job->status == env('STATUS_WORKING_CHECK'))
+                                            <a href="{{ url('redoing-job/'.$job->id) }}"
+                                               class="waves-effect waves-light red lighten-2 btn" >
+                                                Làm Lại
+                                            </a>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @else
+                            <tr>
+                               <td colspan="5" class="center">Tới thời điểm hiện tại bạn chưa làm Job nào. Bạn lười vãi đái.</td>
+                            </tr>
+                        @endif
                         </tbody>
                     </table>
                 </div>

@@ -64,6 +64,57 @@ class ApiController extends Controller
         }
     }
 
+    public function updateOrderWoo(Request $request)
+    {
+        /*Get Header Request*/
+        $header = getallheaders();
+        logfile('[New Order] Phát hiện thấy order mới');
+        if (is_array($header))
+        {
+            $woo_id = false;
+            $woo_infos = \DB::table('woo_infos')->pluck('id','url')->toArray();
+            foreach ($header as $key => $value)
+            {
+                // kiểm tra xem có phải url không
+                if (strpos($value, 'http') !== false) {
+                    // $url = substr($value, 0, -1);
+                    $url = $value;
+                    if (array_key_exists($url, $woo_infos))
+                    {
+                        logfile('[New Order] from '.$url);
+                        $woo_id = $woo_infos[$url];
+                        break;
+                    }
+                }
+            }
+            /*Get data Request*/
+            $data = @file_get_contents('php://input');
+            $data = json_decode($data, true);
+
+            /*Send data to processing*/
+            if ($woo_id !== false)
+            {
+                if (sizeof($data) > 0)
+                {
+                    $api = new Api();
+                    $api->updateOrderWoo($data, $woo_id);
+                } else {
+                    logfile('[Error data] Không nhận được data của new order truyền vào');
+                }
+            } else {
+                logfile('[Error Id] Store Id không được tìm thấy');
+            }
+        } else {
+            logfile('[Error Header] [New Order] Không tồn tại header');
+        }
+    }
+
+    public function getDesignNew()
+    {
+        $api = new Api();
+        return $api->getDesignNew();
+    }
+
     public function getStoreInfo($webhook_head)
     {
         $url = substr($webhook_head['x-wc-webhook-source'], 0, -1);
@@ -220,8 +271,13 @@ class ApiController extends Controller
         return $api->reCheckProductInfo();
     }
     /*End Check Product of category info*/
-
     // End Google Feed
+
+    public function editWooTemplate(Request $request)
+    {
+        $api = new Api();
+        return $api->editWooTemplate($request);
+    }
 
     public function getMoreWooCategory(Request $request)
     {
@@ -233,6 +289,12 @@ class ApiController extends Controller
     {
         $api = new Api();
         return $api->checkTemplateScrap();
+    }
+
+    public function changeInfoProduct()
+    {
+        $api = new Api();
+        return $api->changeInfoProduct();
     }
 }
 

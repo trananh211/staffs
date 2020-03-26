@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Http\Controllers\GoogleController;
 use Illuminate\Console\Command;
 use App\Http\Controllers\ApiController;
+use App\Http\Controllers\WooController;
 
 class CustomCommand extends Command
 {
@@ -83,17 +84,24 @@ class CustomCommand extends Command
     private function run1Minute()
     {
         $api_controller = new ApiController(); // make sure to import the controller
-        $check = true;
-        // upload image from google driver to product
-        $check = $api_controller->autoUploadImage();
-//        $check = $api_controller->getCategoryChecking();
-        if ($check) {
-            // tạo feed check feed đầu tiên
-            $check2 = $api_controller->reCheckProductInfo();
-            if ($check2)
+        $google_controller = new GoogleController(); // make sure to import the controller
+        $check0 = $google_controller->uploadFileWorkingGoogle(); // tải file working lên google driver
+        if ($check0)
+        {
+            $check1 = $google_controller->getFileFulfill(); // download file fulfill từ driver về local
+            if ($check1)
             {
-                //Cào sản phẩm
-                $this->call('scrap:product');
+                // upload image from google driver to product
+                $check2 = $api_controller->autoUploadImage();
+                if ($check2) {
+                    // tạo feed check feed đầu tiên
+                    $check3 = $api_controller->reCheckProductInfo();
+                    if ($check3)
+                    {
+                        //Cào sản phẩm
+                        $this->call('scrap:product');
+                    }
+                }
             }
         }
     }
@@ -102,16 +110,18 @@ class CustomCommand extends Command
     {
         echo 'run 2 phut';
     }
-    private function run3Minute()
-    {
-        echo 'run 3 phut';
-    }
 
     private function run4Minute()
     {
         echo 'run 4 phut';
         $api_controller = new ApiController(); // make sure to import the controller
-        $api_controller->getCategoryChecking();
+        $check = $api_controller->autoUploadProduct();
+        if ($check) {
+            $check1 = $api_controller->changeInfoProduct(); // thay đổi thông tin product theo template
+            if ($check1) {
+                $api_controller->getCategoryChecking();
+            }
+        }
     }
 
     private function run6Minute()

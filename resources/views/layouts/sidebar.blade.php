@@ -414,26 +414,46 @@
                                     {!! (array_key_exists('private', $data)) ? notiSideBar($data['private']['order_review']) : '' !!}
                                 </a>
                             </li>
-                            <li><a href="{{ url('supplier') }}">Supplier</a></li>
-                            <li><a href="{{ url('tracking') }}">Tracking</a></li>
-                            <li><a href="{{ url('list-product') }}">Danh sách sản phẩm</a></li>
+                            <li>
+                                <a href="{{ url('list-job-done') }}">Job Done</a>
+                            </li>
+                            <li><a href="{{ url('fulfill-category') }}">Fulfill Order</a></li>
+                            <li class="hidden"><a href="{{ url('supplier') }}">Supplier</a></li>
+                            <li class="hidden"><a href="{{ url('tracking') }}">Tracking</a></li>
+                            <li class="hidden"><a href="{{ url('list-product') }}">Danh sách sản phẩm</a></li>
                         </ul>
                     </div>
                 </li>
+            @endif
 
+            @if( in_array( Auth::user()->level, array( env('ADMIN'),env('QC'),env('SADMIN')) ) )
                 <li class="no-padding">
-                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">ring_volume</i>
-                        New Idea
-                        {!! (array_key_exists('private', $data)) ? notiSideBar($data['private']['check_idea'] + $data['private']['idea_send_support']) : '' !!}
+                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">work</i>
+                        Products
                         <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
                     </a>
                     <div class="collapsible-body">
                         <ul>
-                            <li><a href="{{ url('list-idea') }}">
-                                    List Idea New{!! (array_key_exists('private', $data)) ? notiSideBar($data['private']['check_idea']) : '' !!}</a></li>
-                            <li><a href="{{ url('list-idea-done') }}">List Idea Up Shop
-                                    {!!  (array_key_exists('private', $data)) ? notiSideBar($data['private']['idea_send_support']) : '' !!}</a></li>
-                            <li><a href="{{ url('new-job-idea') }}">Create New Job</a></li>
+                            <li><a href="{{ url('woo-supplier') }}">Supplier</a></li>
+                            <li><a href="{{ url('list-variation-category') }}">Category & Variation</a></li>
+                            <li><a href="{{ url('list-template-category') }}">Category Template Fulfill</a></li>
+                            <li><a href="{{ url('woo-list-convert-variation') }}">Convert Variation</a></li>
+                        </ul>
+                    </div>
+                </li>
+                <li class="no-padding">
+                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">vpn_key</i>
+                        Tools
+                        <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
+                    </a>
+                    <div class="collapsible-body">
+                        <ul>
+                            <li><a href="{{ url('woo-get-template') }}">Edit Template</a></li>
+                            <li><a href="{{ url('woo-processing-product') }}">Processing Template</a></li>
+                            <li><a href="{{ url('woo-create-template') }}">Create Template</a></li>
+                            <li><a href="{{ url('scrap-create-template') }}">Web Scraper</a></li>
+                            <li><a href="{{ url('list-categories') }}">Keyword Categories</a></li>
+                            <li><a href="{{ url('get-store') }}">Feed Results</a></li>
                         </ul>
                     </div>
                 </li>
@@ -456,56 +476,10 @@
                 </li>
             @endif
 
-            @if( in_array( Auth::user()->level, array( env('ADMIN'),env('QC'),env('SADMIN')) ) )
-                <li class="no-padding">
-                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">work</i>
-                        Products
-                        <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
-                    </a>
-                    <div class="collapsible-body">
-                        <ul>
-                            <li><a href="{{ url('woo-processing-product') }}">Processing Template</a></li>
-                            <li><a href="{{ url('woo-create-template') }}">Create Template</a></li>
-                            <li><a href="{{ url('woo-supplier') }}">Supplier</a></li>
-                            <li><a href="{{ url('woo-get-template') }}">Edit Template</a></li>
-                            <li><a href="{{ url('woo-list-convert-variation') }}">Convert Variation</a></li>
-                        </ul>
-                    </div>
-                </li>
-                <li class="no-padding">
-                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">search</i>
-                        Web Scraper
-                        <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
-                    </a>
-                    <div class="collapsible-body">
-                        <ul>
-                            <li><a href="{{ url('scrap-create-template') }}">Connect Template</a></li>
-                        </ul>
-                    </div>
-                </li>
-                <li class="no-padding">
-                    <a class="collapsible-header waves-effect waves-grey"><i class="material-icons">vpn_key</i>
-                        Keyword
-                        <i class="nav-drop-icon material-icons">keyboard_arrow_right</i>
-                    </a>
-                    <div class="collapsible-body">
-                        <ul>
-                            <li><a href="{{ url('list-categories') }}">List Categories</a></li>
-                            <li><a href="{{ url('get-store') }}">Feed Results </a></li>
-                        </ul>
-                    </div>
-                </li>
-            @endif
-
             @if( Auth::user()->level == env('WORKER'))
                 <li class="no-padding"><a class="waves-effect waves-grey" href="{{ url('staff-dashboard') }}">
                         <i class="material-icons">trending_up</i>Workings
                         {!! (array_key_exists('private', $data)) ?  notiSideBar($data['private']['order_new']) : '' !!}
-                    </a>
-                </li>
-                <li class="no-padding"><a class="waves-effect waves-grey" href="{{ url('new-idea') }}">
-                        <i class="material-icons">ring_volume</i>New Idea
-                        {!! (array_key_exists('private', $data)) ?  notiSideBar($data['private']['idea_new']) : '' !!}
                     </a>
                 </li>
             @endif

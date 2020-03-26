@@ -11,6 +11,7 @@ use Illuminate\Http\UploadFile;
 use Carbon\Carbon;
 Use App\Jobs\SendPostEmail;
 use Image;
+use Excel;
 
 class Working extends Model
 {
@@ -23,7 +24,7 @@ class Working extends Model
     }
 
     /*Hàm check Auth ajax*/
-    private static function checkAuth()
+    public static function checkAuth()
     {
         if (!Auth::check()) {
             $return = [
@@ -56,6 +57,7 @@ class Working extends Model
     /*DASHBOARD*/
     public function adminDashboard($data)
     {
+//        echo "<pre>";
         $list_order = $this->getListOrderOfMonth(30);
         return view('/admin/dashboard')
             ->with(compact('list_order', 'data'));
@@ -63,12 +65,54 @@ class Working extends Model
 
     public function staffDashboard($data)
     {
+        $uid = Auth::id();
+        // số file đang làm việc
+        $where_working = [
+            ['workings.worker_id', '=', $uid],
+            ['workings.status', '=', env('STATUS_WORKING_NEW')]
+        ];
+        $week_day = getTimeAgo(7);
+        $month_day = getTimeAgo(30);
+        // số file đã làm việc trong tuần
+        $where_working_in_week = [
+            ['workings.worker_id', '=', $uid],
+            ['workings.status', '>', env('STATUS_WORKING_NEW')],
+            ['workings.created_at', '>=', "'" . $week_day . "'"],
+        ];
+
+        // số file đã làm việc trong 30 ngày vừa qua
+        $where_working_in_month = [
+            ['workings.worker_id', '=', $uid],
+            ['workings.status', '=', env('STATUS_WORKING_DONE')],
+            ['workings.created_at', '>=', "'" . $month_day . "'"],
+        ];
+        $working = $this->countStaffWorking($where_working);
+        $file_work_inweek = $this->countStaffWorking($where_working_in_week);
+        $file_work_inmonth = $this->countStaffWorking($where_working_in_month);
+
+        $reports = [
+            'working' => $working,
+            'work_in_week' => $file_work_inweek,
+            'work_in_month' => $file_work_inmonth
+        ];
+        // Hiển thị tất cả các job đã làm và trạng thái hoàn thành
+        $where = [
+            ['workings.worker_id', '=', $uid],
+        ];
+        $lst_jobs = $this->orderStaff($where);
         return view('/staff/dashboard')
-            ->with(compact('data'));
+            ->with(compact('data','reports', 'lst_jobs'));
+    }
+
+    private function countStaffWorking($where)
+    {
+        $working = \DB::table('workings')->where($where)->count();
+        return $working;
     }
 
     public function qcDashboard($data)
     {
+        $uid = Auth::id();
         return view('/staff/qc_dashboard')
             ->with(compact('data'));
     }
@@ -93,13 +137,18 @@ class Working extends Model
         $lists = \DB::table('woo_orders')
             ->join('woo_infos', 'woo_orders.woo_info_id', '=', 'woo_infos.id')
             ->leftJoin('trackings as t', 'woo_orders.id', '=', 't.woo_order_id')
-            ->leftJoin('workings', 'woo_orders.id', '=', 'workings.woo_order_id')
+            ->leftjoin('workings', function ($join) {
+                $join->on('workings.design_id', '=', 'woo_orders.design_id')
+                    ->on('workings.product_id', '=', 'woo_orders.product_id')
+                    ->on('workings.store_id', '=', 'woo_orders.woo_info_id');
+            })
             ->select(
-                'woo_orders.id', 'woo_orders.number', 'woo_orders.status', 'woo_orders.product_name',
+                'woo_orders.id', 'woo_orders.number', 'woo_orders.product_name',
                 'woo_orders.quantity', 'woo_orders.price', 'woo_orders.created_at', 'woo_orders.payment_method',
                 'woo_infos.name', 'woo_orders.order_status', 'woo_orders.email',
                 'woo_orders.sku', 'woo_orders.variation_full_detail', 'woo_orders.variation_detail',
-                't.tracking_number', 't.status as tracking_status', 'workings.id as working_id'
+                't.tracking_number', 't.status as tracking_status',
+                'workings.id as working_id', 'workings.status'
             )
             ->where($where)
             ->orderBy('woo_orders.id', 'DESC')
@@ -119,52 +168,47 @@ class Working extends Model
         return $this->orderStaff($where);
     }
 
-    public function detailOrder($order_id)
-    {
-        $where = [
-            ['workings.id', '=', $order_id],
-        ];
-        return $this->orderStaff($where);
-    }
-
     private static function orderStaff($where)
     {
         $lists = \DB::table('workings')
-            ->join('woo_orders', 'workings.woo_order_id', '=', 'woo_orders.id')
-            ->join('woo_products', 'workings.product_id', '=', 'woo_products.product_id')
-            ->join('users as worker', 'workings.worker_id', '=', 'worker.id')
-            ->select(
-                'workings.id', 'workings.status', 'workings.updated_at', 'workings.woo_order_id',
-                'workings.qc_id', 'workings.worker_id', 'workings.reason', 'workings.redo',
-                'worker.id as worker_id', 'worker.name as worker_name',
-                'woo_orders.number', 'woo_orders.detail',
-                'woo_products.name', 'woo_products.permalink', 'woo_products.image'
-            )
-            ->where($where)
-            ->orderBy('workings.id', 'ASC')
-            ->get()
-            ->toArray();
-        return $lists;
-    }
-
-    private static function reviewWork($where)
-    {
-        $lists = \DB::table('workings')
-            ->join('woo_orders', 'workings.woo_order_id', '=', 'woo_orders.id')
-            ->join('woo_products', 'workings.product_id', '=', 'woo_products.product_id')
-            ->join('users as worker', 'workings.worker_id', '=', 'worker.id')
-            ->join('users as qc', 'workings.qc_id', '=', 'qc.id')
+            ->leftjoin('woo_products', 'workings.product_id', '=', 'woo_products.product_id')
+            ->leftjoin('designs', 'workings.design_id', '=', 'designs.id')
+            ->leftjoin('woo_orders', function ($join) {
+                $join->on('workings.design_id', '=', 'woo_orders.design_id')
+                    ->on('workings.product_id', '=', 'woo_orders.product_id')
+                    ->on('workings.store_id', '=', 'woo_orders.woo_info_id');
+            })
+            ->leftjoin('tool_categories', function ($join) {
+                $join->on('workings.design_id', '=', 'designs.id')
+                    ->on('designs.tool_category_id', '=', 'tool_categories.id');
+            })
+            ->leftjoin('users as worker', 'workings.worker_id', '=', 'worker.id')
+            ->leftjoin('users as qc', 'workings.qc_id', '=', 'qc.id')
             ->select(
                 'workings.id', 'workings.status', 'workings.updated_at',
-                'workings.qc_id', 'workings.worker_id', 'workings.woo_order_id', 'workings.reason', 'workings.redo',
-                'worker.id as worker_id', 'worker.name as worker_name', 'qc.id as qc_id', 'qc.name as qc_name',
-                'woo_orders.number', 'woo_orders.detail',
+                'workings.qc_id', 'workings.worker_id', 'workings.reason', 'workings.redo',
+                'designs.id as design_id', 'designs.sku', 'designs.variation', 'designs.tool_category_id',
+                'tool_categories.name as tool_category_name',
+                'woo_orders.detail', 'woo_orders.customer_note',
+                'worker.id as worker_id', 'worker.name as worker_name',
+                'qc.name as qc_name',
                 'woo_products.name', 'woo_products.permalink', 'woo_products.image'
             )
             ->where($where)
             ->orderBy('workings.id', 'ASC')
             ->get()
             ->toArray();
+
+        $array_used = array();
+        foreach ($lists as $key => $list)
+        {
+            if (!in_array($list->design_id, $array_used))
+            {
+                $array_used[] = $list->design_id;
+            } else {
+                unset($lists[$key]);
+            }
+        }
         return $lists;
     }
 
@@ -183,12 +227,80 @@ class Working extends Model
                 ->count();
             if ($check_working == 0) {
                 $username = Auth::user()->original['name'];
-                $this->log(' Nhân viên ' . $username . ' xin job mới.');
+                $this->log('-- Nhân viên ' . $username . ' xin job mới.');
+                $jobs = DB::table('designs')
+                    ->select('id', 'product_id', 'store_id', 'sku', 'variation')
+                    ->where('status', env('STATUS_WORKING_NEW'))
+                    ->orderBy('sku', 'ASC')
+                    ->limit(env("STAFF_GET_JOB_LIMIT"))
+                    ->get()->toArray();
+                if (sizeof($jobs) > 0) {
+                    $data_workings = array();
+                    $data_id_driver = array();
+                    //gộp toàn bộ order vào cùng 1 job
+                    foreach ($jobs as $design) {
+                        $data_workings[] = [
+                            'design_id' => $design->id,
+                            'store_id' => $design->store_id,
+                            'product_id' => $design->product_id,
+                            'worker_id' => $uid,
+                            'status' => env('STATUS_WORKING_NEW'),
+                            'created_at' => date("Y-m-d H:i:s"),
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
+                        $data_id_driver[] = $design->id;
+                    }
+
+                    if (sizeof($data_workings) > 0) {
+                        \DB::beginTransaction();
+                        try {
+                            \DB::table('workings')->insert($data_workings);
+                            \DB::table('designs')
+                                ->whereIn('id', $data_id_driver)
+                                ->update(['status' => env('STATUS_WORKING_CHECK')]);
+                            $return = true;
+                            $save = "Chia " . sizeof($data_workings) . " order cho '" . $username . "' thanh cong.";
+                            \Session::flash('success', 'Nhận việc thành công. Vui lòng hoành thành sớm.');
+                            \DB::commit(); // if there was no errors, your query will be executed
+                        } catch (\Exception $e) {
+                            $return = false;
+                            $save = "Chia " . sizeof($data_workings) . " order cho '" . $username . "' thất bại.";
+                            \Session::flash('error', 'Xảy ra lỗi. Vui lòng thử lại!');
+                            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+                        }
+                        $this->log($save);
+                    }
+                } else {
+                    \Session::flash('error', 'Đã hết công việc. Báo với quản lý của bạn để nhận việc mới.!');
+                    $this->log("Đã hết order để chia cho nhân viên. \n");
+                }
+            } else {
+                \Session::flash('error', 'Hãy hoàn thành hết công việc hiện tại trước đã nhé!');
+            }
+            return redirect('staff-dashboard');
+        }
+    }
+
+    public function staffGetJob2()
+    {
+        $this->log('=============== GET NEW JOB=================');
+        if (Auth::check()) {
+            $uid = Auth::id();
+            $check_working = \DB::table('workings')
+                ->select('id')
+                ->where([
+                    ['worker_id', '=', $uid],
+                    ['status', '=', env('STATUS_WORKING_NEW')]
+                ])
+                ->count();
+            if ($check_working == 0) {
+                $username = Auth::user()->original['name'];
+                $this->log('-- Nhân viên ' . $username . ' xin job mới.');
                 $jobs = DB::table('woo_orders')
                     ->select('id', 'woo_info_id', 'order_id', 'product_id', 'number')
                     ->where('status', env('STATUS_WORKING_NEW'))
                     ->where('custom_status', '!=', env('STATUS_P_AUTO_PRODUCT'))
-                    ->orderBy('id', 'ASC')
+                    ->orderBy('sku', 'ASC')
                     ->limit(env("STAFF_GET_JOB_LIMIT"))
                     ->get()->toArray();
                 if (sizeof($jobs) > 0) {
@@ -267,15 +379,17 @@ class Working extends Model
             $img = '';
             if (sizeof($files) > 0) {
                 /*Kiểm tra file đang làm việc*/
-                $lsts = \DB::table('workings')->select('id', 'number')
+                $lsts = \DB::table('workings')
+                    ->leftjoin('designs', 'designs.id', '=', 'workings.design_id')
+                    ->select('workings.id', 'designs.sku')
                     ->where([
-                        'status' => env('STATUS_WORKING_NEW'),
-                        'worker_id' => $uid
+                        'workings.status' => env('STATUS_WORKING_NEW'),
+                        'workings.worker_id' => $uid
                     ])->get()->toArray();
                 if (sizeof($lsts) > 0) {
                     $ar_filecheck = array();
                     foreach ($lsts as $lst) {
-                        $ar_filecheck[$lst->number][] = $lst->id;
+                        $ar_filecheck[$lst->sku][] = $lst->id;
                     }
                     $mockup = array();
                     $file_upload = array();
@@ -292,7 +406,7 @@ class Working extends Model
                             }
                             $file_upload[$file_id][] = $file;
                         } else {
-                            $message .= getErrorMessage('File ' . $file . ': Bạn không làm job này.');
+                            $message .= getErrorMessage('File ' . $file . ' sai tên hoặc Bạn không làm job này.');
                         }
                     }
                     $deleted = array();
@@ -326,6 +440,7 @@ class Working extends Model
                                 }
                             }
                         } else {
+                            $message .= getErrorMessage('Bạn tải lên thiếu file mockup. Bạn cần tải thêm để hoàn thành job.');
                             $deleted = array_merge($deleted, $f_up);
                         }
                     }
@@ -343,6 +458,8 @@ class Working extends Model
                 } else {
                     $message .= getErrorMessage('Hiện tại bạn không có job. Bạn làm sai quy trình.');
                 }
+            } else {
+                $message .= getErrorMessage('File ảnh bạn tải lên không đúng định dạng yêu cầu. Thiếu -PID- hoặc sai định dạng ảnh.');
             }
             return response()->json([
                 'message' => getMessage($message),
@@ -610,7 +727,7 @@ class Working extends Model
         foreach ($files as $file) {
             $extension = strtolower($file->getClientOriginalExtension());
             $filename = $file->getClientOriginalName();
-            if ($file->getSize() <= 10000000) {
+            if ($file->getSize() <= env('UPLOAD_SIZE_MAX')) {
                 if (in_array(strtolower($extension), $ext)) {
                     if (strlen($str_compare) > 0 && strpos($filename, $str_compare) === false) {
                         $message .= getErrorMessage('File ' . $filename . ' sai định dạng tên. Mời đổi lại tên.');
@@ -651,13 +768,12 @@ class Working extends Model
         }
     }
 
-    public function checking()
+    public function getChecking()
     {
         $where = [
             ['workings.status', '=', env('STATUS_WORKING_CHECK')]
         ];
         $lists = $this->orderStaff($where);
-
         $where_working_file = [
             ['working_files.status', '=', env('STATUS_WORKING_CHECK')]
         ];
@@ -666,7 +782,7 @@ class Working extends Model
         return view('admin/checking')->with(compact('lists', 'images', 'data'));
     }
 
-    public function working()
+    public function checkWorking()
     {
         $where = [
             ['workings.status', '=', env('STATUS_WORKING_NEW')]
@@ -676,7 +792,7 @@ class Working extends Model
         return view('admin/working')->with(compact('data', 'lists'));
     }
 
-    private function getWorkingFile($where)
+    public function getWorkingFile($where)
     {
         $return = array();
         $files = \DB::table('working_files')->select('working_id', 'name', 'thumb')
@@ -692,59 +808,55 @@ class Working extends Model
         return $return;
     }
 
-    public function sendCustomer($order_id)
+    public function sendCustomer($working_id)
     {
-        /*Move file về thư mục done*/
         $where = [
-            ['workings.id', '=', $order_id],
+            ['workings.id', '=', $working_id],
             ['wfl.is_mockup', '=', 1],
         ];
         $working = \DB::table('workings')
             ->join('working_files as wfl', 'workings.id', '=', 'wfl.working_id')
-            ->join('woo_orders as wod', 'workings.woo_order_id', '=', 'wod.id')
             ->select(
-                'workings.id', 'workings.number', 'workings.status', 'workings.woo_order_id', 'workings.woo_info_id',
-                'wfl.path', 'wfl.name', 'wod.email as customer_email', 'wod.fullname as customer_name'
+                'workings.design_id',
+                'wfl.path', 'wfl.name as file_name'
             )
             ->where($where)
             ->first();
         if ($working !== NULL) {
-            \DB::table('workings')->where('id', $order_id)
+            \DB::table('workings')->where('id', $working_id)
                 ->update([
                     'status' => env('STATUS_WORKING_CUSTOMER'),
                     'qc_id' => Auth::id(),
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
-            \DB::table('woo_orders')->where('id', $working->woo_order_id)
+            \DB::table('designs')->where('id', $working->design_id)
                 ->update([
                     'status' => env('STATUS_WORKING_CUSTOMER'),
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
-            \DB::table('working_files')->where('working_id', $order_id)
+            \DB::table('working_files')->where('working_id', $working_id)
                 ->update([
                     'status' => env('STATUS_WORKING_CUSTOMER'),
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
-            /*Todo: Xây dựng hàm gửi email tới khách hàng ở đây */
-            $info = \DB::table('woo_infos')
-                ->select('name', 'email', 'password', 'host', 'port', 'security')
-                ->where('id', $working->woo_info_id)
-                ->first();
-            $title = '[ ' . $info->name . ' ] Update information about order ' . $working->number;
-            $file = public_path($working->path . $working->name);
-            $body = "Dear " . $working->customer_name . ",
-We send you this email with information about " . $working->number . " order. 
-We send detailed information about the design in the attached file below. 
-If you want to resubmit your order redesign request, please reply to the message within 24 hours from the time you receive this email, after 24 hours we will move on to the next stage. 
-If you are satisfied with the product, please do not reply to this email.
-Thank you for your purchase at our store. Wish you a good day and lots of luck.
-            ";
-            $info->email_to = $working->customer_email;
-            $info->title = $title;
-            $info->body = $body;
-            $info->file = $file;
-            dispatch(new SendPostEmail($info));
-            /*End todo: Xây dựng hàm gửi email */
+            $list_customer = \DB::table('woo_orders as wod')
+                ->leftjoin('woo_infos as wif','wod.woo_info_id', '=', 'wif.id')
+                ->select(
+                    'wod.email as customer_email', 'wod.fullname as customer_name', 'wod.number',
+                    'wif.name', 'wif.email', 'wif.password', 'wif.host', 'wif.port', 'wif.security'
+                )
+                ->where('design_id',$working->design_id)
+                ->get()->toArray();
+            if( sizeof($list_customer) > 0)
+            {
+                foreach($list_customer as $info)
+                {
+                    $data = array();
+                    $data = json_decode(json_encode($info), true);;
+                    $data['file'] = public_path($working->path . $working->file_name);
+                    $this->sendEmailToCustomer($data);
+                }
+            }
             $status = 'success';
             $message = "Thành công. Tiếp tục kiểm tra các đơn hàng còn lại.";
         } else {
@@ -755,13 +867,95 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         return back();
     }
 
+    /*Todo: Xây dựng hàm gửi email tới khách hàng ở đây */
+    private function sendEmailToCustomer($data)
+    {
+        $info = (object) array();
+        $info->email_to = $data['customer_email'];
+        $info->title = '[ ' . $data['name'] . ' ] Update information about order ' . $data['number'];
+        $info->file = $data['file'];
+        $info->body = "Dear " . $data['customer_name'] . ",
+We send you this email with information about " . $data['number'] . " order. 
+We send detailed information about the design in the attached file below. 
+If you want to resubmit your order redesign request, please reply to the message within 24 hours from the time you receive this email, after 24 hours we will move on to the next stage. 
+If you are satisfied with the product, please do not reply to this email.
+Thank you for your purchase at our store. Wish you a good day and lots of luck.
+            ";
+        dispatch(new SendPostEmail($info));
+
+    }
+    /*End todo: Xây dựng hàm gửi email */
+
+//    public function sendCustomer2($order_id)
+//    {
+//        /*Move file về thư mục done*/
+//        $where = [
+//            ['workings.id', '=', $order_id],
+//            ['wfl.is_mockup', '=', 1],
+//        ];
+//        $working = \DB::table('workings')
+//            ->join('working_files as wfl', 'workings.id', '=', 'wfl.working_id')
+//            ->join('woo_orders as wod', 'workings.woo_order_id', '=', 'wod.id')
+//            ->select(
+//                'workings.id', 'workings.number', 'workings.status', 'workings.woo_order_id', 'workings.woo_info_id',
+//                'wfl.path', 'wfl.name', 'wod.email as customer_email', 'wod.fullname as customer_name'
+//            )
+//            ->where($where)
+//            ->first();
+//        if ($working !== NULL) {
+//            \DB::table('workings')->where('id', $order_id)
+//                ->update([
+//                    'status' => env('STATUS_WORKING_CUSTOMER'),
+//                    'qc_id' => Auth::id(),
+//                    'updated_at' => date("Y-m-d H:i:s")
+//                ]);
+//            \DB::table('woo_orders')->where('id', $working->woo_order_id)
+//                ->update([
+//                    'status' => env('STATUS_WORKING_CUSTOMER'),
+//                    'updated_at' => date("Y-m-d H:i:s")
+//                ]);
+//            \DB::table('working_files')->where('working_id', $order_id)
+//                ->update([
+//                    'status' => env('STATUS_WORKING_CUSTOMER'),
+//                    'updated_at' => date("Y-m-d H:i:s")
+//                ]);
+//            /*Todo: Xây dựng hàm gửi email tới khách hàng ở đây */
+//            $info = \DB::table('woo_infos')
+//                ->select('name', 'email', 'password', 'host', 'port', 'security')
+//                ->where('id', $working->woo_info_id)
+//                ->first();
+//            $title = '[ ' . $info->name . ' ] Update information about order ' . $working->number;
+//            $file = public_path($working->path . $working->name);
+//            $body = "Dear " . $working->customer_name . ",
+//We send you this email with information about " . $working->number . " order.
+//We send detailed information about the design in the attached file below.
+//If you want to resubmit your order redesign request, please reply to the message within 24 hours from the time you receive this email, after 24 hours we will move on to the next stage.
+//If you are satisfied with the product, please do not reply to this email.
+//Thank you for your purchase at our store. Wish you a good day and lots of luck.
+//            ";
+//            $info->email_to = $working->customer_email;
+//            $info->title = $title;
+//            $info->body = $body;
+//            $info->file = $file;
+//            dispatch(new SendPostEmail($info));
+//            /*End todo: Xây dựng hàm gửi email */
+//            $status = 'success';
+//            $message = "Thành công. Tiếp tục kiểm tra các đơn hàng còn lại.";
+//        } else {
+//            $status = 'error';
+//            $message = "Xảy ra lỗi. Mời bạn thử lại. Nếu vẫn không được hãy báo với quản lý của bạn và kiểm tra đơn kế tiếp";
+//        }
+//        \Session::flash($status, $message);
+//        return back();
+//    }
+
     public function axReSendEmail($request)
     {
         $uid = $this->checkAuth();
         if ($uid) {
             $rq = $request->all();
             $working_id = $rq['working_id'];
-            $order_id = $rq['order_id'];
+            $design_id = $rq['design_id'];
 
             $where = [
                 ['workings.id', '=', $working_id],
@@ -769,39 +963,52 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             ];
             $working = \DB::table('workings')
                 ->join('working_files as wfl', 'workings.id', '=', 'wfl.working_id')
-                ->join('woo_orders as wod', 'workings.woo_order_id', '=', 'wod.id')
                 ->select(
-                    'workings.id', 'workings.number', 'workings.status', 'workings.woo_order_id', 'workings.woo_info_id',
-                    'wfl.path', 'wfl.name', 'wod.email as customer_email', 'wod.fullname as customer_name'
+                    'workings.design_id',
+                    'wfl.path', 'wfl.name as file_name'
                 )
                 ->where($where)
                 ->first();
             if ($working !== NULL) {
-                /*Todo: Xây dựng hàm gửi email tới khách hàng ở đây */
-                $info = \DB::table('woo_infos')
-                    ->select('name', 'email', 'password', 'host', 'port', 'security')
-                    ->where('id', $working->woo_info_id)
-                    ->first();
-                $title = '[ ' . $info->name . ' ] Update information about order ' . $working->number;
-                $file = public_path($working->path . $working->name);
-                $body = "Dear " . $working->customer_name . ",
-We send you this email with information about " . $working->number . " order. 
-We send detailed information about the design in the attached file below. 
-If you want to resubmit your order redesign request, please reply to the message within 24 hours from the time you receive this email, after 24 hours we will move on to the next stage. 
-If you are satisfied with the product, please do not reply to this email.
-Thank you for your purchase at our store. Wish you a good day and lots of luck.
-            ";
-                $info->email_to = $working->customer_email;
-                $info->title = $title;
-                $info->body = $body;
-                $info->file = $file;
-                dispatch(new SendPostEmail($info));
-                /*End todo: Xây dựng hàm gửi email */
+                \DB::table('workings')->where('id', $working_id)
+                    ->update([
+                        'status' => env('STATUS_WORKING_CUSTOMER'),
+                        'qc_id' => Auth::id(),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                \DB::table('designs')->where('id', $working->design_id)
+                    ->update([
+                        'status' => env('STATUS_WORKING_CUSTOMER'),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                \DB::table('working_files')->where('working_id', $working_id)
+                    ->update([
+                        'status' => env('STATUS_WORKING_CUSTOMER'),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                $list_customer = \DB::table('woo_orders as wod')
+                    ->leftjoin('woo_infos as wif','wod.woo_info_id', '=', 'wif.id')
+                    ->select(
+                        'wod.email as customer_email', 'wod.fullname as customer_name', 'wod.number',
+                        'wif.name', 'wif.email', 'wif.password', 'wif.host', 'wif.port', 'wif.security'
+                    )
+                    ->where('design_id',$working->design_id)
+                    ->get()->toArray();
+                if( sizeof($list_customer) > 0)
+                {
+                    foreach($list_customer as $info)
+                    {
+                        $data = array();
+                        $data = json_decode(json_encode($info), true);;
+                        $data['file'] = public_path($working->path . $working->file_name);
+                        $this->sendEmailToCustomer($data);
+                    }
+                }
                 $status = 'success';
-                $message = "Gửi lại email thành công. ";
+                $message = "Gửi lại email cho khách thành công.";
             } else {
                 $status = 'error';
-                $message = "Xảy ra lỗi. Không thể tìm thấy file đang làm việc. Mời bạn thử lại. ";
+                $message = "Xảy ra lỗi. Mời bạn thử lại. Nếu vẫn không được hãy báo với quản lý của bạn.";
             }
 
             return response()->json([
@@ -811,8 +1018,46 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         }
     }
 
+    public function redoingJobStaff($working_id)
+    {
+        \DB::beginTransaction();
+        try {
+            $update = [
+                'status' => env('STATUS_WORKING_NEW'),
+                'updated_at' => date("Y-m-d H:i:s"),
+            ];
+            $files = \DB::table('working_files')
+                ->select('name', 'path', 'thumb')
+                ->where('working_id', $working_id)
+                ->get();
+            $deleted = array();
+            foreach ($files as $file) {
+                $deleted[] = public_path($file->path . $file->name);
+                $deleted[] = public_path($file->thumb);
+            }
+            if (\File::delete($deleted)) {
+                $status = 'success';
+                $save = "Yêu cầu làm lại thành công.";
+                \DB::table('workings')->where('id', $working_id)->update($update);
+                \DB::table('working_files')->where('working_id', $working_id)->delete();
+            } else {
+                $status = 'error';
+                $save = "[Redo] Yêu cầu làm lại thất bại. Mời bạn thử lại";
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $status = 'error';
+            $save = "[Redo Error] Xảy ra lỗi nội bộ. Mời bạn thử lại";
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        $this->log($save . "\n");
+        \Session::flash($status, $save);
+        return back();
+    }
+
     public function redoDesigner($request)
     {
+        \DB::beginTransaction();
         try {
             $rq = $request->all();
             $reason = htmlentities(str_replace("\n", "<br />", trim($rq['reason'])));
@@ -854,17 +1099,62 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     /*phản hồi khách hàng*/
     public function reviewCustomer()
     {
+        $workers = \DB::table('users')->select('id','name')->where('level',3)->get()->toArray();
         $where = [
             ['workings.status', '=', env('STATUS_WORKING_CUSTOMER')],
         ];
-        $lists = $this->reviewWork($where);
+        $lists = $this->reviewWork($where, 0);
         $where_working_file = [
             ['working_files.status', '=', env('STATUS_WORKING_CUSTOMER')],
             ['working_files.thumb', '!=', 'NULL']
         ];
         $images = $this->getWorkingFile($where_working_file);
+        $tmp_variations = $this->getVariation();
+        $variations = $tmp_variations['variations'];
+        $all_variations = $tmp_variations['all_variations'];
         $data = infoShop();
-        return view('/admin/review_customer', compact('lists', 'images', 'data'));
+        return view('/admin/review_customer',
+            compact('lists', 'images', 'data', 'workers', 'variations', 'all_variations'));
+    }
+
+    public function listJobDone()
+    {
+        $workers = \DB::table('users')->select('id','name')->where('level',3)->get()->toArray();
+        $where = [
+            ['workings.status', '=', env('STATUS_WORKING_DONE')],
+        ];
+        $lists = $this->reviewWork($where, 1);
+        $where_working_file = [
+            ['working_files.status', '=', env('STATUS_WORKING_DONE')],
+            ['working_files.thumb', '!=', 'NULL']
+        ];
+        $images = $this->getWorkingFile($where_working_file);
+        $tmp_variations = $this->getVariation();
+        $variations = $tmp_variations['variations'];
+        $all_variations = $tmp_variations['all_variations'];
+        $data = infoShop();
+        return view('/admin/review_customer',
+            compact('lists', 'images', 'data', 'workers', 'variations', 'all_variations'));
+    }
+
+    private function getVariation()
+    {
+        $lst = \DB::table('variations')->select('variation_name','variation_real_name','tool_category_id')->get()->toArray();
+        $variations = array();
+        $all_variations = array();
+        foreach ($lst as $item)
+        {
+            $dt = ($item->variation_real_name != '')? $item->variation_real_name : $item->variation_name;
+            $all_variations[$item->variation_name] = $dt;
+            if ($item->tool_category_id != '')
+            {
+                $variations[$item->tool_category_id][$item->variation_name] = $dt;
+            }
+        }
+        return array(
+            'variations' => $variations,
+            'all_variations' => $all_variations
+        );
     }
 
     public function supplier()
@@ -875,11 +1165,232 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         return $this->reviewWork($where);
     }
 
+    public function axRedoNewSKU($request)
+    {
+        $uid = $this->checkAuth();
+        if ($uid) {
+            \DB::beginTransaction();
+            try {
+                $rq = $request->all();
+                $layout = '';
+                $order_id = $rq['order_id'];
+                $working_id = $rq['working_id'];
+                $design_id = $rq['design_id'];
+                $new_variation = trim($rq['new_variation']);
+                $sku = $rq['sku'];
+                $worker_id = $rq['worker_id'];
+                $reason = '1. Khách đổi sku thành : '.$sku."<br />";
+                $reason .= '2. Khách đổi size thành : '.$new_variation."<br />";
+                $reason .= '3.'.htmlentities(str_replace("\n", "<br />", trim($rq['reason'])));
+
+                //kiem tra xem day la 1 hay nhieu design
+                $checks = \DB::table('woo_orders')->select('id')->where('design_id', $design_id)->count();
+                /** Kiểm tra xem đã tồn tại SKU và variation đấy hay chưa**/
+                $check_exist_design = \DB::table('designs')->select('id')
+                    ->where('sku', $sku)
+                    ->where('variation', $new_variation)
+                    ->first();
+                // nếu tồn tại rồi. Đổi sang design tồn tại
+                if ($check_exist_design != NULL) {
+                    // nếu chỉ có 1 designs. Xóa design hiện tai. working hiện tại. working file hiện tại
+                    if ($checks == 1) {
+                        \DB::table('designs')->where('id', $design_id)->delete();
+                        \DB::table('workings')->where('id', $working_id)->delete();
+                        // xoa working_files
+                        $files = \DB::table('working_files')
+                            ->select('name', 'path', 'thumb')
+                            ->where('working_id', $working_id)
+                            ->get();
+                        $deleted = array();
+                        foreach ($files as $file) {
+                            $deleted[] = public_path($file->path . $file->name);
+                            $deleted[] = public_path($file->thumb);
+                        }
+                        \File::delete($deleted);
+                        \DB::table('working_files')->where('working_id', $working_id)->delete();
+                        $layout = 'refresh';
+                    } else {
+                        $layout = 'keep';
+                    }
+                    // Update thong tin new design_id vao woo_orders
+                    \DB::table('woo_orders')->where('id', $order_id)->update([
+                        'sku' => $sku,
+                        'variation_detail' => $new_variation,
+                        'design_id' => $check_exist_design->id,
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                    $alert = 'success';
+                    $message = '<small class="green-text"> Đã redo Job thành công. Mời bạn kiểm tra các Job tiếp theo.</small>';
+                } else {
+                    /** Tao design id moi **/
+                    // lay thong tin design cu
+                    $design_old = \DB::table('designs')->select('*')->where('id', $design_id)->first();
+                    $new_data_design = [
+                        'product_name' => $design_old->product_name,
+                        'product_id' => $design_old->product_id,
+                        'store_id' => $design_old->store_id,
+                        'sku' => $sku,
+                        'variation' => $new_variation,
+                        'status' => env('STATUS_WORKING_NEW'),
+                        'created_at' => date("Y-m-d H:i:s"),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ];
+
+                    $new_design_id = 1;
+                    $new_design_id = \DB::table('designs')->insertGetId($new_data_design);
+                    //update vao woo_orders va workings
+                    if ($new_design_id) {
+                        // lay du lieu cua working_old
+                        $workings_old = \DB::table('workings')->select('store_id', 'product_id', 'reason')->where('id', $working_id)->first();
+
+                        // neu con nhieu design
+                        if ($checks > 1) {
+                            //tao moi working
+                            $data_workings = [
+                                'design_id' => $new_design_id,
+                                'store_id' => $workings_old->store_id,
+                                'product_id' => $workings_old->product_id,
+                                'worker_id' => $worker_id,
+                                'qc_id' => $uid,
+                                'status' => env('STATUS_WORKING_NEW'),
+                                'redo' => 1,
+                                'reason' => $workings_old->reason . '<br>' . $reason,
+                                'created_at' => date("Y-m-d H:i:s"),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                            \DB::table('workings')->insert($data_workings);
+                            $layout = 'keep';
+                        } else {
+                            // cap nhat working id cu
+                            \DB::table('workings')->where('id', $working_id)->update([
+                                'design_id' => $new_design_id,
+                                'worker_id' => $worker_id,
+                                'qc_id' => $uid,
+                                'redo' => 1,
+                                'status' => env('STATUS_WORKING_NEW'),
+                                'reason' => $workings_old->reason . '<br>' . $reason,
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ]);
+                            // xoa working_files
+                            $files = \DB::table('working_files')
+                                ->select('name', 'path', 'thumb')
+                                ->where('working_id', $order_id)
+                                ->get();
+                            $deleted = array();
+                            foreach ($files as $file) {
+                                $deleted[] = public_path($file->path . $file->name);
+                                $deleted[] = public_path($file->thumb);
+                            }
+                            \File::delete($deleted);
+                            \DB::table('working_files')->where('working_id', $working_id)->delete();
+                            // xoa designs
+                            \DB::table('designs')->where('id', $design_id)->delete();
+                            $layout = 'refresh';
+                        }
+                        // Update thong tin new design_id vao woo_orders
+                        \DB::table('woo_orders')->where('id', $order_id)->update([
+                            'sku' => $sku,
+                            'variation_detail' => $new_variation,
+                            'design_id' => $new_design_id,
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ]);
+                        $alert = 'success';
+                        $message = '<small class="green-text"> Đã redo Job thành công. Mời bạn kiểm tra các Job tiếp theo.</small>';
+                    } else {
+                        $alert = 'error';
+                        $message = '<small class="red-text"> Xảy ra lỗi nội bộ. Mời bạn tải lại trang và thử lại.</span>';
+                    }
+                }
+                \DB::commit(); // if there was no errors, your query will be executed
+            } catch (\Exception $e) {
+                $status = 'error';
+                $message = "Yêu cầu chưa được thực hiện. Vui lòng tải lại trang và tiếp tục với đơn khác nếu vẫn lỗi.";
+                \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+            }
+        } else {
+            $alert = 'error';
+            $message = '<small class="red-text"> Đã hết phiên. Mời bạn đăng nhập và thử lại.</span>';
+        }
+        return response()->json([
+            'message' => $message,
+            'status' => $alert,
+            'layout' => $layout
+        ]);
+    }
+
+    /*Hàm hiển thị danh sách review của customer*/
+    private static function reviewWork($where, $done = NULL)
+    {
+        $lists = array();
+        $lsts = \DB::table('workings')
+            ->leftjoin('designs', 'workings.design_id', '=', 'designs.id')
+            ->leftjoin('users as worker', 'workings.worker_id', '=', 'worker.id')
+            ->leftjoin('users as qc', 'workings.qc_id', '=', 'qc.id')
+            ->leftjoin('woo_products', 'workings.product_id', '=', 'woo_products.product_id')
+            ->select(
+                'workings.id', 'workings.status', 'workings.updated_at', 'workings.design_id',
+                'workings.qc_id', 'workings.worker_id', 'workings.reason', 'workings.redo','workings.updated_at',
+                'designs.sku','designs.variation', 'designs.status', 'designs.tool_category_id',
+                'worker.id as worker_id', 'worker.name as worker_name', 'qc.id as qc_id', 'qc.name as qc_name',
+                'woo_products.name', 'woo_products.permalink', 'woo_products.image'
+            )
+            ->where($where)
+            ->orderBy('designs.sku','ASC')
+            ->get()->toArray();
+        if (sizeof($lsts) > 0)
+        {
+            $lst_design_id = array();
+            foreach( $lsts as $lst)
+            {
+                $lst_design_id[$lst->design_id] = $lst->design_id;
+            }
+            // lấy toàn bộ danh sách woo_orders ra để hiển thị ra ngoài
+            if ($done == 0)
+            {
+                $where_order = [
+                    ['status', '<', env('STATUS_WORKING_DONE')]
+                ];
+            } else {
+                $where_order = [
+                    ['status', '>=', env('STATUS_WORKING_NEW')]
+                ];
+            }
+
+            $lst_orders = \DB::table('woo_orders')
+                ->select(
+                    'woo_orders.id','woo_orders.number', 'woo_orders.email', 'woo_orders.fullname',
+                    'woo_orders.payment_method','woo_orders.sku','woo_orders.design_id', 'woo_orders.variation_full_detail'
+                )
+                ->whereIn('design_id',$lst_design_id)
+                ->where($where_order)
+                ->get()->toArray();
+            if (sizeof($lst_orders) > 0)
+            {
+                $lst_designs = array();
+                foreach ($lst_orders as $lst_order)
+                {
+                    $lst_designs[$lst_order->design_id][] = json_decode(json_encode($lst_order,true),true);
+                }
+            }
+            // dồn toàn bộ woo_orders vào trong 1 array với design
+            $lsts = json_decode(json_encode($lsts,true),true);
+            foreach ($lsts as $key => $lst)
+            {
+                if (array_key_exists($lst['design_id'], $lst_designs))
+                {
+                    $lists[$key]['info'] = $lst;
+                    $lists[$key]['orders'] = $lst_designs[$lst['design_id']];
+                }
+            }
+        }
+        return $lists;
+    }
+
     public function eventQcDone($request)
     {
         if (Auth::check()) {
             $working_id = $request->all()['working_id'];
-            $order_id = $request->all()['order_id'];
+            $design_id = $request->all()['design_id'];
             \DB::beginTransaction();
             try {
                 $update = [
@@ -887,7 +1398,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     'updated_at' => date("Y-m-d H:i:s"),
                 ];
                 \DB::table('workings')->where('id', $working_id)->update($update);
-                \DB::table('woo_orders')->where('id', $order_id)->update($update);
+                \DB::table('designs')->where('id', $design_id)->update($update);
                 \DB::table('working_files')->where('working_id', $working_id)->update($update);
                 $status = 'success';
                 $message = "Yêu cầu chuyển cho supplier thành công. Tiếp tục kiểm tra các đơn hàng còn lại.";
@@ -1084,11 +1595,11 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         if ($uid) {
             $rq = $request->all();
             $working_id = $rq['working_id'];
-            $woo_order_id = $rq['woo_order_id'];
+            $design_id = $rq['design_id'];
             \DB::beginTransaction();
             try {
                 \DB::table('workings')->where('id', $working_id)->delete();
-                \DB::table('woo_orders')->where('id', $woo_order_id)
+                \DB::table('designs')->where('id', $design_id)
                     ->update([
                         'status' => env('STATUS_WORKING_NEW'),
                         'updated_at' => date("Y-m-d H:i:s")
@@ -1128,6 +1639,151 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 'message' => $message
             ]);
         }
+    }
+
+    public function axChooseVariations($request)
+    {
+        $uid = $this->checkAuth();
+        $status = 'error';
+        $message = '';
+        if ($uid) {
+            $rq = $request->all();
+            $tool_category_id = $rq['cat_id'];
+            $category_name = $rq['cat_name'];
+
+            //lấy toàn bộ danh sách category ra ngoài
+            $categories = \DB::table('tool_categories')->pluck('name','id')->toArray();
+            //lấy toàn bộ danh sách variation chưa được chọn trong 1 store id
+            $variations = \DB::table('variations')
+                ->select('id','variation_name', 'tool_category_id')
+                ->orderBy('tool_category_id','ASC')
+                ->orderBy('variation_name')
+                ->get()->toArray();
+            // lấy danh sách variations được chọn trong category này
+            $variations_choosed = \DB::table('variations')
+                ->where('tool_category_id', $tool_category_id)
+                ->pluck('id','variation_name')
+                ->toArray();
+            $list_variations = array();
+            foreach ($variations as $item)
+            {
+                $selected = 0;
+                if (in_array($item->id, $variations_choosed))
+                {
+                    $selected = 1;
+                }
+                $tool_category_name = '';
+                if (array_key_exists($item->tool_category_id, $categories))
+                {
+                    $tool_category_name = $categories[$item->tool_category_id];
+                }
+                $list_variations[] = [
+                    'id' => $item->id,
+                    'variation_name' => $item->variation_name,
+                    'selected' => $selected,
+                    'tool_category_name' => $tool_category_name
+                ];
+            }
+
+            if (sizeof($variations_choosed) > 0)
+            {
+                $status = 'success';
+                $message .= 'Category : '.$category_name.' đã từng được chọn variations trước đó rồi. Mời bạn kiểm tra lại';
+            } else {
+                $status = 'success';
+                $message .= 'Category : '.$category_name.' chưa được chọn variations lần nào. Mời bạn chọn';
+            }
+            if (sizeof($variations) == 0)
+            {
+                $status = 'error';
+                $message = 'Chưa có variations nào. Mời bạn tạo variation ở dưới trước nhé.';
+            }
+            $response = [
+                'result' => $status,
+                'message' => $message,
+                'variations' => $list_variations,
+                'cat_id' => $tool_category_id,
+                'cat_name' => $category_name
+            ];
+        } else {
+            $response = [
+                'result' => 'error',
+                'message' => 'Đã hết phiên làm việc. Mời bạn đăng nhập lại.',
+                'variations' => []
+            ];
+        }
+        return response()->json($response);
+    }
+
+    public function addListVariation($request)
+    {
+        $rq = $request->all();
+        \DB::beginTransaction();
+        try {
+            $tool_category_id = $rq['tool_category_id'];
+            \DB::table('designs')->where('tool_category_id', $tool_category_id)->update(['tool_category_id' => null]);
+            if (array_key_exists('variations', $rq))
+            {
+                $variations = $rq['variations'];
+                \DB::table('variations')->where('tool_category_id', $tool_category_id)
+                    ->update([
+                        'tool_category_id' => null
+                    ]);
+                \DB::table('variations')->whereIn('id', $variations)
+                    ->update([
+                        'tool_category_id' => $tool_category_id,
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                //update tool_variation_id to design
+                $lst_variations = \DB::table('variations')->whereIn('id', $variations)->pluck('variation_name')->toArray();
+                \DB::table('designs')->whereIn('variation', $lst_variations)->update(['tool_category_id' => $tool_category_id]);
+                $message = 'Thêm Variation vào Category thành công.';
+            } else {
+                \DB::table('variations')->where('tool_category_id', $tool_category_id)
+                    ->update([
+                        'tool_category_id' => null
+                    ]);
+                $message = 'Xóa Variation thành công.';
+            }
+            $status = 'success';
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $status = 'error';
+            $message = 'Xảy ra lỗi. Hãy thử lại.';
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($status, $message);
+    }
+
+    public function editInfoFulfills($request)
+    {
+        $status = 'error';
+        $rq = $request->all();
+        \DB::beginTransaction();
+        try {
+            $fulfill_id = $rq['fulfill_id'];
+            $woo_order_id = $rq['woo_order_id'];
+            $data = $rq;
+            unset($data['fulfill_id']);
+            unset($data['woo_order_id']);
+            unset($data['_token']);
+            $result = \DB::table('fulfills')->where('id', $fulfill_id)->update($data);
+            \DB::table('woo_orders')->where('id', $woo_order_id)->update($data);
+            if ($result)
+            {
+                $status = 'success';
+                $message = 'Cập nhật thông tin order thành công.';
+            } else {
+                $message = 'Xảy ra lỗi. Không thể cập nhật thông tin order bây giờ. Mời bạn tải lại trang và thử lại.';
+            }
+
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $status = 'error';
+            $message = 'Xảy ra lỗi. Hãy thử lại.';
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($status, $message);
     }
 
     public function listAllOrder()
@@ -1218,6 +1874,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
 
     public function scanAgainTemplate($woo_template_id)
     {
+        \DB::beginTransaction();
         try {
             $message_status = 'error';
             $message = '';
@@ -1240,40 +1897,9 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         return redirect('woo-get-template')->with($message_status, $message);
     }
 
-    public function editWooTemplate($request)
-    {
-        try {
-            $rq = $request->all();
-            $message_status = 'error';
-            $message = '';
-            $product_name = ucwords(trim($rq['product_name']));
-            $id = trim($rq['id']);
-            $supplier_id = trim($rq['supplier_id']);
-            $base_price = trim($rq['base_price']);
-            $variation_change_id = trim($rq['variation_change_id']);
-            $result = \DB::table('woo_templates')->where('id', $id)->update([
-                'product_name' => $product_name,
-                'supplier_id' => $supplier_id,
-                'variation_change_id' => ($variation_change_id > 0) ? $variation_change_id : null,
-                'base_price' => $base_price,
-                'updated_at' => date("Y-m-d H:i:s")
-            ]);
-            if ($result) {
-                $message_status = 'success';
-                $message = 'Cập nhật template thành công.';
-            } else {
-                $message = 'Cập nhật template thất bại. Mời bạn thử lại';
-            }
-            \DB::commit(); // if there was no errors, your query will be executed
-        } catch (\Exception $e) {
-            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
-            echo $e->getMessage();
-        }
-        return redirect('woo-get-template')->with($message_status, $message);
-    }
-
     public function saveCreateTemplate($request)
     {
+        \DB::beginTransaction();
         try {
             $rq = $request->all();
             $message_status = 'error';
@@ -1463,6 +2089,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
 
     public function deleteSupplier($supplier_id)
     {
+        \DB::beginTransaction();
         try {
             $alert = 'error';
             $exists = \DB::table('suppliers')->where('id', $supplier_id)->first();
@@ -1494,6 +2121,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
 
     public function deleteAllTemplate($woo_template_id)
     {
+        \DB::beginTransaction();
         try {
             $alert = 'error';
             $exists = \DB::table('woo_templates')
@@ -1550,6 +2178,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
 
     public function deleteAllProductTemplate($woo_template_id, $type)
     {
+        \DB::beginTransaction();
         try {
             $alert = 'error';
             $message = '';
@@ -1615,6 +2244,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
 
     public function ajaxPutConvertVariation($request)
     {
+        \DB::beginTransaction();
         try {
             $uid = $this->checkAuth();
             $alert = 'error';
@@ -1688,6 +2318,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
 
     public function deleteConvertVariation($id)
     {
+        \DB::beginTransaction();
         try {
             \DB::table('variation_changes')->where('id', $id)->delete();
             \DB::table('variation_change_items')->where('variation_change_id', $id)->delete();
@@ -1712,6 +2343,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
 
     public function actionDeletedCategories($request)
     {
+        \DB::beginTransaction();
         try {
             $rq = $request->all();
             $store_id = $rq['store_id'];
@@ -1785,22 +2417,301 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     public function listCategories()
     {
         $data = array();
+        $categories = $this->getCategory();
+        $woo_infos = \DB::table('woo_infos')->select('id','name')->get()->toArray();
+        return view('/keyword/list_categories', compact('data', 'categories', 'woo_infos'));
+    }
+
+    private function getCategory()
+    {
         $categories = \DB::table('woo_categories as wot')
-            ->join('woo_infos', 'wot.store_id', '=', 'woo_infos.id')
+            ->leftjoin('woo_infos', 'wot.store_id', '=', 'woo_infos.id')
             ->select(
                 'wot.id', 'wot.woo_category_id', 'wot.name as category_name',
-                'woo_infos.name as store_name'
+                'woo_infos.name as store_name', 'woo_infos.id as store_id'
             )
             ->where('wot.status', 0)
             ->orderBy('wot.store_id')
             ->orderBy('wot.id','DESC')
             ->get()->toArray();
-        $woo_infos = \DB::table('woo_infos')->select('id','name')->get()->toArray();
-        return view('/keyword/list_categories', compact('data', 'categories', 'woo_infos'));
+        return $categories;
+    }
+
+    public function listVariationCategory()
+    {
+        $data = array();
+        $categories = \DB::table('tool_categories as tot')
+            ->select('tot.id','tot.name as category_name','tot.note')->orderBy('tot.name','DESC')->get()->toArray();
+        $variations = \DB::table('variations')
+            ->leftjoin('tool_categories', 'variations.tool_category_id', '=', 'tool_categories.id')
+            ->select(
+                'variations.id', 'variations.variation_name', 'variations.price', 'variations.variation_sku',
+                'variations.variation_real_name', 'variations.factory_sku',
+                'tool_categories.name as category_name'
+            )
+            ->orderBy('id', 'DESC')
+            ->orderBy('variations.store_id')
+            ->get()->toArray();
+        return view('/admin/woo/list_category_variation', compact(
+            'data', 'categories', 'variations'));
+    }
+
+    public function updateVariation()
+    {
+        $alert = 'error';
+        \DB::beginTransaction();
+        try {
+            $variations = \DB::table('woo_orders')->select('variation_detail')->distinct('variation_detail')->get()->toArray();
+            $variation_exist = \DB::table('variations')->pluck('variation_name')->toArray();
+            $data_variations = array();
+            // so sanh
+            foreach ($variations as $item)
+            {
+                if (!in_array($item->variation_detail, $variation_exist)) {
+                    $data_variations[] = [
+                        'variation_name' => $item->variation_detail,
+                        'created_at' => date("Y-m-d H:i:s"),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ];
+                }
+            }
+            if (sizeof($data_variations) > 0) {
+                $result = \DB::table('variations')->insert($data_variations);
+                if ($result) {
+                    $alert = 'success';
+                    $message = 'Đã tạo ' . sizeof($data_variations) . ' variations thành công';
+                } else {
+                    $message = 'Xảy ra lỗi. Không thể tạo variations lúc này. Mời bạn thử lại';
+                }
+            } else {
+                $message = 'Đã hết variation để tạo mới';
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $alert = 'error';
+            logfile($e->getMessage());
+            $message = 'Tạo variations thất bại. Mời bạn thử lại' . $e->getMessage();
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($alert, $message);
+    }
+
+    public function addNewToolCategory($request)
+    {
+        $alert = 'error';
+        \DB::beginTransaction();
+        try {
+            $rq = $request->all();
+            $tool_category_name = $rq['tool_category_name'];
+            $note = $rq['note'];
+            $check = \DB::table('tool_categories')->select('id')->where('name',$tool_category_name)->count();
+            if ($check > 0)
+            {
+                $message = 'Đã tồn tại category : '.$tool_category_name.' trong hệ thống rồi. Mời bạn chọn tên khác';
+            } else {
+                $result = \DB::table('tool_categories')->insert([
+                    'name' => $tool_category_name,
+                    'note' => htmlentities(str_replace("\n", ". ", $note)),
+                    'created_at' => date("Y-m-d H:i:s"),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+                if ($result) {
+                    $alert = 'success';
+                    $message = 'Tạo mới thành công category: '.$tool_category_name;
+                } else {
+                    $message = 'Xảy ra lỗi. Mời bạn thử lại';
+                }
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            logfile($e->getMessage());
+            $message = 'Cập nhật variations thất bại. Mời bạn thử lại' . $e->getMessage();
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($alert, $message);
+    }
+
+    public function editToolCategory($request)
+    {
+        $alert = 'error';
+        \DB::beginTransaction();
+        try {
+            $rq = $request->all();
+            $tool_category_id = $rq['tool_category_id'];
+            $tool_category_name = $rq['tool_category_name'];
+            $note = $rq['note'];
+            $result = \DB::table('tool_categories')->where('id',$tool_category_id)->update([
+                'name' => $tool_category_name,
+                'note' => htmlentities(str_replace("\n", ". ", $note)),
+                'updated_at' => date("Y-m-d H:i:s")
+            ]);
+            if ($result) {
+                $alert = 'success';
+                $message = 'Sửa thành công category: '.$tool_category_name;
+            } else {
+                $message = 'Xảy ra lỗi. Mời bạn thử lại';
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            logfile($e->getMessage());
+            $message = 'Xảy ra lỗi nội bộ. Mời bạn thử lại' . $e->getMessage();
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($alert, $message);
+    }
+
+    public function NewTemplateCategory($request)
+    {
+        $uid = $this->checkAuth();
+        $alert = 'error';
+        if ($uid) {
+            $rq = $request->all();
+            $data = $rq['data_title'];
+            $tool_category_id = trim($rq['tool_category_id']);
+            if ($tool_category_id != '') {
+                \DB::beginTransaction();
+                try {
+                    $tmps = explode(";", $data);
+                    $insert_data = array();
+                    $i = 1;
+                    foreach ($tmps as $tmp) {
+                        if ($tmp != '') {
+                            $title_data = explode('-', $tmp);
+                            $insert_data[] = [
+                                'key_title' => trim($title_data[0]),
+                                'title' => trim($title_data[1]),
+                                'fixed' => (trim($title_data[2]) != '.') ? trim($title_data[2]) : '',
+                                'tool_category_id' => $tool_category_id,
+                                'sort' => $i,
+                                'created_at' => date("Y-m-d H:i:s"),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                            $i++;
+                        }
+                    }
+                    if (sizeof($insert_data) > 0) {
+                        // xóa dữ liệu cũ trước
+                        \DB::table('template_excels')->where('tool_category_id', $tool_category_id)->delete();
+                        $result = \DB::table('template_excels')->insert($insert_data);
+                        if ($result) {
+                            $alert = 'success';
+                            $message = 'Đã tạo template cho category này thành công';
+                        } else {
+                            $message = 'Xảy ra lỗi khi cập nhật vào database. Mời bạn thử lại.';
+                        }
+                    } else {
+                        $message = 'Bạn cần phải điền ít nhất là 1 trường để có thể thay đổi';
+                    }
+                    \DB::commit(); // if there was no errors, your query will be executed
+                } catch (\Exception $e) {
+                    logfile($e->getMessage());
+                    $message = 'Xảy ra lỗi nội bộ. Mời bạn thử lại' . $e->getMessage();
+                    \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+                }
+            } else {
+                $message = 'Bạn cần phải điền ít nhất là 1 trường để có thể thay đổi';
+            }
+        } else {
+            $message = 'Đã hết phiên đăng nhập. Mời bạn đăng nhập và thử lại';
+        }
+        return \Redirect::back()->with($alert, $message);
+    }
+
+    public function deleteToolCategory($tool_category_id)
+    {
+        $alert = 'error';
+        \DB::beginTransaction();
+        try {
+            $where = [
+                ['tool_category_id', '=', $tool_category_id]
+            ];
+            $check = \DB::table('variations')->select('id')->where($where)->count();
+            if ($check > 0)
+            {
+                \DB::table('variations')->where($where)->update([
+                    'tool_category_id' => null
+                ]);
+            }
+            $result = \DB::table('tool_categories')->where('id',$tool_category_id)->delete();
+            if ($result) {
+                $alert = 'success';
+                $message = 'Xoá thành công category';
+            } else {
+                $message = 'Xảy ra lỗi. Mời bạn thử lại';
+            }
+
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            logfile($e->getMessage());
+            $message = 'Xảy ra lỗi nội bộ. Mời bạn thử lại' . $e->getMessage();
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($alert, $message);
+    }
+
+    public function listTemplateCategory()
+    {
+        $data = infoShop();
+        $categories = \DB::table('tool_categories')->select('id','name')->get()->toArray();
+        return view('admin/list_tool_category',compact('data','categories'));
+    }
+
+    public function makeTemplateCategory($tool_category_id)
+    {
+        $data = infoShop();
+        $lst_titles = getListTitle();
+        $template_excel = \DB::table('template_excels')
+            ->select('key_title','title','fixed')
+            ->where('tool_category_id',$tool_category_id)
+            ->orderBy('sort', 'ASC')
+            ->get()->toArray();
+        $excel_titles = array();
+        foreach ($template_excel as $item)
+        {
+            $excel_titles[$item->key_title] = json_decode(json_encode($item, true), true);
+        }
+        return view('popup/make_template_category',
+            compact('data', 'lst_titles','tool_category_id','excel_titles'));
+    }
+
+    public function editVariations($request)
+    {
+        $alert = 'error';
+        \DB::beginTransaction();
+        try {
+            $rq = $request->all();
+            if ($rq['price'] != '')
+            {
+                $data_update = [
+                    'variation_real_name' => $rq['variation_real_name'],
+                    'price' => $rq['price'],
+                    'variation_sku' => ($rq['variation_sku'] != '')? $rq['variation_sku'] : null,
+                    'factory_sku' => ($rq['factory_sku'] != '')? $rq['factory_sku'] : null,
+                    'updated_at' => date("Y-m-d H:i:s")
+                ];
+                $result = \DB::table('variations')->where('id', $rq['id'])->update($data_update);
+                if ($result)
+                {
+                    $alert = 'success';
+                    $message = 'Cập nhật thành công variation';
+                } else {
+                    $message = 'Xảy ra lỗi. Cập nhật thất bại variation. Mời bạn tải lại trang và thử lại.';
+                }
+            } else {
+                $message = 'Xảy ra lỗi. Bạn nên nhập giá tiền gốc vào để cập nhật variation';
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            logfile($e->getMessage());
+            $message = 'Cập nhật variations thất bại. Mời bạn thử lại' . $e->getMessage();
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($alert, $message);
     }
 
     public function deleteWooCategory($woo_category_id)
     {
+        \DB::beginTransaction();
         try {
             //xóa hết keyword
             \DB::table('ads_keywords')->where('woo_category_id',$woo_category_id)->delete();
@@ -1850,6 +2761,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
 
     public function addListKeyword($request)
     {
+        \DB::beginTransaction();
         try {
             $rq = $request->all();
             $woo_category_id = $rq['id'];
@@ -1923,6 +2835,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
 
     public function processFeedStore($request)
     {
+        \DB::beginTransaction();
         try {
             $rq = $request->all();
             $store_id = $rq['store_id'];
@@ -2163,6 +3076,379 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             $message = 'Không tồn tại google feed này. Mời bạn kiểm tra lại';
             return redirect('get-store')->with($alert, $message);
         }
+    }
+
+    // fulfill order
+    private function preDataFulfill()
+    {
+        $data_fulfills = array();
+        $order_status = order_status();
+        // lấy danh sách design id
+        $lst_design_id = \DB::table('woo_orders')
+            ->where('status', env('STATUS_WORKING_DONE'))
+            ->whereIn('order_status', $order_status)
+            ->distinct()->pluck('design_id')->toArray();
+        if (sizeof($lst_design_id) > 0) {
+            $designs = \DB::table('workings')
+                ->leftjoin('designs', 'workings.design_id', '=', 'designs.id')
+                ->leftjoin('working_files', function ($join) {
+                    $join->on('working_files.working_id', '=', 'workings.id');
+                })
+                ->select(
+                    'workings.id as working_id', 'workings.store_id',
+                    'designs.id as design_id', 'designs.sku', 'designs.variation',
+                    'working_files.name', 'working_files.path', 'working_files.thumb'
+                )
+                ->whereIn('design_id', $lst_design_id)
+                ->where('working_files.is_mockup', 1)
+                ->get()->toArray();
+            if (sizeof($designs) > 0) {
+                $woo_orders = \DB::table('woo_orders')
+                    ->leftjoin('file_fulfills as ff','woo_orders.id','=', 'ff.woo_order_id')
+                    ->select('woo_orders.*', 'ff.web_path')
+                    ->where('woo_orders.status', env('STATUS_WORKING_DONE'))
+                    ->whereIn('woo_orders.order_status', $order_status)
+                    ->get()->toArray();
+                $data_fulfills = $this->sortDataFulfill($designs, $woo_orders);
+            }
+        } else {
+            $alert = 'success';
+            $message = '-- Đã hết new order để fulfill';
+        }
+        return $data_fulfills;
+    }
+
+    private function preDataFulfillScan($list_woo_order_id)
+    {
+        $data_fulfills = array();
+        // lấy danh sách design id
+        $lst_design_id = \DB::table('woo_orders')->whereIn('id',$list_woo_order_id)->distinct()->pluck('design_id')->toArray();
+        if (sizeof($lst_design_id) > 0) {
+            $designs = \DB::table('workings')
+                ->leftjoin('designs', 'workings.design_id', '=', 'designs.id')
+                ->leftjoin('working_files', function ($join) {
+                    $join->on('working_files.working_id', '=', 'workings.id');
+                })
+                ->select(
+                    'workings.id as working_id', 'workings.store_id',
+                    'designs.id as design_id', 'designs.sku', 'designs.variation',
+                    'working_files.name', 'working_files.path', 'working_files.thumb'
+                )
+                ->whereIn('design_id', $lst_design_id)
+                ->where('working_files.is_mockup', 1)
+                ->get()->toArray();
+
+            if (sizeof($designs) > 0) {
+                $woo_orders = \DB::table('woo_orders')
+                    ->leftjoin('file_fulfills as ff','woo_orders.id','=', 'ff.woo_order_id')
+                    ->select('woo_orders.*', 'ff.web_path')
+                    ->whereIn('woo_orders.id',$list_woo_order_id)->get()->toArray();
+                $data_fulfills = $this->sortDataFulfill($designs, $woo_orders);
+            }
+        }
+        return $data_fulfills;
+    }
+
+    private function sortDataFulfill($designs, $woo_orders)
+    {
+        $data_fulfills = array();
+        //lấy toàn bộ variations ra ngoài
+        $tmp_variations = \DB::table('variations')
+            ->select('variation_name', 'variation_real_name','price','variation_sku','tool_category_id','factory_sku')
+            ->get()->toArray();
+        //phân loại variations
+        $lst_variations = array();
+        foreach ($tmp_variations as $variation)
+        {
+            $key = $variation->variation_name;
+            $lst_variations[$key] = json_decode(json_encode($variation, true),true);
+        }
+
+        $tmp_designs = array();
+        foreach ($designs as $design) {
+            $tmp_designs[$design->design_id] = json_decode(json_encode($design, true), true);
+        }
+        // thu thap data lưu vào database
+
+        $order_fulfills = array();
+        foreach ($woo_orders as $order) {
+            $works = '';
+            $key_order = $order->variation_detail;
+            $sku = $order->sku;
+            $base_price = 0;
+            $factory_sku = '';
+            $tool_category_id = 0;
+            if (array_key_exists($key_order, $lst_variations))
+            {
+                $vari = $lst_variations[$key_order];
+                $sku = trim($order->sku.$vari['variation_sku']);
+                $base_price = $vari['price'];
+                $variation_detail = ($vari['variation_real_name'] != '')? $vari['variation_real_name'] : $vari['variation_name'];
+                $factory_sku = $vari['factory_sku'];
+                $tool_category_id = $vari['tool_category_id'];
+            }
+            if (array_key_exists($order->design_id, $tmp_designs)) {
+                $works = $tmp_designs[$order->design_id];
+                $order_fulfills[$order->id] = $order->id;
+                $data_fulfills[$tool_category_id][$order->id] = [
+                    'order_id' => $order->id,
+                    'order_number' => $order->number,
+                    'transaction_id' => $order->transaction_id,
+                    'currency' => '$',
+                    'full_name' => $order->fullname,
+                    'email' => $order->email,
+                    'first_name' => '',
+                    'last_name' => '',
+                    'address' => $order->address,
+                    'city' => $order->city,
+                    'state' => $order->state,
+                    'country' => $order->country,
+                    'postcode' => $order->postcode,
+                    'phone' => $order->phone,
+                    'shipping' => '',
+                    'customer_note' => $order->customer_note,
+                    'variation_detail' => $variation_detail,
+                    'product_name' => $order->product_name,
+                    'sku' => $sku,
+                    'design_id' => $order->design_id,
+                    'size' => $order->variation_detail,
+                    'quantity' => $order->quantity,
+                    'color' => '',
+                    'base_price' => $base_price,
+                    'item_price' => $order->price,
+                    'shipping_cost' => $order->shipping_cost,
+                    'factory_sku' => $factory_sku,
+
+                    'exact_art_work' => '',
+                    'back_inscription' => '',
+                    'memo' => '',
+                    'design_position' => '',
+                    'design_url' => env('URL_LOCAL').$order->web_path,
+
+                    'product_image' => $works['path'] . $works['name'],
+                    'product_id' => $order->product_id,
+                    'working_id' => $works['working_id'],
+                    'store_id' => $order->woo_info_id,
+                ];
+            }
+        }
+        return $data_fulfills;
+    }
+
+    private function preDataTemplateExcel()
+    {
+        $excels = \DB::table('template_excels as tec')
+            ->leftjoin('tool_categories','tec.tool_category_id', '=', 'tool_categories.id')
+            ->select(
+                'tec.key_title','tec.title', 'tec.fixed',
+                'tool_categories.name as tool_category_name', 'tool_categories.id as tool_category_id'
+            )
+            ->orderBy('tec.sort','ASC')
+            ->get()->toArray();
+        $tmp_excels = array();
+        if (sizeof($excels) > 0)
+        {
+            foreach ($excels as $item)
+            {
+                $tmp_excels[$item->tool_category_id]['info'] = [
+                    'tool_category_name' => $item->tool_category_name,
+                    'tool_category_id' => $item->tool_category_id
+                ];
+                $tmp_excels[$item->tool_category_id]['sort'][$item->key_title] = [
+                    'key_title' => $item->key_title,
+                    'title' => $item->title,
+                    'fixed' => $item->fixed,
+                ];
+            }
+        }
+        return $tmp_excels;
+    }
+
+    private function actionDataFulfill($data, $excels, $type, $excel_fulfill_id = null)
+    {
+        $files = array();
+        $message = '';
+        //lọc file excel trước
+        foreach ($excels as $tool_category_id => $item_excel)
+        {
+            // kiểm tra xem có category không
+            if(array_key_exists($tool_category_id, $data))
+            {
+                // lưu thông tin cơ bản tên và id của category từ excel vào files
+                $files[$tool_category_id]['info'] = $item_excel['info'];
+
+                // bắt đầu lặp data woo order cần fulfill
+                foreach ($data[$tool_category_id] as $woo_order_id => $item_data)
+                {
+                    // refresh dữ liệu tạm để sang dữ liệu mới.
+                    $tmp = array();
+                    //Sắp xếp thứ tự order theo thứ tự file excel
+                    foreach ($item_excel['sort'] as $key_title => $template_excel)
+                    {
+                        // nếu fixed cứng dữ liệu từ trước thì gửi ra dữ liệu fix cứng
+                        $tmp[$template_excel['title']] = ($template_excel['fixed'] != '') ? $template_excel['fixed'] : $item_data[$key_title];
+                    }
+                    $files[$tool_category_id]['data'][$woo_order_id] = $tmp;
+                }
+            }
+        }
+        $time = date("Ymd_Hms");
+        //nếu là tạo mới lần đầu tiên
+        if ($type == env('FULFILL_TYPE_CREATE'))
+        {
+            foreach ($files as $item)
+            {
+                $name_file = str_replace(" ", "_", strtolower($item['info']['tool_category_name'])).'_'.$time;
+                $make_excel = createFileExcel($name_file, $item['data'], storage_path('feed'), $name_file);
+                if ($make_excel)
+                {
+                    $excel_fulfill_id = \DB::table('excel_fulfills')->insertGetId([
+                        'date_fulfill' => $name_file.'.csv',
+                        'tool_category_id' => $item['info']['tool_category_id'],
+                        'path' => storage_path('feed'),
+                        'created_at' => date("Y-m-d H:i:s"),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                    $list_woo_order_id = array_keys($item['data']);
+                    // cập nhật excel fulfill id vào woo orders
+                    $result = \DB::table('woo_orders')->whereIn('id',$list_woo_order_id)->update([
+                        'status' => env('STATUS_WORKING_MOVE'),
+                        'excel_fulfill_id' => $excel_fulfill_id,
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                    if ($result && $excel_fulfill_id)
+                    {
+                        $message .= 'Tạo file excel '.$item['info']['tool_category_name'].' thành công'."\n";
+                    } else {
+                        $message .= 'Tạo file excel '.$item['info']['tool_category_name'].' thất bại'."\n";
+                    }
+                }
+            }
+
+        } else if($type == env('FULFILL_TYPE_UPDATE')) {
+            foreach ($files as $item)
+            {
+                $excel_fulfil_data = \DB::table('excel_fulfills')->select('id','date_fulfill', 'path')
+                    ->where('id', $excel_fulfill_id)
+                    ->where('tool_category_id', $item['info']['tool_category_id'])
+                    ->first();
+                if ($excel_fulfil_data != NULL)
+                {
+                    $name_file = str_replace(" ", "_", strtolower($item['info']['tool_category_name'])).'_'.$time;
+                    $make_excel = createFileExcel($name_file, $item['data'], storage_path('feed'), $name_file);
+                    if ($make_excel)
+                    {
+                        \File::delete($excel_fulfil_data->path.'/'.$excel_fulfil_data->date_fulfill);
+                        $result = \DB::table('excel_fulfills')->where('id', $excel_fulfill_id)->update([
+                            'date_fulfill' => $name_file.'.csv',
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ]);
+                        if ($result)
+                        {
+                            $message .= 'Tạo lại file excel '.$item['info']['tool_category_name'].' thành công';
+                        } else {
+                            $message .= 'Tạo lại file excel '.$item['info']['tool_category_name'].' thất bại';
+                        }
+                    }
+                }
+            }
+        }
+        return $message;
+    }
+
+    public function actionFulfillNow()
+    {
+        $alert = 'error';
+        \DB::beginTransaction();
+        try {
+            // lấy data để save ra file excel
+            $data = $this->preDataFulfill();
+            if (sizeof($data) > 0) {
+                // lấy cấu trúc file excel
+                $excels = $this->preDataTemplateExcel();
+                if (sizeof($excels) > 0) {
+                    // đủ dữ liệu yêu cầu thì bắt đầu tạo file excel
+                    $message = $this->actionDataFulfill($data, $excels, env('FULFILL_TYPE_CREATE'));
+                } else {
+                    $message = 'Bạn chưa chọn cấu trúc để export file fulfill. Mời bạn chọn ở mục "Category Template Fulfill" trước khi thực hiện hành động này';
+                }
+            } else {
+                $alert = 'success';
+                $message = 'Đã hết đơn hàng để fulfill';
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            logfile($e->getMessage());
+            $message = 'Xảy ra lỗi nội bộ. Mời bạn thử lại' . $e->getMessage();
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($alert, $message);
+    }
+
+    public function fulfillRescanFile($excel_fulfill_id)
+    {
+        $alert = 'error';
+        $message = '';
+        \DB::beginTransaction();
+        try {
+            $list_woo_order_id = \DB::table('woo_orders')->where('excel_fulfill_id', $excel_fulfill_id)->pluck('id')->toArray();
+            if (sizeof($list_woo_order_id) > 0) {
+                // lấy data để save ra file excel
+                $data = $this->preDataFulfillScan($list_woo_order_id);
+                if (sizeof($data) > 0) {
+                    // lấy cấu trúc file excel
+                    $excels = $this->preDataTemplateExcel();
+                    if (sizeof($excels) > 0) {
+                        // đủ dữ liệu yêu cầu thì bắt đầu tạo file excel
+                        $message = $this->actionDataFulfill($data, $excels, env('FULFILL_TYPE_UPDATE'), $excel_fulfill_id);
+                    } else {
+                        $message = 'Bạn chưa chọn cấu trúc để export file fulfill. Mời bạn chọn ở mục "Category Template Fulfill" trước khi thực hiện hành động này';
+                    }
+                } else {
+                    $alert = 'success';
+                    $message = 'Không có order nào thuộc file fulfill này. Mời bạn kiểm tra lại.';
+                }
+            } else {
+                $message = 'Không có order nào thuộc file fulfill này.';
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            logfile($e->getMessage());
+            $message = 'Xảy ra lỗi nội bộ. Mời bạn thử lại' . $e->getMessage();
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($alert, $message);
+    }
+
+    public function fulfilGetFile($excel_fulfill_id)
+    {
+        $excel_fulfill = \DB::table('excel_fulfills')->select('date_fulfill','path')->where('id',$excel_fulfill_id)->first();
+        if ($excel_fulfill != NULL)
+        {
+            $path = $excel_fulfill->path.'/'.$excel_fulfill->date_fulfill;
+            return response()->download($path);
+        } else {
+            $alert = 'error';
+            $message = 'Không tồn tại file fulfill này. Mời bạn kiểm tra lại.';
+            return redirect('fulfill-category')->with($alert, $message);
+        }
+    }
+
+    public function fulfillCategory()
+    {
+        $data = infoShop();
+        $fulfills = \DB::table('excel_fulfills as exf')
+            ->join('tool_categories', 'exf.tool_category_id', '=', 'tool_categories.id')
+            ->join('woo_orders', 'exf.id', '=', 'woo_orders.excel_fulfill_id')
+            ->select(
+                'exf.id', 'exf.date_fulfill', 'exf.path', 'exf.status', 'exf.created_at', 'exf.updated_at',
+                'tool_categories.name',
+                DB::raw("count(woo_orders.excel_fulfill_id) as count")
+            )
+            ->groupBy('woo_orders.excel_fulfill_id')
+            ->orderBy('exf.created_at', 'DESC')
+            ->get()->toArray();
+        return view('/admin/fulfill_category', compact('data','fulfills'));
     }
     /*End Admin + QC*/
 }
