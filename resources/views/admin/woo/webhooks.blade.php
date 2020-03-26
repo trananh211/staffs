@@ -27,6 +27,11 @@
                         </tr>
                         <tr>
                             <td>1.2</td>
+                            <td>{{ url('/api/update-order/') }} <br> </td>
+                            <td>Get Update Order from Woocommerce Store</td>
+                        </tr>
+                        <tr>
+                            <td>1.3</td>
                             <td>{{ url('/api/update-product/') }} <br> Test Local:  {{ url('/api/test-update-product/1') }}</td>
                             <td>Get Update product from Woocommerce Store</td>
                         </tr>

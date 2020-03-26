@@ -72,10 +72,10 @@ class Api extends Model
     public function createOrder($data, $woo_id)
     {
         $db = array();
-        logfile_system('=====================CREATE NEW ORDER=======================');
+        logfile('=====================CREATE NEW ORDER=======================');
         $lst_product_skip = $this->getProductSkip();
         if (sizeof($data['line_items']) > 0) {
-            logfile_system('Store ' . $woo_id . ' has new ' . sizeof($data['line_items']) . ' order item.');
+            logfile('Store ' . $woo_id . ' has new ' . sizeof($data['line_items']) . ' order item.');
             $woo_infos = $this->getWooSkuInfo();
             $paypal_id = $this->getPaypalId($woo_id);
             $lst_product = array();
@@ -164,7 +164,7 @@ class Api extends Model
                 $save = "[Error] Save to database error.";
                 \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
             }
-            logfile_system($save . "\n");
+            logfile($save . "\n");
         }
 
         /*Create new product*/
@@ -174,9 +174,50 @@ class Api extends Model
         $this->getDesignNew();
     }
 
+    public function updateOrderWoo($data, $woo_id)
+    {
+        $return = false;
+        if (is_array($data) && array_key_exists('id', $data)) {
+            \DB::beginTransaction();
+            try {
+                $order_id = $data['id'];
+                $check_exist = \DB::table('woo_orders')->select('id')
+                    ->where('order_id', $order_id)->where('woo_info_id', $woo_id)->first();
+                if ($check_exist != NULL) {
+                    $update = [
+                        'order_status' => $data['status'],
+                        'customer_note' => trim(htmlentities($data['customer_note'])),
+                        'email' => $data['billing']['email'],
+                        'fullname' => $data['shipping']['first_name'] . ' ' . $data['shipping']['last_name'],
+                        'address' => (strlen($data['shipping']['address_2']) > 0) ? $data['shipping']['address_1'] . ', ' . $data['shipping']['address_2'] : $data['shipping']['address_1'],
+                        'city' => $data['shipping']['city'],
+                        'postcode' => $data['shipping']['postcode'],
+                        'country' => $data['shipping']['country'],
+                        'state' => $data['shipping']['state'],
+                        'phone' => $data['billing']['phone'],
+                        'transaction_id' => $data['transaction_id'],
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ];
+                    $result = \DB::table('woo_orders')
+                        ->where('order_id', $order_id)->where('woo_info_id', $woo_id)
+                        ->update($update);
+                    if ($result) {
+                        $return = true;
+                    }
+                }
+                \DB::commit(); // if there was no errors, your query will be executed
+            } catch (\Exception $e) {
+                $return = false;
+                $save = "[Error] Save to database error.";
+                \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+            }
+            return $return;
+        }
+    }
+
     public function getDesignNew()
     {
-        logfile_system('== Tạo Design new');
+        logfile('== Tạo Design new');
         //lấy danh sách order mới mà chưa có design id
         $list_orders = \DB::table('woo_orders')
             ->select('id', 'product_name', 'product_id', 'woo_info_id', 'sku', 'variation_detail')
@@ -281,9 +322,9 @@ class Api extends Model
                 $result = \DB::table('variations')->insert($data_new_variations);
             }
             $return = false;
-            logfile_system('-- Tạo thành công design');
+            logfile('-- Tạo thành công design');
         } else {
-            logfile_system('-- Không có order để tạo design');
+            logfile('-- Không có order để tạo design');
             $return = true;
         }
         return $return;
@@ -292,7 +333,7 @@ class Api extends Model
     public function updateProduct($data, $store_id)
     {
         if (sizeof($data) > 0) {
-            logfile_system("==== Update product ====");
+            logfile("==== Update product ====");
             $product_id = $data['id'];
             $product_name = $data['name'];
             $img = '';
@@ -346,16 +387,16 @@ class Api extends Model
                             'updated_at' => date("Y-m-d H:i:s")
                         ]);
                 }
-                logfile_system("Cập nhật thành công product " . $product_name);
+                logfile("Cập nhật thành công product " . $product_name);
             } else {
-                logfile_system("==== Product  " . $product_name . " chưa được mua hàng lần nào. Bỏ qua ====");
+                logfile("==== Product  " . $product_name . " chưa được mua hàng lần nào. Bỏ qua ====");
             }
         }
     }
 
     private function syncProduct($lst, $woo_id)
     {
-        logfile_system("==== Create product ====");
+        logfile("==== Create product ====");
         /*Kiem tra xem danh sach product da ton tai hay chua*/
         $products = DB::table('woo_products')
             ->whereIn('product_id', $lst)
@@ -403,18 +444,18 @@ class Api extends Model
                             $save = "[Error] Save " . sizeof($db) . " product to database error.";
                             \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
                         }
-                        logfile_system($save . "\n");
+                        logfile($save . "\n");
                     }
                 }
             }
         } else {
-            logfile_system('All ' . sizeof($lst) . ' products had add to database before.');
+            logfile('All ' . sizeof($lst) . ' products had add to database before.');
         }
     }
 
     public function checkPaymentAgain()
     {
-        logfile_system('---------------- [Payment Again]------------------');
+        logfile('---------------- [Payment Again]------------------');
         $lists = \DB::table('woo_orders')
             ->join('woo_infos', 'woo_orders.woo_info_id', '=', 'woo_infos.id')
             ->select(
@@ -427,7 +468,7 @@ class Api extends Model
             $status = env('STATUS_WORKING_DONE');
             $this->checkPaymentAgain($lists, $status);
         } else {
-            logfile_system('-- [Payment Again] Chuyển sang kiểm tra đơn hàng auto');
+            logfile('-- [Payment Again] Chuyển sang kiểm tra đơn hàng auto');
 //
 //            $list_auto = \DB::table('woo_orders')
 //                ->join('woo_infos', 'woo_orders.woo_info_id', '=', 'woo_infos.id')
@@ -442,9 +483,9 @@ class Api extends Model
 //            {
 //                $this->checkPaymentAgain($list_auto);
 //            } else {
-//                logfile_system('-- [Payment Again] Check Payment không tìm thấy pending');
+//                logfile('-- [Payment Again] Check Payment không tìm thấy pending');
 //            }
-            logfile_system('-- [Payment Again] Check Payment không tìm thấy pending');
+            logfile('-- [Payment Again] Check Payment không tìm thấy pending');
         }
     }
 
@@ -485,9 +526,9 @@ class Api extends Model
                     }
                     $result = \DB::table('woo_orders')->where('id', $list->id)->update($update);
                     if ($result) {
-                        logfile_system('-- [Payment Again] Cập nhật thành công ' . $list->number);
+                        logfile('-- [Payment Again] Cập nhật thành công ' . $list->number);
                     } else {
-                        logfile_system('-- [Payment Again] [Error] Cập nhật thất bại ' . $list->number);
+                        logfile('-- [Payment Again] [Error] Cập nhật thất bại ' . $list->number);
                     }
                 }
             }
@@ -497,7 +538,7 @@ class Api extends Model
             $return = false;
             \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
         }
-        logfile_system('-- [Payment Again] Đã kiểm tra xong ' . sizeof($lists) . ' check payment');
+        logfile('-- [Payment Again] Đã kiểm tra xong ' . sizeof($lists) . ' check payment');
     }
 
     public function updateSku()
@@ -764,7 +805,7 @@ class Api extends Model
     // kiểm tra tag để lưu vào product
     private function checkTag()
     {
-        logfile_system('--[ Check Tag ] ---------------------------');
+        logfile('--[ Check Tag ] ---------------------------');
         $lst_product_tag = \DB::table('woo_product_drivers as spd')
             ->join('woo_infos as woo_info', 'spd.store_id', '=', 'woo_info.id')
             ->select(
@@ -848,14 +889,14 @@ class Api extends Model
                 }
                 //them toan bo thong tin woo_tags mới get được về database
                 if (sizeof($woo_tags_data) > 0) {
-                    logfile_system('-- Tạo mới thông tin woo_tags : ' . sizeof($woo_tags_data) . ' news');
+                    logfile('-- Tạo mới thông tin woo_tags : ' . sizeof($woo_tags_data) . ' news');
                     \DB::table('woo_tags')->insert($woo_tags_data);
                 }
             }
 
             // Nếu tồn tại thông tin để update vào sản phẩm scrap_products
             if (sizeof($scrap_product_update) > 0) {
-                logfile_system('-- Cập nhật thông tin tag vào woo_product_drivers : ' . sizeof($scrap_product_update) . ' update.');
+                logfile('-- Cập nhật thông tin tag vào woo_product_drivers : ' . sizeof($scrap_product_update) . ' update.');
                 foreach ($scrap_product_update as $woo_tag_id => $list_id) {
                     $data = [
                         'woo_tag_id' => $woo_tag_id
@@ -866,7 +907,7 @@ class Api extends Model
             $result = false;
         } else {
             $result = true;
-            logfile_system('-- Đã chuẩn bị đủ tag. Chuyển sang tạo mới sản phẩm.');
+            logfile('-- Đã chuẩn bị đủ tag. Chuyển sang tạo mới sản phẩm.');
         }
         return $result;
     }
