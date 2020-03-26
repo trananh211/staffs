@@ -1738,7 +1738,7 @@ class Api extends Model
                 )
                 ->where('scp.status_tool', 1)
                 ->where('scp.status', 1)
-                ->limit(15)
+                ->limit(19)
                 ->get()->toArray();
             if (sizeof($products) > 0) {
                 // lấy thông tin API ở store ra
