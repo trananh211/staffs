@@ -48,7 +48,7 @@ class TestCommand extends Command
         $api_controller = new ApiController();
 //        $api_controller->checkTemplateScrap();
 //        $google_controller = new GoogleController();
-        $check = $api_controller->changeInfoProduct();
+        $check = $api_controller->getAllOrderOld();
 //        $this->checkTemplateScrap();
     }
 

@@ -138,6 +138,8 @@ class Api extends Model
                     'variation_full_detail' => trim($variation_full_detail),
                     'custom_status' => $custom_status,
                     'email' => $data['billing']['email'],
+                    'last_name' => trim($data['shipping']['last_name']),
+                    'first_name' => trim($data['shipping']['first_name']),
                     'fullname' => $data['shipping']['first_name'] . ' ' . $data['shipping']['last_name'],
                     'address' => (strlen($data['shipping']['address_2']) > 0) ? $data['shipping']['address_1'] . ', ' . $data['shipping']['address_2'] : $data['shipping']['address_1'],
                     'city' => $data['shipping']['city'],
@@ -1834,6 +1836,42 @@ class Api extends Model
         }
         return $return;
     }
+
+    public function getAllOrderOld()
+    {
+        $full_order = array(
+            7371, 7302, 7303, 7304, 7305, 7306, 7307, 7308, 7309, 7310, 7311, 7312, 7313, 7314, 7315, 7316, 7317, 7318, 7319, 7320, 7321, 7322, 7323, 7324, 7325, 7326, 7327, 7328, 7329, 7330, 7355, 7356, 7357, 7358, 7359, 7360, 7361, 7362, 7363, 7364, 7366, 7367, 7370, 7372, 7373, 7374, 7375, 7399
+        );
+
+        echo "<pre>";
+        $list_order_exists = \DB::table('woo_orders')->pluck('order_id')->toArray();
+        echo sizeof($full_order) - sizeof($list_order_exists)." = ";
+
+        $list_order_thieu = array_diff($full_order, $list_order_exists);
+        echo sizeof($list_order_thieu)."\n";
+
+        $info = \DB::table('woo_infos')->select('*')->first();
+        $woocommerce = $this->getConnectStore($info->url, $info->consumer_key, $info->consumer_secret);
+        foreach ($list_order_thieu as $order_id)
+        {
+            try {
+                $try = true;
+                $result = ($woocommerce->get('orders/'.$order_id));
+            } catch (\Exception $e)
+            {
+                $try = false;
+            }
+            if ($try)
+            {
+                $result = json_decode(json_encode($result, true), true);
+                logfile_system('-- Tồn tại order Id: '. $order_id);
+                $this->createOrder($result, $info->id);
+            } else {
+                logfile_system('-- Không tồn tại order Id: '. $order_id);
+            }
+        }
+    }
+
     /*End WooCommerce API*/
 
     /*cập nhật thông tin sản phẩm đối thủ mới liên tục*/
@@ -1852,4 +1890,6 @@ class Api extends Model
             logfile_system('-- [Error] Xảy ra lỗi không thể cập nhật lại template về new');
         }
     }
+
+
 }
