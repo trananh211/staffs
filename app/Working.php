@@ -1897,39 +1897,6 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         return redirect('woo-get-template')->with($message_status, $message);
     }
 
-    public function editWooTemplate($request)
-    {
-        \DB::beginTransaction();
-        try {
-            $rq = $request->all();
-            $message_status = 'error';
-            $message = '';
-            $product_name = ucwords(trim($rq['product_name']));
-            $id = trim($rq['id']);
-            $supplier_id = trim($rq['supplier_id']);
-            $base_price = trim($rq['base_price']);
-            $variation_change_id = trim($rq['variation_change_id']);
-            $result = \DB::table('woo_templates')->where('id', $id)->update([
-                'product_name' => $product_name,
-                'supplier_id' => $supplier_id,
-                'variation_change_id' => ($variation_change_id > 0) ? $variation_change_id : null,
-                'base_price' => $base_price,
-                'updated_at' => date("Y-m-d H:i:s")
-            ]);
-            if ($result) {
-                $message_status = 'success';
-                $message = 'Cập nhật template thành công.';
-            } else {
-                $message = 'Cập nhật template thất bại. Mời bạn thử lại';
-            }
-            \DB::commit(); // if there was no errors, your query will be executed
-        } catch (\Exception $e) {
-            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
-            echo $e->getMessage();
-        }
-        return redirect('woo-get-template')->with($message_status, $message);
-    }
-
     public function saveCreateTemplate($request)
     {
         \DB::beginTransaction();

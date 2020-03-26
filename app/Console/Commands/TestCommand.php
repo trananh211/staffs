@@ -45,14 +45,10 @@ class TestCommand extends Command
 //        $controller->autoUploadProduct();
 //        $controller->autoUploadImage();
 
-//        $api_controller = new ApiController();
+        $api_controller = new ApiController();
 //        $api_controller->checkTemplateScrap();
-        $google_controller = new GoogleController();
-        $check = $google_controller->uploadFileWorkingGoogle();
-        if($check)
-        {
-            $check2 = $google_controller->getFileFulfill();
-        }
+//        $google_controller = new GoogleController();
+        $check = $api_controller->changeInfoProduct();
 //        $this->checkTemplateScrap();
     }
 

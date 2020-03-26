@@ -380,24 +380,16 @@ class WooController extends Controller
             ->leftjoin('woo_infos', 'w_temp.store_id', '=', 'woo_infos.id')
             ->leftjoin('suppliers as sup', 'w_temp.supplier_id', '=', 'sup.id')
             ->select(
-                'w_temp.id', 'w_temp.product_name', 'w_temp.supplier_id', 'w_temp.store_id', 'w_temp.template_id',
-                'w_temp.base_price', 'w_temp.variation_change_id', 'w_temp.website_id', 'w_temp.status',
+                'w_temp.id', 'w_temp.product_name', 'w_temp.store_id', 'w_temp.template_id',
+                'w_temp.website_id', 'w_temp.status', 'w_temp.product_code',
+                'w_temp.product_name_change', 'w_temp.product_name_exclude', 'w_temp.origin_price', 'w_temp.sale_price',
                 'woo_infos.name as store_name',
                 'sup.name as sup_name'
             )
             ->orderBy('w_temp.store_id')
             ->get()->toArray();
-        $suppliers = \DB::table('suppliers')->select('id', 'name')->get()->toArray();
-        $variation_changes = \DB::table('variation_changes')->select('id','name')->get()->toArray();
         $data = array();
-        return view('/admin/woo/list_templates')
-            ->with(compact('lists', 'suppliers','variation_changes', 'data'));
-    }
-
-    public function editWooTemplate(Request $request)
-    {
-        $work = new Working();
-        return $work->editWooTemplate($request);
+        return view('/admin/woo/list_templates')->with(compact('lists', 'data'));
     }
 
     public function scanAgainTemplate($woo_template_id)

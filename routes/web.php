@@ -105,7 +105,7 @@ Route::middleware('auth')->group(function () {
     Route::post('woo-add-new-supplier','WooController@addNewSupplier');
     Route::get('woo-delete-supplier/{supplier_id}','WooController@deleteSupplier');
     Route::get('woo-get-template','WooController@getListTemplate');
-    Route::post('woo-update-template','WooController@editWooTemplate');
+    Route::post('woo-update-template','ApiController@editWooTemplate');
     Route::get('woo-scan-template/{woo_template_id}','WooController@scanAgainTemplate');
     Route::get('woo-list-convert-variation','WooController@getListConvertVariation');
     Route::get('woo-convert-variation','WooController@getConvertVariation');

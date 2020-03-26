@@ -116,8 +116,11 @@ class CustomCommand extends Command
         echo 'run 4 phut';
         $api_controller = new ApiController(); // make sure to import the controller
         $check = $api_controller->autoUploadProduct();
-        if ($check){
-            $api_controller->getCategoryChecking();
+        if ($check) {
+            $check1 = $api_controller->changeInfoProduct(); // thay đổi thông tin product theo template
+            if ($check1) {
+                $api_controller->getCategoryChecking();
+            }
         }
     }
 

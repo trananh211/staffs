@@ -271,8 +271,13 @@ class ApiController extends Controller
         return $api->reCheckProductInfo();
     }
     /*End Check Product of category info*/
-
     // End Google Feed
+
+    public function editWooTemplate(Request $request)
+    {
+        $api = new Api();
+        return $api->editWooTemplate($request);
+    }
 
     public function getMoreWooCategory(Request $request)
     {
@@ -284,6 +289,12 @@ class ApiController extends Controller
     {
         $api = new Api();
         return $api->checkTemplateScrap();
+    }
+
+    public function changeInfoProduct()
+    {
+        $api = new Api();
+        return $api->changeInfoProduct();
     }
 }
 

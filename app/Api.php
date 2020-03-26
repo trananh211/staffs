@@ -681,24 +681,12 @@ class Api extends Model
             } else {
                 $woocommerce = $this->getConnectStore($rq['url'], $rq['consumer_key'], $rq['consumer_secret']);
                 $i = $woocommerce->get('products/' . $rq['id_product']);
-                $template_data = json_decode(json_encode($i), True);
-                $template_name = $template_data['name'];
-                $description = htmlentities(str_replace("\n", "<br />", $template_data['description']));
-                $template_data['description'] = $description;
-                //xoa cac key khong can thiet
-                $deleted = array('id', 'slug', 'permalink', 'price_html', 'images', '_links');
-                $variation_list = $template_data['variations'];
-                foreach ($deleted as $v) {
-                    unset($template_data[$v]);
-                }
-                //tao thu muc de luu template
-                $path = storage_path('app/public') . '/template/' . $id_store . '/' . $template_id . '/';
-                makeFolder(($path));
-                // Write File
-                $template_path = $path . 'temp_' . $template_id . '.json';
-                $template_data['meta_data'] = [];
-                $result = writeFileJson($template_path, $template_data);
-                chmod($template_path, 777);
+                $r = $this->makeFileTemplate($i, $id_store, $template_id);
+                $result = $r['result'];
+                $template_path = $r['template_path'];
+                $template_name = $r['template_name'];
+                $variation_list = $r['variation_list'];
+                $path = $r['path'];
                 // Nếu tạo file json thành công. Luu thông tin template vao database
                 if ($result) {
                     logfile('-- Tạo json file template thành công. chuyển sang tạo variantions file json');
@@ -1035,8 +1023,6 @@ class Api extends Model
                     $return = $this->deleteProductUploaded();
                 }
             } else {
-                logfile_system('-- Chuyển sang up ảnh scrap website');
-//                $result = $this->uploadScrapImage();
                 $result = true;
                 if ($result) {
                     logfile_system('-- Chuyển sang xóa sản phẩm');
@@ -1048,119 +1034,6 @@ class Api extends Model
             return $e->getMessage();
         }
         return $return;
-    }
-
-    private function uploadScrapImage()
-    {
-        $limit = 1;
-        $check = \DB::table('scrap_products')
-            ->where('status', 1)
-            ->orderBy('id', 'ASC')
-            ->orderBy('store_id', 'ASC')
-            ->pluck('id', 'woo_product_id');
-        if (sizeof($check) > 0) {
-            $result = false;
-            $checks = \DB::table('woo_image_uploads as woo_up')
-                ->leftjoin('scrap_products as spd', 'spd.id', '=', 'woo_up.woo_scrap_product_id')
-                ->leftjoin('woo_infos as woo_info', 'spd.store_id', '=', 'woo_info.id')
-                ->select(
-                    'woo_up.id as woo_up_id', 'woo_up.woo_scrap_product_id', 'woo_up.url as woo_up_url', 'woo_up.store_id',
-                    'spd.woo_product_id',
-                    'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret'
-                )
-                ->whereIn('woo_up.woo_scrap_product_id', $check)
-                ->orderBy('woo_up.id', 'ASC')
-                ->get()->toArray();
-            if (sizeof($checks) > 0) {
-                $stores = array();
-                $tmp = array();
-                $tmp_woo_up_id = array();
-                foreach ($checks as $val) {
-                    $tmp[$val->woo_product_id][] = [
-                        'src' => $val->woo_up_url
-                    ];
-
-                    $tmp_woo_up_id[$val->woo_product_id][] = $val->woo_up_id;
-                    $stores[$val->store_id] = [
-                        'url' => $val->url,
-                        'consumer_key' => $val->consumer_key,
-                        'consumer_secret' => $val->consumer_secret,
-                        'images' => $tmp,
-                        'woo_up_id' => $tmp_woo_up_id
-                    ];
-                }
-                logfile_system("-- Đang tải " . sizeof($checks) . " images từ store :" . $val->url);
-                $product_update_data = array();
-                $product_image_uploaded = array();
-                $product_update_data_false = array();
-                $slug_data = array();
-                foreach ($stores as $store_id => $store) {
-                    $change_status_image = array();
-                    $up_id_data = $store['woo_up_id'];
-                    //Kết nối với woocommerce
-                    $woocommerce = $this->getConnectStore($store['url'], $store['consumer_key'], $store['consumer_secret']);
-                    $check_upload_false = true;
-                    $i = 0;
-                    foreach ($store['images'] as $product_id => $images) {
-                        if ($i >= $limit) {
-                            break;
-                        }
-                        $i++;
-                        $tmp = array(
-                            'id' => $product_id,
-                            'status' => 'publish',
-                            'images' => $images,
-                            'date_created' => date("Y-m-d H:i:s", strtotime(" -3 days"))
-                        );
-                        $result = $woocommerce->put('products/' . $product_id, $tmp);
-                        if ($result) {
-                            $myarray = (array)$result;
-                            $product_update_data[$store_id][] = $product_id;
-                            $product_image_uploaded = array_merge($product_image_uploaded, $store['woo_up_id'][$product_id]);
-                            logfile_system('--- Upload thành công: ' . sizeof($images) . ' của product_id: ' . $product_id);
-                        } else {
-                            $product_update_data_false[] = $product_id;
-                            logfile_system('--- [Error] Upload thất bại: ' . sizeof($images) . ' của product_id: ' . $product_id);
-                        }
-                    }
-                }
-
-                if (sizeof($product_image_uploaded) > 0) {
-                    \DB::table('woo_image_uploads')->whereIn('id', $product_image_uploaded)->update(['status' => 1]);
-                }
-
-                if (sizeof($product_update_data) > 0) {
-                    foreach ($product_update_data as $store_id => $list_product_id) {
-                        $check = \DB::table('scrap_products as spd')
-                            ->leftjoin('woo_image_uploads as woo_up', 'spd.id', '=', 'woo_up.woo_scrap_product_id')
-                            ->whereIn('spd.woo_product_id', $list_product_id)
-                            ->where('spd.store_id', $store_id)
-                            ->where('woo_up.status', 0)
-                            ->orderBy('woo_up.id', 'ASC')
-                            ->pluck('spd.id', 'spd.woo_product_id')
-                            ->toArray();
-                        foreach ($list_product_id as $key => $product_id) {
-                            if (array_key_exists($product_id, $check)) {
-                                unset($list_product_id[$key]);
-                            }
-                        }
-                        if (sizeof($list_product_id) > 0) {
-                            \DB::table('scrap_products')
-                                ->where('store_id', $store_id)
-                                ->whereIn('woo_product_id', $list_product_id)
-                                ->update(['status' => 3]);
-                        }
-                    }
-                }
-
-                logfile_system('-- [END] Hoàn tất tiến trình upload ảnh.');
-            } else {
-                logfile_system('-- [END] Đã hết ảnh scrap để tải lên. Kết thúc.');
-            }
-        } else {
-            $result = true;
-        }
-        return $result;
     }
 
     /*Xóa categories*/
@@ -1735,6 +1608,232 @@ class Api extends Model
         return redirect('list-categories')->with($alert, $message);
     }
     // End Google feed
+
+    public function editWooTemplate($request)
+    {
+        $message_status = 'error';
+        \DB::beginTransaction();
+        try {
+            $rq = $request->all();
+            $message = '';
+            $status = 1;
+            if ($rq['product_code'] != '' || $rq['sale_price'] != '' || $rq['origin_price'] != '' || $rq['product_name_exclude'] != '' || $rq['product_name_change'] != '') {
+                $status = 2;
+            }
+            $product_name = ucwords(trim($rq['product_name']));
+            $product_code = ($rq['product_code'] != '') ? trim($rq['product_code']) : NULL;
+            $sale_price = ($rq['product_code'] != '') ? trim($rq['sale_price']) : 0;
+            $origin_price = ($rq['product_code'] != '') ? trim($rq['origin_price']) : 0;
+            $product_name_exclude = ($rq['product_code'] != '') ? ucwords(trim($rq['product_name_exclude'])) : NULL;
+            $product_name_change = ($rq['product_code'] != '') ? ucwords(trim($rq['product_name_change'])) : NULL;
+            $id = trim($rq['id']);
+            $woo_info = \DB::table('woo_templates')
+                ->join('woo_infos', 'woo_templates.store_id', '=', 'woo_infos.id')
+                ->select(
+                    'woo_templates.template_id', 'woo_templates.template_path',
+                    'woo_infos.id as store_id', 'woo_infos.url', 'woo_infos.consumer_key', 'woo_infos.consumer_secret'
+                )
+                ->where('woo_templates.id', $id)
+                ->first();
+            try {
+                $woocommerce = $this->getConnectStore($woo_info->url, $woo_info->consumer_key, $woo_info->consumer_secret);
+                $template_old = readFileJson($woo_info->template_path);
+                $update = [
+                    'name' => $product_name,
+                    'price' => ($sale_price > 0) ? $sale_price : $template_old['price'],
+                    'regular_price' => ($origin_price > 0) ? $origin_price : $template_old['regular_price'],
+                    'sale_price' => ($sale_price > 0) ? $sale_price : $template_old['sale_price']
+                ];
+                $update_template = $woocommerce->put('products/' . $woo_info->template_id, $update);
+                $try = true;
+            } catch (\Exception $e) {
+                $try = false;
+            }
+            if ($try) {
+                $r = $this->makeFileTemplate($update_template, $woo_info->store_id, $woo_info->template_id);
+                $result = $r['result'];
+                $template_path = $r['template_path'];
+                $update_db = [
+                    'product_name' => $product_name,
+                    'product_code' => $product_code,
+                    'sale_price' => $sale_price,
+                    'origin_price' => $origin_price,
+                    'product_name_exclude' => $product_name_exclude,
+                    'product_name_change' => $product_name_change,
+                    'template_path' => $template_path,
+                    'status' => $status,
+                    'updated_at' => date("Y-m-d H:i:s")
+                ];
+                if ($result) {
+                    $result_update = \DB::table('woo_templates')->where('id', $id)->update($update_db);
+                    \DB::table('scrap_products')
+                        ->where('template_id',$woo_info->template_id)
+                        ->whereNotNull('woo_product_id')
+                        ->update(['status_tool' => 1]);
+                    if ($result_update) {
+                        $message_status = 'success';
+                        $message = 'Cập nhật template thành công.';
+                    } else {
+                        $message = 'Cập nhật template thất bại. Mời bạn thử lại';
+                    }
+                }
+            } else {
+                $message = 'Không thể kết nối tới store. Mời bạn thử lại.';
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+            $message = 'Xảy ra lỗi nội bộ : ' . $e->getMessage();
+        }
+        return redirect('woo-get-template')->with($message_status, $message);
+    }
+
+    private function makeFileTemplate($templates, $id_store, $template_id)
+    {
+        $template_data = json_decode(json_encode($templates), True);
+        $template_name = $template_data['name'];
+        $description = htmlentities(str_replace("\n", "<br />", $template_data['description']));
+        $template_data['description'] = $description;
+        //xoa cac key khong can thiet
+        $deleted = array('id', 'slug', 'permalink', 'price_html', 'images', '_links');
+        $variation_list = $template_data['variations'];
+        foreach ($deleted as $v) {
+            unset($template_data[$v]);
+        }
+        //tao thu muc de luu template
+        $path = storage_path('app/public') . '/template/' . $id_store . '/' . $template_id . '/';
+        makeFolder(($path));
+        $count_file = sizeof(array_diff(scandir($path), array('.', '..'))) + 1;
+        // Write File
+        $template_path = $path . 'temp_' . $template_id .'_'.$count_file. '.json';
+        $template_data['meta_data'] = [];
+        $result = writeFileJson($template_path, $template_data);
+        chmod($template_path, 777);
+        $return = [
+            'result' => $result,
+            'template_path' => $template_path,
+            'template_name' => $template_name,
+            'variation_list' => $variation_list,
+            'path' => $path
+        ];
+        return $return;
+    }
+
+    public function changeInfoProduct()
+    {
+        $return = false;
+        \DB::beginTransaction();
+        try {
+            logfile_system('==== Bắt đầu thay đổi thông tin product =========================');
+            $products = \DB::table('scrap_products as scp')
+                ->leftjoin('woo_templates as wtp', function ($join) {
+                    $join->on('scp.template_id', '=', 'wtp.template_id')
+                        ->on('scp.store_id', '=', 'wtp.store_id');
+                })
+                ->select(
+                    'scp.id as scrap_product_id', 'scp.template_id', 'scp.woo_product_id', 'scp.store_id',
+                    'scp.woo_product_name', 'scp.woo_slug',
+                    'wtp.product_name as temp_product_name', 'wtp.product_code', 'wtp.product_name_change',
+                    'wtp.product_name_exclude', 'wtp.template_path'
+                )
+                ->where('scp.status_tool', 1)
+                ->where('scp.status', 1)
+                ->limit(15)
+                ->get()->toArray();
+            if (sizeof($products) > 0) {
+                // lấy thông tin API ở store ra
+                $infos = \DB::table('woo_infos')->select('id', 'url', 'consumer_key', 'consumer_secret')->get()->toArray();
+                // gộp thông tin api theo id của store
+                $woo_infos = array();
+                foreach ($infos as $info) {
+                    $woo_infos[$info->id] = json_decode(json_encode($info, true), true);
+                }
+                // dồn thông tin api vào các product
+                $tmp = array();
+                foreach ($products as $item) {
+                    if (array_key_exists($item->store_id, $woo_infos)) {
+                        $tmp[$item->store_id]['info'] = $woo_infos[$item->store_id];
+                        $tmp[$item->store_id]['data'][] = json_decode(json_encode($item, true), true);
+                    }
+                }
+                $scrap_success = array();
+                $scrap_id_success = array();
+                $scrap_id_error = array();
+                foreach ($tmp as $store_id => $value) {
+                    $info = $value['info'];
+                    $data = $value['data'];
+                    $woocommerce = $this->getConnectStore($info['url'], $info['consumer_key'], $info['consumer_secret']);
+                    foreach ($data as $item) {
+                        $info_template = readFileJson($item['template_path']);
+                        $product_name = str_replace($item['product_code'], '', $item['woo_product_name']);
+                        $product_name = str_replace(ucwords($item['product_name_exclude']), ucwords($item['product_name_change']), $product_name);
+                        $product_name = trim(trim($product_name) . " " . trim($item['product_code']));
+
+                        $update = [
+                            'name' => $product_name,
+                            'permalink' => $item['woo_slug'],
+                            'price' => $info_template['price'],
+                            'regular_price' => $info_template['regular_price'],
+                            'sale_price' => $info_template['sale_price']
+                        ];
+                        try {
+                            $result_change = $woocommerce->put('products/' . $item['woo_product_id'], $update);
+                            $check = true;
+                        } catch (\Exception $e) {
+                            $check = false;
+                            logfile_system('-- Không connect được với product id : ' . $item['woo_product_id']);
+                        }
+                        if ($check) {
+                            $scrap_success[$item['scrap_product_id']] = [
+                                'woo_product_name' => $product_name,
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                            $scrap_id_success[] = $item['scrap_product_id'];
+                            logfile_system('-- Thay đổi thông tin scrap id: ' . $item['scrap_product_id'] . ' thành công');
+                        } else {
+                            $scrap_id_error[] = $item['scrap_product_id'];
+                            logfile_system('-- [E] Thay đổi thông tin scrap id: ' . $item['scrap_product_id'] . ' thất bại');
+                        }
+                    }
+
+                }
+                // nếu thay đổi thông tin product thành công. Thì cập nhật scrap_product và feed_product
+                if (sizeof($scrap_id_success) > 0) {
+                    $check_feed_products = \DB::table('feed_products')->whereIn('scrap_product_id', $scrap_id_success)
+                        ->pluck('id', 'scrap_product_id')->toArray();
+                    \DB::table('scrap_products')->whereIn('id', $scrap_id_success)->update(['status_tool' => 0]);
+                    foreach ($scrap_success as $scrap_product_id => $update) {
+                        \DB::table('scrap_products')->where('id', $scrap_product_id)->update($update);
+                        if (array_key_exists($scrap_product_id, $check_feed_products)) {
+                            \DB::table('scrap_products')->where('id', $scrap_product_id)->update($update);
+                        }
+                    }
+                }
+
+                // nếu không thể cập nhật được thông tin product. Thì product đó đã xóa trước rồi. Xóa ở scrap_product và feed product
+                if (sizeof($scrap_id_error) > 0) {
+                    $check_feed_products = \DB::table('feed_products')->whereIn('scrap_product_id', $scrap_id_error)
+                        ->pluck('id')->toArray();
+                    \DB::table('scrap_products')->whereIn('id', $scrap_id_error)->delete();
+                    if (sizeof($check_feed_products) > 0) {
+                        \DB::table('scrap_products')->whereIn('id', $scrap_id_error)->delete();
+                    }
+                }
+            } else {
+                logfile_system('-- Đã hết product thay đổi thông tin. Chuyển sang công việc khác.');
+                $return = true;
+                \DB::table('woo_templates')->where('status', 2)->update([
+                    'status' => 1,
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+            $message = 'Xảy ra lỗi nội bộ : ' . $e->getMessage();
+        }
+        return $return;
+    }
     /*End WooCommerce API*/
 
     /*cập nhật thông tin sản phẩm đối thủ mới liên tục*/
