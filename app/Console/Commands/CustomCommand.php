@@ -88,15 +88,19 @@ class CustomCommand extends Command
         $check0 = $google_controller->uploadFileWorkingGoogle(); // tải file working lên google driver
         if ($check0)
         {
-            // upload image from google driver to product
-            $check = $api_controller->autoUploadImage();
-            if ($check) {
-                // tạo feed check feed đầu tiên
-                $check2 = $api_controller->reCheckProductInfo();
-                if ($check2)
-                {
-                    //Cào sản phẩm
-                    $this->call('scrap:product');
+            $check1 = $google_controller->getFileFulfill(); // download file fulfill từ driver về local
+            if ($check1)
+            {
+                // upload image from google driver to product
+                $check2 = $api_controller->autoUploadImage();
+                if ($check2) {
+                    // tạo feed check feed đầu tiên
+                    $check3 = $api_controller->reCheckProductInfo();
+                    if ($check3)
+                    {
+                        //Cào sản phẩm
+                        $this->call('scrap:product');
+                    }
                 }
             }
         }
