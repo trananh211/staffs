@@ -12,6 +12,8 @@ use Carbon\Carbon;
 Use App\Jobs\SendPostEmail;
 use Image;
 use Excel;
+use Session;
+use Redirect;
 
 class Working extends Model
 {
@@ -58,9 +60,145 @@ class Working extends Model
     public function adminDashboard($data)
     {
 //        echo "<pre>";
-        $list_order = $this->getListOrderOfMonth(30);
+        if (\Session::has('date'))
+        {
+            $date_from = \Session::get('date.date_from');
+            $date_to = \Session::get('date.date_to');
+        } else {
+            $date_from = date("Y-m-d");
+            $date_to = date("Y-m-d");
+        }
+        $date_from = $date_from." 00:00:00";
+        $date_to = $date_to." 00:00:00";
+        if ($date_from == $date_to)
+        {
+            $date_to = Carbon::parse($date_to)->addDay(1)->toDateTimeString();
+        }
+        $order_status = order_status();
+        $between = [$date_from, $date_to];
+        $lists = \DB::table('woo_orders')
+            ->leftjoin('woo_infos','woo_orders.woo_info_id', '=', 'woo_infos.id')
+            ->leftjoin('designs', 'woo_orders.design_id', '=', 'designs.id')
+            ->leftjoin('tool_categories', 'designs.tool_category_id', '=', 'tool_categories.id')
+            ->leftjoin('variations', function ($join){
+                $join->on('variations.tool_category_id', '=', 'tool_categories.id')
+                    ->on('woo_orders.variation_detail', '=', 'variations.variation_name');
+            })
+            ->select(
+                'woo_orders.id', 'woo_orders.created_at', 'woo_orders.design_id', 'woo_orders.payment_method',
+                'woo_orders.price', 'woo_orders.shipping_cost', 'woo_orders.quantity', 'woo_orders.sku',
+                'woo_orders.product_name', 'woo_orders.product_id', 'woo_orders.woo_info_id as store_id',
+                'woo_orders.variation_detail', 'woo_orders.country', 'woo_orders.state',
+                'designs.tool_category_id', 'tool_categories.name as category_name',
+                'variations.price as base_cost',
+                'woo_infos.name as store_name'
+            )
+            ->whereIn('woo_orders.order_status',$order_status)
+            ->whereBetween('woo_orders.created_at', $between)->get()->toArray();
+//        print_r($lists);
+//        die();
+        $stores = array();
+        $designs = array();
+        $categories = array();
+        $products = array();
+        $countries = array();
+        $states = array();
+        foreach ($lists as $item)
+        {
+            // stores
+            $base_cost = ($item->base_cost > 0) ? $item->base_cost : ($item->price/2);
+            if(array_key_exists($item->store_id, $stores)){
+                $stores[$item->store_id]['item'] += $item->quantity;
+                $stores[$item->store_id]['cross'] += ($item->price*$item->quantity) + $item->shipping_cost;
+                $stores[$item->store_id]['ship'] += $item->shipping_cost;
+                $stores[$item->store_id]['base_cost'] += ($base_cost*$item->quantity);
+                $stores[$item->store_id]['net'] += ($item->price*$item->quantity) + $item->shipping_cost - ($base_cost*$item->quantity);
+            } else {
+                $stores[$item->store_id]['store_name'] = ucwords($item->store_name);
+                $stores[$item->store_id]['item'] = $item->quantity;
+                $stores[$item->store_id]['cross'] = ($item->price*$item->quantity) + $item->shipping_cost;
+                $stores[$item->store_id]['ship'] = $item->shipping_cost;
+                $stores[$item->store_id]['base_cost'] = ($base_cost*$item->quantity);
+                $stores[$item->store_id]['net'] = ($item->price*$item->quantity) + $item->shipping_cost - ($base_cost*$item->quantity);
+            }
+            // end stores
+            // designs
+            if (array_key_exists($item->design_id, $designs))
+            {
+                $designs[$item->design_id]['item'] += $item->quantity;
+            } else {
+                $designs[$item->design_id]['sku'] = $item->sku;
+                $designs[$item->design_id]['item'] = $item->quantity;
+            }
+            // end designs
+            // categories
+            if (array_key_exists($item->tool_category_id, $categories))
+            {
+                $categories[$item->tool_category_id]['item'] += $item->quantity;
+                $categories[$item->tool_category_id]['net'] += ($item->price*$item->quantity) + $item->shipping_cost - ($base_cost*$item->quantity);
+            } else {
+                $categories[$item->tool_category_id]['category_name'] = ucwords($item->category_name);
+                $categories[$item->tool_category_id]['item'] = $item->quantity;
+                $categories[$item->tool_category_id]['net'] = ($item->price*$item->quantity) + $item->shipping_cost - ($base_cost*$item->quantity);
+            }
+            // end categories
+            // products
+            if (array_key_exists($item->product_id, $products))
+            {
+                $products[$item->product_id]['item'] += $item->quantity;
+                $products[$item->product_id]['net'] += ($item->price*$item->quantity) + $item->shipping_cost - ($base_cost*$item->quantity);
+            } else {
+                $products[$item->product_id]['product_name'] = ucwords($item->product_name);
+                $products[$item->product_id]['item'] = $item->quantity;
+                $products[$item->product_id]['net'] = ($item->price*$item->quantity) + $item->shipping_cost - ($base_cost*$item->quantity);
+            }
+            // end products
+
+            // countries
+            if (array_key_exists($item->country, $countries))
+            {
+                $countries[$item->country]['item'] += $item->quantity;
+            } else {
+                $countries[$item->country]['country'] = ucwords($item->country);
+                $countries[$item->country]['item'] = $item->quantity;
+            }
+            // end countries
+
+            // states
+            if (array_key_exists($item->state, $states))
+            {
+                $states[$item->state]['item'] += $item->quantity;
+            } else {
+                $states[$item->state]['state'] = ucwords($item->state);
+                $states[$item->state]['item'] = $item->quantity;
+            }
+            // end states
+        }
+        $stores = collect($stores);
+        $stores = $stores->sortByDesc('item');
+
+        $countries = collect($countries);
+        $countries = $countries->sortByDesc('item');
+        $countries = $countries->take(10);
+
+        $designs = collect($designs);
+        $designs = $designs->sortByDesc('item');
+        $designs = $designs->take(10);
+
+        $states = collect($states);
+        $states = $states->sortByDesc('item');
+        $states = $states->take(10);
+
+        $categories = collect($categories);
+        $categories = $categories->sortByDesc('item');
+        $categories = $categories->take(10);
+
+        $products = collect($products);
+        $products = $products->sortByDesc('item');
+        $products = $products->take(10);
+
         return view('/admin/dashboard')
-            ->with(compact('list_order', 'data'));
+            ->with(compact( 'data','stores', 'designs', 'countries', 'states', 'categories', 'products'));
     }
 
     public function staffDashboard($data)
@@ -115,6 +253,18 @@ class Working extends Model
         $uid = Auth::id();
         return view('/staff/qc_dashboard')
             ->with(compact('data'));
+    }
+
+    public function dashboardDate($request)
+    {
+        $rq = $request->all();
+//        $date_from = Carbon::parse($rq['date_from']);
+//        $date_to = Carbon::parse($rq['date_to']);
+        $date_from = $rq['date_from'];
+        $date_to = $rq['date_to'];
+        \Session::put('date.date_from', $date_from);
+        \Session::put('date.date_to', $date_to);
+        return \Redirect::back();
     }
 
     private function getListOrderOfMonth($subday)

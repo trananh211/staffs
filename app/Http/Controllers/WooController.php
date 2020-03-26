@@ -587,5 +587,11 @@ class WooController extends Controller
         $work = new Working();
         return $work->fulfillCategory();
     }
+
+    public function dashboardDate(Request $request)
+    {
+        $work = new Working();
+        return $work->dashboardDate($request);
+    }
     /*End Admin + QC*/
 }

@@ -1,122 +1,228 @@
 @extends('master')
 @section('content')
-    ADMIN
-    <div class="row no-m-t no-m-b">
-        <div class="col s12 m12 l4">
-            <div class="card stats-card">
-                <div class="card-content">
-                    <div class="card-options">
-                        <ul>
-                            <li class="red-text"><span class="badge cyan lighten-1">gross</span></li>
-                        </ul>
+    <div class="col s12 m12 l12">
+        <div class="card invoices-card">
+            <div class="card-content">
+                <div class="row">
+                    <div class="col s6 grid-example">
+                        <h5>Bảng thống kê</h5>
                     </div>
-                    <span class="card-title">Sales</span>
-                    <span class="stats-counter">$<span class="counter">48190</span><small>This week</small></span>
-                </div>
-                <div id="sparkline-bar"></div>
-            </div>
-        </div>
-        <div class="col s12 m12 l4">
-            <div class="card stats-card">
-                <div class="card-content">
-                    <div class="card-options">
-                        <ul>
-                            <li><a href="javascript:void(0)"><i class="material-icons">more_vert</i></a></li>
-                        </ul>
+                    {{-- Form Choose Date--}}
+                    <div class="col s6 grid-example">
+                        <div class="card white">
+                            <form class="col s12" action="{{url('dashboard-date')}}" method="post">
+                                {{ csrf_field() }}
+                                <div class="input-field col s5">
+                                    <input id="date_from" type="date" name="date_from" required
+                                           value="{{ (\Session::has('date'))? \Session::get('date.date_from') : '' }}">
+                                    <label for="date_from" class="active">Date From</label>
+                                </div>
+                                <div class="input-field col s5">
+                                    <input id="date_to" type="date" name="date_to" required
+                                           value="{{ (\Session::has('date'))? \Session::get('date.date_to') : '' }}">
+                                    <label for="date_to" class="active">Date To</label>
+                                </div>
+                                <div class="input-field col s2">
+                                    <button type="submit" class="waves-effect waves-light btn">Ok</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                    <span class="card-title">Page views</span>
-                    <span class="stats-counter"><span class="counter">83710</span><small>This month</small></span>
-                </div>
-                <div id="sparkline-line"></div>
-            </div>
-        </div>
-        <div class="col s12 m12 l4">
-            <div class="card stats-card">
-                <div class="card-content">
-                    <span class="card-title">Reports</span>
-                    <span class="stats-counter"><span class="counter">23230</span><small>Last week</small></span>
-                    <div class="percent-info green-text">8% <i class="material-icons">trending_up</i></div>
-                </div>
-                <div class="progress stats-card-progress">
-                    <div class="determinate" style="width: 70%"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="row no-m-t no-m-b">
-        <div class="col s12 m12 l12">
-            <div class="card invoices-card">
-                <div class="card-content">
-                    <span class="card-title">List Job 30 day before</span>
-                    <table id="list-order" class="display responsive-table datatable-example">
-                        <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Store</th>
-                            <th>Order</th>
-                            <th>Name</th>
-                            <th>Sku</th>
-                            <th>Custom</th>
-                            <th>Email</th>
-                            <th>Status</th>
-                            <th>Qty</th>
-                            <th>Price</th>
-                            <th>Payment</th>
-                            <th>Date</th>
-                            <th>Tracking</th>
-                        </tr>
-                        </thead>
-                        <tfoot>
-                        <tr>
-                            <th>#</th>
-                            <th>Store</th>
-                            <th>Order</th>
-                            <th>Name</th>
-                            <th>Sku</th>
-                            <th>Custom</th>
-                            <th>Email</th>
-                            <th>Status</th>
-                            <th>Qty</th>
-                            <th>Price</th>
-                            <th>Payment</th>
-                            <th>Date</th>
-                            <th>Tracking</th>
-                        </tr>
-                        </tfoot>
-                        <tbody>
-                        @if(isset($list_order) && sizeof($list_order) > 0)
-                            @foreach($list_order as $key => $order)
-                                <tr>
-                                    <td>{{ $key+1 }}</td>
-                                    <td>{{ $order->name }}</td>
-                                    <td>{{ $order->number.'-'.$order->id }}</td>
-                                    <td>{{ $order->product_name }}</td>
-                                    <td>{{ $order->sku }}</td>
-                                    <td>
-                                        <?php
-                                        $tmp = str_replace("-;-;-","-",$order->variation_full_detail);
-                                        $variation_full = str_replace($order->variation_detail, '', $tmp);
+                    {{-- End Form Choose Date--}}
+                    <div class="col s12 grid-example">
+                        <div class="card white">
+                            <div class="card-content center">
+                                <span class="card-title">Top Stores</span>
+                                <table class="bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th data-field="id">Store</th>
+                                            <th data-field="name">Item</th>
+                                            <th data-field="price">Cross</th>
+                                            <th data-field="price">Ship</th>
+                                            <th data-field="price">Base</th>
+                                            <th data-field="price">Net</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    <?php
+                                        $i = 1;
+                                        $item = 0;
+                                        $cross = 0;
+                                        $ship = 0;
+                                        $base_cost = 0;
+                                        $net = 0;
                                         ?>
-                                        {{ str_replace('-', '', $variation_full) }}
-                                    </td>
-                                    <td>{{ $order->email }}</td>
-                                    <td>{!! statusJob($order->status, 0, '') !!}</td>
-                                    <td>{{ $order->quantity }}</td>
-                                    <td>{{ $order->price }}</td>
-                                    <td>{!! statusPayment($order->order_status, $order->payment_method) !!}</td>
-                                    <td>{!! compareTime($order->created_at, date("Y-m-d H:i:s")) !!}</td>
-                                    <td>{!! showTracking($order->tracking_number, $order->tracking_status) !!}</td>
-                                </tr>
-                            @endforeach
-                        @else
-                            <tr>
-                                <td colspan="9" class="center">
-                                    30 ngày vừa rồi bạn chưa bán được cái đéo gì cả. Xem lại bản thân mình đi.
-                                </td>
-                            </tr>
-                        @endif
-                        </tbody>
-                    </table>
+                                    @foreach ($stores as $store)
+                                        <tr>
+                                            <td>{{ $i++ }}</td>
+                                            <td>{{ $store['store_name'] }}</td>
+                                            <td>{{ $store['item'] }}</td>
+                                            <td>{{ $store['cross'] }}</td>
+                                            <td>{{ $store['ship'] }}</td>
+                                            <td>{{ $store['base_cost'] }}</td>
+                                            <td>{{ $store['net'] }}</td>
+                                        </tr>
+                                        <?php
+                                            $item += $store['item'];
+                                            $cross += $store['cross'];
+                                            $ship += $store['ship'];
+                                            $base_cost += $store['base_cost'];
+                                            $net += $store['net'];
+                                        ?>
+                                    @endforeach
+                                    <tr>
+                                        <td></td>
+                                        <td>Tổng kết: </td>
+                                        <td>{{ $item }}</td>
+                                        <td>{{ $cross }}</td>
+                                        <td>{{ $ship }}</td>
+                                        <td>{{ $base_cost }}</td>
+                                        <td>{{ $net }}</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col s4 grid-example">
+                        <div class="card white">
+                            <div class="card-content center">
+                                <span class="card-title">Top 10 Design</span>
+                                <table class="bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th data-field="id">Design</th>
+                                            <th data-field="price">Item</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    <?php $i= 1; ?>
+                                    @foreach ($designs as $design)
+                                        <tr>
+                                            <td>{{ $i++ }}</td>
+                                            <td>{{ $design['sku'] }}</td>
+                                            <td>{{ $design['item'] }}</td>
+                                        </tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col s4 grid-example">
+                        <div class="card white">
+                            <div class="card-content center">
+                                <span class="card-title">Top 10 Country</span>
+                                <table class="bordered">
+                                    <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th data-field="id">Country</th>
+                                        <th data-field="price">Item</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <?php $i= 1; ?>
+                                    @foreach ($countries as $country)
+                                        <tr>
+                                            <td>{{ $i++ }}</td>
+                                            <td>{{ $country['country'] }}</td>
+                                            <td>{{ $country['item'] }}</td>
+                                        </tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col s4 grid-example">
+                        <div class="card white">
+                            <div class="card-content center">
+                                <span class="card-title">Top 10 State</span>
+                                <table class="bordered">
+                                    <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th data-field="id">State</th>
+                                        <th data-field="price">Item</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <?php $i= 1; ?>
+                                    @foreach ($states as $state)
+                                        <tr>
+                                            <td>{{ $i++ }}</td>
+                                            <td>{{ $state['state'] }}</td>
+                                            <td>{{ $state['item'] }}</td>
+                                        </tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col s6 grid-example">
+                        <div class="card white">
+                            <div class="card-content center">
+                                <span class="card-title">Top Categories</span>
+                                <table class="bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th data-field="id">Category</th>
+                                            <th data-field="name">Item</th>
+                                            <th data-field="price">Net</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    <?php $i= 1; ?>
+                                    @foreach ($categories as $category)
+                                        <tr>
+                                            <td>{{ $i++ }}</td>
+                                            <td>{{ $category['category_name'] }}</td>
+                                            <td>{{ $category['item'] }}</td>
+                                            <td>{{ $category['net'] }}</td>
+                                        </tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col s6 grid-example">
+                        <div class="card white">
+                            <div class="card-content center">
+                                <span class="card-title">Top Products</span>
+                                <table class="bordered">
+                                    <thead>
+                                        <tr>
+                                            <th data-field="id">Name</th>
+                                            <th data-field="name">Name</th>
+                                            <th data-field="item">Item</th>
+                                            <th data-field="net">Net</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    <?php $i= 1; ?>
+                                    @foreach ($products as $product)
+                                        <tr>
+                                            <td>{{ $i++ }}</td>
+                                            <td>{{ $product['product_name'] }}</td>
+                                            <td>{{ $product['item'] }}</td>
+                                            <td>{{ $product['net'] }}</td>
+                                        </tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
