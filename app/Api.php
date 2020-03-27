@@ -116,6 +116,9 @@ class Api extends Model
                         $str .= $item['key'] . " : " . $item['value'] . " -;-;-\n";
                     }
                 }
+                if (strpos(($value['name']), "-") !== false) {
+                    $value['name'] = trim(explode("-", $value['name'])[0]);
+                }
                 $db[] = [
                     'woo_info_id' => $woo_id,
                     'order_id' => $data['id'],
