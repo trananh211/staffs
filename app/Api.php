@@ -634,7 +634,7 @@ class Api extends Model
         $product_name = sanitizer($product_name);
         $str_sku = sanitizer($str_sku);
         $product_name = preg_replace('/\s+/', ' ', $product_name);
-        $str_sku = preg_replace('/\s+/', '', ucwords($str_sku));
+        $str_sku = preg_replace('/\s+/', '', ucwords(strtolower($str_sku)));
         $tmp = explode(" ", $product_name);
         if (sizeof($tmp) > 1) {
 //            $tmp[0] = (strlen($woo_sku) > 0) ? $woo_sku . '-' . $product_id : $product_id;
@@ -1837,6 +1837,7 @@ class Api extends Model
         return $return;
     }
 
+    /*Hafm tam thoi. sau nay se xoa*/
     public function getAllOrderOld()
     {
         $full_order = array(
@@ -1902,6 +1903,35 @@ class Api extends Model
             }
         }
     }
+
+    public function changeSkuWooOrder()
+    {
+        $store_id = 4;
+        $woo_orders = \DB::table('woo_orders')
+            ->select(
+                'id','product_name', 'sku', 'variation_detail', 'variation_full_detail', 'product_id'
+            )
+            ->where('woo_info_id',$store_id)->get()->toArray();
+        foreach ($woo_orders as $item)
+        {
+            $tmp = explode('-;-;-', $item->variation_full_detail);
+            $tmp = array_filter($tmp);
+            $tmp_detail = ltrim(str_replace($item->variation_detail,'',implode('-', $tmp)), '-');
+            if (strlen($tmp_detail) > 0)
+            {
+                $str_sku = $tmp_detail;
+            } else {
+                $str_sku = '';
+            }
+            $sku = $this->getSku($store_id, $item->product_id, $item->product_name, $str_sku);
+            if ($sku != $item->sku)
+            {
+                \DB::table('woo_orders')->where('id',$item->id)->update(['sku' => $sku]);
+            }
+        }
+    }
+
+    /* End ham tam thoi sau nay se xoa*/
 
     /*End WooCommerce API*/
 

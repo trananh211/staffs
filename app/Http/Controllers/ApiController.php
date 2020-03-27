@@ -297,6 +297,7 @@ class ApiController extends Controller
         return $api->changeInfoProduct();
     }
 
+    /*Hafm tam thoi. sau nay se xoas*/
     public function getAllOrderOld()
     {
         $api = new Api();
@@ -308,5 +309,13 @@ class ApiController extends Controller
         $api = new Api();
         return $api->changeNameProduct();
     }
+
+    public function changeSkuWooOrder()
+    {
+        $api = new Api();
+        return $api->changeSkuWooOrder();
+    }
+
+    /*Hafm tam thoi. sau nay se xoas*/
 }
 
