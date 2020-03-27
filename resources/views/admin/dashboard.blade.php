@@ -38,6 +38,7 @@
                                         <tr>
                                             <th>#</th>
                                             <th data-field="id">Store</th>
+                                            <th data-field="order">Order</th>
                                             <th data-field="name">Item</th>
                                             <th data-field="price">Cross</th>
                                             <th data-field="price">Ship</th>
@@ -48,6 +49,7 @@
                                     <tbody>
                                     <?php
                                         $i = 1;
+                                        $order = 0;
                                         $item = 0;
                                         $cross = 0;
                                         $ship = 0;
@@ -58,14 +60,16 @@
                                         <tr>
                                             <td>{{ $i++ }}</td>
                                             <td>{{ $store['store_name'] }}</td>
+                                            <td>{{ sizeof($store['order']) }}</td>
                                             <td>{{ $store['item'] }}</td>
-                                            <td>{{ $store['cross'] }}</td>
-                                            <td>{{ $store['ship'] }}</td>
-                                            <td>{{ $store['base_cost'] }}</td>
-                                            <td>{{ $store['net'] }}</td>
+                                            <td>{!! showCurrency($store['cross']) !!}</td>
+                                            <td>{!! showCurrency($store['ship']) !!}</td>
+                                            <td>{!! showCurrency($store['base_cost']) !!}</td>
+                                            <td>{!! showCurrency($store['net']) !!}</td>
                                         </tr>
                                         <?php
                                             $item += $store['item'];
+                                            $order+= sizeof($store['order']);
                                             $cross += $store['cross'];
                                             $ship += $store['ship'];
                                             $base_cost += $store['base_cost'];
@@ -75,11 +79,12 @@
                                     <tr>
                                         <td></td>
                                         <td>Tổng kết: </td>
+                                        <td>{{ $order }}</td>
                                         <td>{{ $item }}</td>
-                                        <td>{{ $cross }}</td>
-                                        <td>{{ $ship }}</td>
-                                        <td>{{ $base_cost }}</td>
-                                        <td>{{ $net }}</td>
+                                        <td>{!! showCurrency($cross) !!}</td>
+                                        <td>{!! showCurrency($ship) !!}</td>
+                                        <td>{!! showCurrency($base_cost) !!}</td>
+                                        <td>{!! showCurrency($net) !!}</td>
                                     </tr>
                                     </tbody>
                                 </table>
@@ -146,7 +151,7 @@
                                     <thead>
                                     <tr>
                                         <th>#</th>
-                                        <th data-field="id">State</th>
+                                        <th data-field="state">State</th>
                                         <th data-field="price">Item</th>
                                     </tr>
                                     </thead>
@@ -155,7 +160,7 @@
                                     @foreach ($states as $state)
                                         <tr>
                                             <td>{{ $i++ }}</td>
-                                            <td>{{ $state['state'] }}</td>
+                                            <td>{{ $state['state'].', '.$state['country'] }}</td>
                                             <td>{{ $state['item'] }}</td>
                                         </tr>
                                     @endforeach
@@ -187,7 +192,7 @@
                                             <td>{{ $i++ }}</td>
                                             <td>{{ $category['category_name'] }}</td>
                                             <td>{{ $category['item'] }}</td>
-                                            <td>{{ $category['net'] }}</td>
+                                            <td>{!! showCurrency($category['net']) !!}</td>
                                         </tr>
                                     @endforeach
                                     </tbody>
@@ -215,7 +220,7 @@
                                             <td>{{ $i++ }}</td>
                                             <td>{{ $product['product_name'] }}</td>
                                             <td>{{ $product['item'] }}</td>
-                                            <td>{{ $product['net'] }}</td>
+                                            <td>{!! showCurrency($product['net']) !!}</td>
                                         </tr>
                                     @endforeach
                                     </tbody>

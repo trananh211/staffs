@@ -88,7 +88,7 @@ class Working extends Model
                 'woo_orders.id', 'woo_orders.created_at', 'woo_orders.design_id', 'woo_orders.payment_method',
                 'woo_orders.price', 'woo_orders.shipping_cost', 'woo_orders.quantity', 'woo_orders.sku',
                 'woo_orders.product_name', 'woo_orders.product_id', 'woo_orders.woo_info_id as store_id',
-                'woo_orders.variation_detail', 'woo_orders.country', 'woo_orders.state',
+                'woo_orders.variation_detail', 'woo_orders.country', 'woo_orders.state', 'woo_orders.number',
                 'designs.tool_category_id', 'tool_categories.name as category_name',
                 'variations.price as base_cost',
                 'woo_infos.name as store_name'
@@ -96,13 +96,13 @@ class Working extends Model
             ->whereIn('woo_orders.order_status',$order_status)
             ->whereBetween('woo_orders.created_at', $between)->get()->toArray();
 //        print_r($lists);
-//        die();
         $stores = array();
         $designs = array();
         $categories = array();
         $products = array();
         $countries = array();
         $states = array();
+        $number_order = array();
         foreach ($lists as $item)
         {
             // stores
@@ -121,14 +121,19 @@ class Working extends Model
                 $stores[$item->store_id]['base_cost'] = ($base_cost*$item->quantity);
                 $stores[$item->store_id]['net'] = ($item->price*$item->quantity) + $item->shipping_cost - ($base_cost*$item->quantity);
             }
+            if (!in_array($item->number, $number_order))
+            {
+                $number_order[] = $item->number;
+                $stores[$item->store_id]['order'][] = $item->number;
+            }
             // end stores
             // designs
-            if (array_key_exists($item->design_id, $designs))
+            if (array_key_exists($item->sku, $designs))
             {
-                $designs[$item->design_id]['item'] += $item->quantity;
+                $designs[$item->sku]['item'] += $item->quantity;
             } else {
-                $designs[$item->design_id]['sku'] = $item->sku;
-                $designs[$item->design_id]['item'] = $item->quantity;
+                $designs[$item->sku]['sku'] = $item->sku;
+                $designs[$item->sku]['item'] = $item->quantity;
             }
             // end designs
             // categories
@@ -170,6 +175,7 @@ class Working extends Model
                 $states[$item->state]['item'] += $item->quantity;
             } else {
                 $states[$item->state]['state'] = ucwords($item->state);
+                $states[$item->state]['country'] = ucwords($item->country);
                 $states[$item->state]['item'] = $item->quantity;
             }
             // end states

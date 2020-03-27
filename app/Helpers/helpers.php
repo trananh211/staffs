@@ -408,6 +408,12 @@ function order_status()
     return $order_status;
 }
 
+function showCurrency($monney)
+{
+    $formatter = new NumberFormatter('en_US',  NumberFormatter::CURRENCY);
+    return $formatter->formatCurrency($monney, 'USD');
+}
+
 /*GOOGLE API*/
 function createDir($name, $parent_path = null)
 {
