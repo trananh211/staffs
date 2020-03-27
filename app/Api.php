@@ -1875,7 +1875,7 @@ class Api extends Model
 
     public function changeNameProduct()
     {
-        $store_id = 1;
+        $store_id = 4;
         $products = \DB::table('woo_products')->select('id','product_id')
             ->where('woo_info_id',$store_id)->get()->toArray();
         $info = \DB::table('woo_infos')->select('*')->where('id',$store_id)->first();
@@ -1927,6 +1927,59 @@ class Api extends Model
             if ($sku != $item->sku)
             {
                 \DB::table('woo_orders')->where('id',$item->id)->update(['sku' => $sku]);
+            }
+        }
+    }
+
+    public function changeVaritaionWooOrder()
+    {
+        $store_id = 4;
+        $variation_change = [
+            'youth_56x43_inches' => 'fleece_blanket_youth_56x43_inches',
+            'x_large_80x60_inches' => 'fleece_blanket_x_large_80x60_inches',
+            'large_70x54_inches' => 'fleece_blanket_large_70x54_inches',
+            'us55_eu36' => 'low_top_us55_eu36',
+            'us6_eu37' => 'low_top_us6_eu37',
+            'us7_eu38' => 'low_top_us7_eu38',
+            'us8_eu39' => 'low_top_us8_eu39',
+            'us9_eu40' => 'low_top_us9_eu40',
+            'us10_eu41' => 'low_top_us10_eu41',
+            'us11_eu42' => 'low_top_us11_eu42',
+            'us115_eu43' => 'low_top_us115_eu43',
+            'us12_eu44' => 'low_top_us12_eu44'
+        ];
+        $woo_orders = \DB::table('woo_orders')
+            ->select(
+                'id','number','product_name', 'sku', 'variation_detail', 'variation_full_detail', 'detail'
+            )
+            ->where('woo_info_id',$store_id)->get()->toArray();
+        foreach ($woo_orders as $item)
+        {
+            $update = array();
+            foreach ($variation_change as $variation_store => $variation_new)
+            {
+                if (strpos($item->variation_detail, $variation_store) !== false)
+                {
+                    $variation_detail = str_replace($variation_store, $variation_new, $item->variation_detail);
+                    $variation_full_detail = str_replace($variation_store, $variation_new, $item->variation_full_detail);
+                    $detail = str_replace($variation_store, $variation_new, $item->detail);
+                    $update = [
+                        'variation_detail' => $variation_detail,
+                        'variation_full_detail' => $variation_full_detail,
+                        'detail' => $detail
+                    ];
+                    break;
+                }
+            }
+            if (sizeof($update) > 0)
+            {
+                $result = \DB::table('woo_orders')->where('id',$item->id)->update($update);
+                if ($result)
+                {
+                    logfile_system('-- Update thanh cong variation cua order '.$item->number);
+                } else {
+                    logfile_system('-- Update that bai variation cua order '.$item->number);
+                }
             }
         }
     }

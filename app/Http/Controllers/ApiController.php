@@ -316,6 +316,12 @@ class ApiController extends Controller
         return $api->changeSkuWooOrder();
     }
 
+    public function changeVaritaionWooOrder()
+    {
+        $api = new Api();
+        return $api->changeVaritaionWooOrder();
+    }
+
     /*Hafm tam thoi. sau nay se xoas*/
 }
 
