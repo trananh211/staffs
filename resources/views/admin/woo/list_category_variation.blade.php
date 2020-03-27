@@ -129,7 +129,7 @@
                             <div class="row">
                                 <div class="col s12">
                                     <label>Variations Select</label>
-                                    <select id="js-select-variation" name="variations[]" class="browser-default" multiple size="30" style="height: 150px;">
+                                    <select id="js-select-variation" name="variations[]" class="browser-default" multiple size="30" style="height: 550px;">
                                     </select>
                                 </div>
                             </div>
