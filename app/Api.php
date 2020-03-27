@@ -1938,18 +1938,16 @@ class Api extends Model
     {
         $store_id = 4;
         $variation_change = [
-            'youth_56x43_inches' => 'fleece_blanket_youth_56x43_inches',
-            'x_large_80x60_inches' => 'fleece_blanket_x_large_80x60_inches',
-            'large_70x54_inches' => 'fleece_blanket_large_70x54_inches',
-            'us55_eu36' => 'low_top_us55_eu36',
-            'us6_eu37' => 'low_top_us6_eu37',
-            'us7_eu38' => 'low_top_us7_eu38',
-            'us8_eu39' => 'low_top_us8_eu39',
-            'us9_eu40' => 'low_top_us9_eu40',
-            'us10_eu41' => 'low_top_us10_eu41',
-            'us11_eu42' => 'low_top_us11_eu42',
-            'us115_eu43' => 'low_top_us115_eu43',
-            'us12_eu44' => 'low_top_us12_eu44'
+            'us10_eu42' => 'season_boots_us10_eu42',
+            'us105_eu425' => 'season_boots_us10_5_eu42_5',
+            'us11_eu43' => 'season_boots_us11_eu43',
+            'us45_eu35' => 'season_boots_us4_5_eu35',
+            'us65_eu37' => 'season_boots_us6_5_eu37',
+            'us75_eu39' => 'season_boots_us7_5_eu39',
+            'us85_eu40' => 'season_boots_us8_5_eu40',
+            'us95_eu41' => 'season_boots_us9_5_eu41',
+            'us11_eu45' => 'season_boots_us11_eu45',
+            'us8_eu41' => 'season_boots_us8_eu41'
         ];
         $woo_orders = \DB::table('woo_orders')
             ->select(
@@ -1961,7 +1959,7 @@ class Api extends Model
             $update = array();
             foreach ($variation_change as $variation_store => $variation_new)
             {
-                if (strpos($item->variation_detail, $variation_store) !== false)
+                if (strpos($item->variation_detail, $variation_store) !== false && strpos($item->product_name, "Season Boots") !== false)
                 {
                     $variation_detail = str_replace($variation_store, $variation_new, $item->variation_detail);
                     $variation_full_detail = str_replace($variation_store, $variation_new, $item->variation_full_detail);
