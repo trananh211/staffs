@@ -2600,7 +2600,6 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 'tool_categories.name as category_name'
             )
             ->orderBy('id', 'DESC')
-            ->orderBy('variations.store_id')
             ->get()->toArray();
         return view('/admin/woo/list_category_variation', compact(
             'data', 'categories', 'variations'));
