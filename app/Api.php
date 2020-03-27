@@ -1872,6 +1872,37 @@ class Api extends Model
         }
     }
 
+    public function changeNameProduct()
+    {
+        $store_id = 1;
+        $products = \DB::table('woo_products')->select('id','product_id')
+            ->where('woo_info_id',$store_id)->get()->toArray();
+        $info = \DB::table('woo_infos')->select('*')->where('id',$store_id)->first();
+        $woocommerce = $this->getConnectStore($info->url, $info->consumer_key, $info->consumer_secret);
+        foreach ($products  as $item)
+        {
+            $product_id = $item->product_id;
+            try {
+                $try = true;
+                $result = ($woocommerce->get('products/'.$product_id));
+            } catch (\Exception $e)
+            {
+                $try = false;
+            }
+            if ($try)
+            {
+                $result = json_decode(json_encode($result, true), true);
+                logfile_system('-- Tồn tại product Id: '. $product_id);
+                \DB::table('woo_orders')->where('woo_info_id',$store_id)->where('product_id',$product_id)->
+                    update(['product_name' => $result['name']]);
+                \DB::table('woo_products')->where('woo_info_id',$store_id)->where('product_id',$product_id)->
+                    update(['name'  => $result['name'], 'permalink' => $result['permalink']]);
+            } else {
+                logfile_system('-- Không tồn tại product Id: '. $product_id);
+            }
+        }
+    }
+
     /*End WooCommerce API*/
 
     /*cập nhật thông tin sản phẩm đối thủ mới liên tục*/

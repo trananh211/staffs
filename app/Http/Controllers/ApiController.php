@@ -302,5 +302,11 @@ class ApiController extends Controller
         $api = new Api();
         return $api->getAllOrderOld();
     }
+
+    public function changeNameProduct()
+    {
+        $api = new Api();
+        return $api->changeNameProduct();
+    }
 }
 
