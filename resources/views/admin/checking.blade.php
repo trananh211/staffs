@@ -22,9 +22,10 @@
                         </thead>
                         <tbody>
                         @if(sizeof($lists) > 0)
+                            <?php $i = 1; ?>
                             @foreach($lists as $key => $list)
                                 <tr>
-                                    <td class="center">{{ $key+1 }}</td>
+                                    <td class="center">{{ $i++ }}</td>
                                     <td class="center">
                                         @if($list->tool_category_name != '')
                                             {{ $list->tool_category_name }}
