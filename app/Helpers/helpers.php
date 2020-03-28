@@ -230,7 +230,7 @@ function sendEmail($email_from, $pass, $host, $port, $security, $email_to, $titl
 //
 //    // Send the message
 //    $result = $mailer->send($message);
-    logfile("Sended: " . $email_from . " to " . $email_to . " with title: " . $title);
+//    logfile("Sended: " . $email_from . " to " . $email_to . " with title: " . $title);
 }
 
 function statusJob($status, $redo, $reason)
