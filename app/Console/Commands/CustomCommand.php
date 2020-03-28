@@ -89,7 +89,8 @@ class CustomCommand extends Command
         $check0 = true;
         if ($check0)
         {
-            $check1 = $google_controller->getFileFulfill(); // download file fulfill từ driver về local
+//            $check1 = $google_controller->getFileFulfill(); // download file fulfill từ driver về local
+            $check1 = true;
             if ($check1)
             {
                 // upload image from google driver to product
