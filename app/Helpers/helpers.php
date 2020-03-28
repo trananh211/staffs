@@ -206,30 +206,30 @@ function statusPayment($status, $payment)
 
 function sendEmail($email_from, $pass, $host, $port, $security, $email_to, $title, $body, $file = null)
 {
-    // Create the Transport
-    $transport = (new Swift_SmtpTransport($host, $port, $security))
-        ->setUsername($email_from)
-        ->setPassword($pass);
-
-    // Create the Mailer using your created Transport
-    $mailer = new Swift_Mailer($transport);
-
-    // Create a message
-    if ($file == null) {
-        $message = (new Swift_Message($title))
-            ->setFrom([$email_from => 'Support Care'])
-            ->setTo([$email_to])
-            ->setBody($body);
-    } else {
-        $message = (new Swift_Message($title))
-            ->setFrom([$email_from => 'Support Care'])
-            ->setTo([$email_to])
-            ->attach(Swift_Attachment::fromPath($file))
-            ->setBody($body);
-    }
-
-    // Send the message
-    $result = $mailer->send($message);
+//    // Create the Transport
+//    $transport = (new Swift_SmtpTransport($host, $port, $security))
+//        ->setUsername($email_from)
+//        ->setPassword($pass);
+//
+//    // Create the Mailer using your created Transport
+//    $mailer = new Swift_Mailer($transport);
+//
+//    // Create a message
+//    if ($file == null) {
+//        $message = (new Swift_Message($title))
+//            ->setFrom([$email_from => 'Support Care'])
+//            ->setTo([$email_to])
+//            ->setBody($body);
+//    } else {
+//        $message = (new Swift_Message($title))
+//            ->setFrom([$email_from => 'Support Care'])
+//            ->setTo([$email_to])
+//            ->attach(Swift_Attachment::fromPath($file))
+//            ->setBody($body);
+//    }
+//
+//    // Send the message
+//    $result = $mailer->send($message);
     logfile("Sended: " . $email_from . " to " . $email_to . " with title: " . $title);
 }
 
