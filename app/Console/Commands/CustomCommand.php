@@ -137,7 +137,7 @@ class CustomCommand extends Command
         {
             $google_controller = new GoogleController();
             // up load product fullfill from google driver
-            $check2 = $google_controller->uploadFileDriver();
+//            $check2 = $google_controller->uploadFileDriver();
         }
     }
 
