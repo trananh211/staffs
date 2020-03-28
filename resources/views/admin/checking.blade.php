@@ -140,7 +140,11 @@
                                                                         @if(array_key_exists($list->id, $images))
                                                                             @foreach($images[$list->id] as $img)
                                                                             {!! ($img['thumb'] != '') ? thumb_c($img['thumb'], env('THUMB'), '') : '' !!}
-                                                                                <div>{{ $img['name'] }}</div>
+
+                                                                                <a title="Click vào đây để xem chi tiết ảnh rõ hơn nữa" href="{{ url(env('DIR_CHECK')).'/'.$img['name'] }}" target="_blank">
+                                                                                    <div>{{ $img['name'] }}</div>
+                                                                                </a>
+
                                                                             @endforeach
                                                                             <?php unset($images[$list->id]); ?>
                                                                         @endif
