@@ -143,6 +143,7 @@ Route::middleware('auth')->group(function () {
     Route::get('new-idea','WooController@doNewIdea');
     Route::post('ideaUpload', 'WooController@uploadIdea')->name('ajaxIdeaUpload.action');
     Route::get('redoing-job/{working_id}','WooController@redoingJobStaff');
+    Route::get('staff-skip-job/{working_id}','WooController@staffSkipJob');
     /*End Staff*/
 });
 

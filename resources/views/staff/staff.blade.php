@@ -30,6 +30,7 @@
                             <th data-field="price">Qc</th>
                             <th data-field="price">Link</th>
                             <th data-field="price">Action</th>
+                            <th data-field="price">Skip</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -170,6 +171,13 @@
                                            data-workingid="{{$list->id}}" data-url="{{ url('ajax-take-job') }}"
                                         >
                                             Trả Job
+                                        </a>
+                                    </td>
+                                    <td class="center">
+                                        <a
+                                            onclick="return confirm('Bạn có chắc chắn muốn bỏ qua job này?');"
+                                            class="waves-effect waves-light btn red" href="{{ url('staff-skip-job'.'/'.$list->id) }}">
+                                            Bỏ qua
                                         </a>
                                     </td>
                                 </tr>

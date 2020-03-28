@@ -122,6 +122,12 @@ class WooController extends Controller
         $work = new Working();
         return $work->doNewIdea();
     }
+
+    public function staffSkipJob($working_id)
+    {
+        $work = new Working();
+        return $work->staffSkipJob($working_id);
+    }
     /*End Staff*/
 
     /*Admin + QC*/

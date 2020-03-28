@@ -701,6 +701,28 @@ class Working extends Model
             ]);
         }
     }
+
+    public function staffSkipJob($working_id)
+    {
+        \DB::beginTransaction();
+        try {
+            $status = true;
+            $update = [
+                'status' => env('STATUS_SKIP'),
+                'updated_at' => date("Y-m-d H:i:s")
+            ];
+            $workings = \DB::table('workings')->select('design_id')->where('id',$working_id)->first();
+            \DB::table('workings')->where('id',$working_id)->update($update);
+            \DB::table('designs')->where('id',$workings->design_id)->update($update);
+            $message = 'Bỏ qua job này thành công. Mời bạn làm job tiếp theo.';
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $status = 'error';
+            $message = 'Bỏ qua job này thất bại. Yêu cầu gửi số Id của Job cho quản lý của bạn ngay.';
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($status, $message);
+    }
     /*Staff*/
 
     /*Admin + QC*/
