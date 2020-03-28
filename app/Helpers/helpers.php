@@ -6,8 +6,8 @@ use Illuminate\Support\Facades\Log;
 function logfile($str)
 {
     $datetime = Carbon::now('Asia/Ho_Chi_Minh');
-    \Log::info($datetime . '==> ' . $str);
-//    echo $datetime . '==> ' . $str."\n";
+//    \Log::info($datetime . '==> ' . $str);
+    echo $datetime . '==> ' . $str."\n";
 }
 
 function logfile_system($str)
