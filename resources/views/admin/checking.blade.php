@@ -17,7 +17,6 @@
                             <th class="center" data-field="price">Designer</th>
                             <th class="center" data-field="price">Date</th>
                             <th class="center" data-field="price">Status</th>
-                            <th class="center" data-field="price">Link</th>
                             <th class="center" data-field="price">Action</th>
                         </tr>
                         </thead>
@@ -41,12 +40,6 @@
                                     </td>
                                     <td class="center">
                                         {!! statusJob($list->status, $list->redo, $list->reason) !!}
-                                    </td>
-                                    <td class="center">
-                                        <a class="waves-effect m-b-xs" href="{{ url($list->permalink) }}"
-                                           target="_blank">
-                                            {{ substr($list->permalink,0,30) }} ...
-                                        </a>
                                     </td>
                                     <td class="center">
                                         <a class="waves-effect waves-grey btn white modal-trigger"
@@ -174,7 +167,7 @@
                             @endforeach
                         @else
                             <tr>
-                                <td colspan="6" class="center">
+                                <td colspan="8" class="center">
                                     Đã hết công việc kiểm tra Design. Vui lòng chuyển sang công việc xem phản hồi khách
                                     hàng.
                                 </td>
