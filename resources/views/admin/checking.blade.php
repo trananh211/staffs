@@ -116,6 +116,7 @@
                                                             </div>
                                                             <div class="col s6">
                                                                 <div class="card white">
+                                                                    <span class="card-title">Ảnh thiết kế</span>
                                                                     {{-- Redo --}}
                                                                     @if ($list->redo == 1)
                                                                         <div class="card red lighten-1">
@@ -136,7 +137,16 @@
                                                                             </div>
                                                                         </div>
                                                                     @endif
-                                                                    <span class="card-title">Ảnh thiết kế</span>
+
+                                                                    <div class="card">
+                                                                        <div class="card-content">
+                                                                            <ul class="collection">
+                                                                                @foreach(explode("-;-;-",$list->detail) as $detail)
+                                                                                    <li class="collection-item">{{ $detail }}</li>
+                                                                                @endforeach
+                                                                            </ul>
+                                                                        </div>
+                                                                    </div>
                                                                     <div class="card-content center">
                                                                         @if(array_key_exists($list->id, $images))
                                                                             @foreach($images[$list->id] as $img)
@@ -152,15 +162,7 @@
                                                                     </div>
                                                                 </div>
 
-                                                                <div class="card">
-                                                                    <div class="card-content">
-                                                                        <ul class="collection">
-                                                                            @foreach(explode("-;-;-",$list->detail) as $detail)
-                                                                                <li class="collection-item">{{ $detail }}</li>
-                                                                            @endforeach
-                                                                        </ul>
-                                                                    </div>
-                                                                </div>
+
                                                             </div>
                                                         </div>
                                                     </div>
