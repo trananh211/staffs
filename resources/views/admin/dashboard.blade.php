@@ -33,7 +33,7 @@
                         <div class="card white">
                             <div class="card-content center">
                                 <span class="card-title">Top Stores</span>
-                                <table class="bordered">
+                                <table class="bordered responsive-table">
                                     <thead>
                                         <tr>
                                             <th>#</th>
@@ -91,7 +91,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col s4 grid-example">
+                    <div class="col s6 grid-example">
                         <div class="card white">
                             <div class="card-content center">
                                 <span class="card-title">Top 10 Design</span>
@@ -117,51 +117,27 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col s4 grid-example">
+                    <div class="col s6 grid-example">
                         <div class="card white">
                             <div class="card-content center">
-                                <span class="card-title">Top 10 Country</span>
+                                <span class="card-title">Top Product Code</span>
                                 <table class="bordered">
                                     <thead>
                                     <tr>
                                         <th>#</th>
-                                        <th data-field="id">Country</th>
-                                        <th data-field="price">Item</th>
+                                        <th data-field="id">Product Code</th>
+                                        <th data-field="name">Item</th>
+                                        <th data-field="price">Net</th>
                                     </tr>
                                     </thead>
                                     <tbody>
                                     <?php $i= 1; ?>
-                                    @foreach ($countries as $country)
+                                    @foreach ($product_by_name as $product_code_name => $product_code)
                                         <tr>
                                             <td>{{ $i++ }}</td>
-                                            <td>{{ $country['country'] }}</td>
-                                            <td>{{ $country['item'] }}</td>
-                                        </tr>
-                                    @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col s4 grid-example">
-                        <div class="card white">
-                            <div class="card-content center">
-                                <span class="card-title">Top 10 State</span>
-                                <table class="bordered">
-                                    <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th data-field="state">State</th>
-                                        <th data-field="price">Item</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    <?php $i= 1; ?>
-                                    @foreach ($states as $state)
-                                        <tr>
-                                            <td>{{ $i++ }}</td>
-                                            <td>{{ $state['state'].', '.$state['country'] }}</td>
-                                            <td>{{ $state['item'] }}</td>
+                                            <td>{{ $product_code_name }}</td>
+                                            <td>{{ $product_code['item'] }}</td>
+                                            <td>{!! showCurrency($product_code['net']) !!}</td>
                                         </tr>
                                     @endforeach
                                     </tbody>
@@ -221,6 +197,62 @@
                                             <td>{{ $product['product_name'] }}</td>
                                             <td>{{ $product['item'] }}</td>
                                             <td>{!! showCurrency($product['net']) !!}</td>
+                                        </tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="row">
+                    <div class="col s6 grid-example">
+                        <div class="card white">
+                            <div class="card-content center">
+                                <span class="card-title">Top 10 Country</span>
+                                <table class="bordered">
+                                    <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th data-field="id">Country</th>
+                                        <th data-field="price">Item</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <?php $i= 1; ?>
+                                    @foreach ($countries as $country)
+                                        <tr>
+                                            <td>{{ $i++ }}</td>
+                                            <td>{{ $country['country'] }}</td>
+                                            <td>{{ $country['item'] }}</td>
+                                        </tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col s6 grid-example">
+                        <div class="card white">
+                            <div class="card-content center">
+                                <span class="card-title">Top 10 State</span>
+                                <table class="bordered">
+                                    <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th data-field="state">State</th>
+                                        <th data-field="price">Item</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <?php $i= 1; ?>
+                                    @foreach ($states as $state)
+                                        <tr>
+                                            <td>{{ $i++ }}</td>
+                                            <td>{{ $state['state'].', '.$state['country'] }}</td>
+                                            <td>{{ $state['item'] }}</td>
                                         </tr>
                                     @endforeach
                                     </tbody>

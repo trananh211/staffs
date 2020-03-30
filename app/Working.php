@@ -22,7 +22,7 @@ class Working extends Model
 
     public function log($str)
     {
-        \Log::info($str);
+//        \Log::info($str);
     }
 
     /*Hàm check Auth ajax*/
@@ -103,6 +103,8 @@ class Working extends Model
         $countries = array();
         $states = array();
         $number_order = array();
+        $product_by_name = array();
+        $tmp_product_code = array();
         foreach ($lists as $item)
         {
             // stores
@@ -179,6 +181,20 @@ class Working extends Model
                 $states[$item->state]['item'] = $item->quantity;
             }
             // end states
+
+            // Product by product code
+            $tmp = explode(' ', $item->product_name);
+            $product_code = $tmp[sizeof($tmp) - 1];
+            if (array_key_exists($product_code, $tmp_product_code))
+            {
+                $product_by_name[$product_code]['item'] += 1;
+                $product_by_name[$product_code]['net'] += ($item->price*$item->quantity) + $item->shipping_cost - ($base_cost*$item->quantity);
+            } else {
+                $tmp_product_code[$product_code] = $product_code;
+                $product_by_name[$product_code]['item'] = 1;
+                $product_by_name[$product_code]['net'] = ($item->price*$item->quantity) + $item->shipping_cost - ($base_cost*$item->quantity);
+            }
+            // End product by product code
         }
         $stores = collect($stores);
         $stores = $stores->sortByDesc('item');
@@ -203,8 +219,11 @@ class Working extends Model
         $products = $products->sortByDesc('item');
         $products = $products->take(10);
 
+        $product_by_name = collect($product_by_name);
+        $product_by_name = $product_by_name->sortByDesc('item');
+
         return view('/admin/dashboard')
-            ->with(compact( 'data','stores', 'designs', 'countries', 'states', 'categories', 'products'));
+            ->with(compact( 'data','stores', 'designs', 'countries', 'states', 'categories', 'products','product_by_name'));
     }
 
     public function staffDashboard($data)
