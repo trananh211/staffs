@@ -84,8 +84,14 @@ class WooController extends Controller
     {
         $work = new Working();
         $lists = $work->listOrder();
+        $list_workers = \DB::table('users')->where('level',env('WORKER'))->pluck('name','id')->toArray();
+        $uid = Auth::id();
+        if( array_key_exists($uid, $list_workers))
+        {
+            unset($list_workers[$uid]);
+        }
         $data = infoShop();
-        return view('staff/staff', compact('data', 'lists'));
+        return view('staff/staff', compact('data', 'lists', 'list_workers'));
     }
 
     public function staffGetJob()
@@ -241,6 +247,12 @@ class WooController extends Controller
     {
         $work = new Working();
         return $work->axTakeJob($request);
+    }
+
+    public function axGiveJobStaff(Request $request)
+    {
+        $work = new Working();
+        return $work->axGiveJobStaff($request);
     }
 
     public function axDeleteLog(Request $request)

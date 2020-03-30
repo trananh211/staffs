@@ -215,6 +215,45 @@ $(document).ready(function () {
         }
     });
 
+    $('#idea-job tbody').on('click', '.js-give-job-other-staff', function (e) {
+        e.preventDefault();
+        if (confirm('Bạn có chắc chắn muốn thực hiện chuyển job này hay không?')) {
+            var url = $(this).attr('data-url');
+            var working_id = $(this).attr('data-workingid');
+            var design_id = $(this).attr('data-woo-order-id');
+            var staff_id = $('#js-change-staff-id-'+working_id).val();
+            var data = {working_id: working_id, design_id: design_id, staff_id: staff_id};
+            $(this).parents('tr').addClass('js-remove-table');
+            $.ajax({
+                method: "POST",
+                url: url,
+                data: data,
+                dataType: 'JSON',
+                // dataType: 'html',
+                success: function (data) {
+                    if (data.status === 'success') {
+                        Materialize.toast(data.message, 2000);
+                        //xóa hàng đã chọn
+                        table_idea
+                            .row('.js-remove-table')
+                            .remove()
+                            .draw();
+                    } else {
+                        $('.js-remove-table').removeClass('js-remove-table');
+                        Materialize.toast(data.message, 2000);
+                    }
+                    // console.log('success');
+                    console.log(data);
+                },
+                error: function (error) {
+                    window.location.reload();
+                    // console.log('error');
+                    // console.log(error);
+                }
+            })
+        }
+    });
+
     $('#idea-job tbody').on('click', '.js-delete-log', function (e) {
         e.preventDefault();
         var url = $(this).attr('data-url');

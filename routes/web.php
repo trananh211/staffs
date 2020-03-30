@@ -47,6 +47,7 @@ Route::middleware('auth')->group(function () {
     Route::get('see-log','ApiController@seeLog');
     Route::get('detail-log/{logfile}','ApiController@detailLog');
     Route::post('ajax-take-job','WooController@axTakeJob');
+    Route::post('ajax-give-job-staff','WooController@axGiveJobStaff');
     Route::get('send-customer/{order_id}','WooController@sendCustomer');
     Route::post('redo-designer','WooController@redoDesigner');
     Route::get('review-customer','WooController@reviewCustomer');

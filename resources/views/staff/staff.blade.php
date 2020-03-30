@@ -30,6 +30,7 @@
                             <th data-field="price">Qc</th>
                             <th data-field="price">Link</th>
                             <th data-field="price">Action</th>
+                            <th data-field="price">Other</th>
                             <th data-field="price">Skip</th>
                         </tr>
                         </thead>
@@ -172,6 +173,22 @@
                                         >
                                             Trả Job
                                         </a>
+                                    </td>
+                                    <td>
+                                        <a class="js-give-job-other-staff waves-effect waves-light white btn"
+                                           data-woo-order-id="{{ $list->design_id }}"
+                                           data-workingid="{{$list->id}}" data-url="{{ url('ajax-give-job-staff') }}"
+                                        >
+                                            Chuyển Job cho
+                                        </a>
+                                        <div class="input-field col s12">
+                                            <select id="js-change-staff-id-{{$list->id}}">
+                                                @foreach ($list_workers as $worker_id => $worker_name)
+                                                    <option value="{{ $worker_id }}">{{ $worker_name }}</option>
+                                                @endforeach
+                                            </select>
+                                            <label>Designer Select</label>
+                                        </div>
                                     </td>
                                     <td class="center">
                                         <a

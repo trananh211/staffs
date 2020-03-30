@@ -1816,6 +1816,33 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         }
     }
 
+    public function axGiveJobStaff($request)
+    {
+        $uid = $this->checkAuth();
+        if ($uid) {
+            $rq = $request->all();
+            $working_id = $rq['working_id'];
+            $staff_id = $rq['staff_id'];
+            \DB::beginTransaction();
+            try {
+                \DB::table('workings')->where('id', $working_id)->update(['worker_id' => $staff_id]);
+                \DB::table('working_files')->where('working_id', $working_id)->update(['worker_id' => $staff_id]);
+
+                $status = 'success';
+                $message = 'Chuyển Job thành công. Tiếp tục công việc của bạn.';
+                \DB::commit(); // if there was no errors, your query will be executed
+            } catch (\Exception $e) {
+                $status = 'error';
+                $message = 'Xảy ra lỗi. Hãy thử lại.';
+                \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+            }
+            return response()->json([
+                'status' => $status,
+                'message' => $message
+            ]);
+        }
+    }
+
     public function axDeleteLog($request)
     {
         $uid = $this->checkAuth();
