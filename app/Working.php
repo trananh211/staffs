@@ -371,7 +371,7 @@ class Working extends Model
             )
             ->where($where)
             ->orderBy('workings.id', 'ASC')
-            ->limit(50)
+            ->limit(env('CHECKING_JOB_LIMIT'))
             ->get()
             ->toArray();
 
