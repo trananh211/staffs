@@ -1534,6 +1534,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             )
             ->where($where)
             ->orderBy('designs.sku','ASC')
+            ->limit(env('CHECKING_JOB_LIMIT'))
             ->get()->toArray();
         if (sizeof($lsts) > 0)
         {
