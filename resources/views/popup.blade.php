@@ -34,34 +34,26 @@
 @endif
 @include('popup.head')
 <body>
-<div id="loading" class="col s12 m6 l6 hidden">
-    <div class="card">
-        <div class="card-content">
-
-            <div class="row">
-                <div class="col s12 m4 center">
+<div class="row">
+    <div id="loading" class="col s12 m6 l6 hidden">
+        <div class="preloader-wrapper big active">
+            <span>Đang Up.</span>
+            <div class="spinner-layer spinner-red-only">
+                <div class="circle-clipper left">
+                    <div class="circle"></div>
                 </div>
-                <div class="col s12 m4 center">
-                    <span class="card-title">Đang tải ảnh lên.</span>
-                    <div class="preloader-wrapper big active">
-                        <div class="spinner-layer spinner-red-only">
-                            <div class="circle-clipper left">
-                                <div class="circle"></div>
-                            </div><div class="gap-patch">
-                                <div class="circle"></div>
-                            </div><div class="circle-clipper right">
-                                <div class="circle"></div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="gap-patch">
+                    <div class="circle"></div>
                 </div>
-                <div class="col s12 m4 center">
-
+                <div class="circle-clipper right">
+                    <div class="circle"></div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+</div>
+
 @yield('content')
 
 <!-- Javascripts -->
@@ -190,5 +182,15 @@
         /** END Chỉnh sửa trường fulfill excel*/
     });
 </script>
+<style>
+    #loading {
+        position: fixed;
+        right: 20px;
+        bottom: 30px;
+        width: 100px;
+        height: auto;
+        z-index: 9999;
+    }
+</style>
 </body>
 </html>
