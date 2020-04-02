@@ -52,9 +52,9 @@ class TestCommand extends Command
 
 
 //        $check = $api_controller->getAllOrderOld();
-//        $check = $api_controller->changeNameProduct();
+        $check = $api_controller->changeNameProduct();
 //        $check = $api_controller->changeSkuWooOrder();
-        $check = $api_controller->imgThumbProduct();
+//        $check = $api_controller->imgThumbProduct();
     }
 
     private function checkTemplateScrap()
