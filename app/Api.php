@@ -1992,37 +1992,45 @@ class Api extends Model
         $products = \DB::table('woo_products')
             ->select('id','woo_info_id','product_id', 'image')
             ->where('woo_info_id', 4)
+            ->limit(5)
             ->get()->toArray();
         $data_update = array();
-        foreach ($products as $item)
+        if (sizeof($products) > 0)
         {
-            $tmp = explode(',', $item->image);
-            $img_update = "";
-            foreach( $tmp as $img)
+            foreach ($products as $item)
             {
-                if (strpos($img, 'v1/thumb/') == false)
+                $tmp = explode(',', $item->image);
+                $img_update = "";
+                foreach( $tmp as $img)
                 {
-                    $extension = strtolower(pathinfo($img)['extension']);
-                    $rand = strRandom();
-                    $img_update .= env('URL_LOCAL').genThumb($item->woo_info_id.$item->product_id.'_'.$rand.'.'.$extension, $img, env('THUMB')) . ",";
+                    if (strpos($img, 'v1/thumb/') == false)
+                    {
+                        $extension = strtolower(pathinfo($img)['extension']);
+                        $rand = strRandom();
+                        $img_update .= env('URL_LOCAL').genThumb($item->woo_info_id.$item->product_id.'_'.$rand.'.'.$extension, $img, env('THUMB')) . ",";
+                    }
+                }
+                $img_update = substr(trim($img_update), 0, -1);
+                if (strlen($img_update) > 0)
+                {
+                    logfile_system('-- Tao file thumb thanh cong cua product id: '. $item->product_id);
+                    $data_update[$item->id] = [
+                        'image' => $img_update
+                    ];
                 }
             }
-            $img_update = substr(trim($img_update), 0, -1);
-            if (strlen($img_update) > 0)
+            if(sizeof($data_update) > 0)
             {
-                logfile_system('-- Tao file thumb thanh cong cua product id: '. $item->product_id);
-                $data_update[$item->id] = [
-                    'image' => $img_update
-                ];
+                foreach ($data_update as $woo_product_id => $data)
+                {
+                    \DB::table('woo_products')->where('id',$woo_product_id)->update($data);
+                }
             }
+            $return = false;
+        } else {
+            $return = true;
         }
-        if(sizeof($data_update) > 0)
-        {
-            foreach ($data_update as $woo_product_id => $data)
-            {
-                \DB::table('woo_products')->where('id',$woo_product_id)->update($data);
-            }
-        }
+        return $return;
     }
 
     /* End ham tam thoi sau nay se xoa*/
