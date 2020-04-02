@@ -1987,6 +1987,43 @@ class Api extends Model
         }
     }
 
+    public function imgThumbProduct()
+    {
+        $products = \DB::table('woo_products')
+            ->select('id','woo_info_id','product_id', 'image')
+            ->get()->toArray();
+        $data_update = array();
+        foreach ($products as $item)
+        {
+            $tmp = explode(',', $item->image);
+            $img_update = "";
+            foreach( $tmp as $img)
+            {
+                if (strpos($img, 'v1/thumb/') == false)
+                {
+                    $extension = strtolower(pathinfo($img)['extension']);
+                    $rand = strRandom();
+                    $img_update .= env('URL_LOCAL').genThumb($item->woo_info_id.$item->product_id.'_'.$rand.'.'.$extension, $img, env('THUMB')) . ",";
+                }
+            }
+            $img_update = substr(trim($img_update), 0, -1);
+            if (strlen($img_update) > 0)
+            {
+                logfile_system('-- Tao file thumb thanh cong cua product id: '. $item->product_id);
+                $data_update[$item->id] = [
+                    'image' => $img_update
+                ];
+            }
+        }
+        if(sizeof($data_update) > 0)
+        {
+            foreach ($data_update as $woo_product_id => $data)
+            {
+                \DB::table('woo_products')->where('id',$woo_product_id)->update($data);
+            }
+        }
+    }
+
     /* End ham tam thoi sau nay se xoa*/
 
     /*End WooCommerce API*/

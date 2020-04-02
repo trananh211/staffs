@@ -322,6 +322,11 @@ class ApiController extends Controller
         return $api->changeVaritaionWooOrder();
     }
 
+    public function imgThumbProduct()
+    {
+        $api = new Api();
+        return $api->imgThumbProduct();
+    }
     /*Hafm tam thoi. sau nay se xoas*/
 }
 
