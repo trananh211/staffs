@@ -1992,6 +1992,7 @@ class Api extends Model
         $products = \DB::table('woo_products')
             ->select('id','woo_info_id','product_id', 'image')
             ->where('woo_info_id', 4)
+            ->where('type', 0)
             ->limit(4)
             ->get()->toArray();
         $data_update = array();
@@ -2015,7 +2016,8 @@ class Api extends Model
                 {
                     logfile_system('-- Tao file thumb thanh cong cua product id: '. $item->product_id);
                     $data_update[$item->id] = [
-                        'image' => $img_update
+                        'image' => $img_update,
+                        'type' => 24
                     ];
                 }
             }
