@@ -366,6 +366,12 @@ function genThumb($file, $path, $width_new)
     return $return;
 }
 
+function strRandom()
+{
+    $permitted_chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    return substr(str_shuffle($permitted_chars), 0, 10);
+}
+
 function compareTime($from, $to)
 {
     $created = new Carbon($from);

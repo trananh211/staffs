@@ -424,7 +424,9 @@ class Api extends Model
                         if ($data) {
                             $img = "";
                             foreach ($data->images as $image) {
-                                $img .= $image->src . ",";
+                                $extension = strtolower(pathinfo($image->src)['extension']);
+                                $rand = strRandom();
+                                $img .= env('URL_LOCAL').genThumb($woo_id.$product_id.'_'.$rand.'.'.$extension, $image->src, env('THUMB')) . ",";
                             }
                             $db[] = [
                                 'woo_info_id' => $woo_id,
