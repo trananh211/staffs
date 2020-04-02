@@ -99,9 +99,8 @@ class CustomCommand extends Command
                     $check3 = $api_controller->reCheckProductInfo();
                     if ($check3)
                     {
-                        $check4 = $api_controller->imgThumbProduct();
                         //Cào sản phẩm
-//                        $this->call('scrap:product');
+                        $this->call('scrap:product');
                     }
                 }
             }

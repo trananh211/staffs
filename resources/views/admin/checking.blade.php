@@ -50,7 +50,95 @@
                                             <div class="modal-content">
                                                 <div class="card card-transparent">
                                                     <div class="card-content">
+                                                        <span class="card-content">
+                                                            Job: {{ $list->sku.'-PID-'.$list->id }} - Variation: {{ $list->variation }}
+                                                        </span>
                                                         <div class="col s12 m12 l12">
+                                                            {{-- Cập nhật category--}}
+                                                            @if($list->tool_category_name == '')
+                                                                <div class="card">
+                                                                    <div class="card-content">
+                                                                        <div class="row">
+                                                                            <form action="{{ url('update-tool-category') }}" method="post" class="col s12">
+                                                                                {{ csrf_field() }}
+                                                                                <div class="row">
+                                                                                    <div class="input-field col s12">
+                                                                                        <input type="text" style="display: none;" name="design_id" value="{{ $list->design_id }}"/>
+                                                                                    </div>
+                                                                                    <div class="input-field col s6">
+                                                                                        <select name="tool_category_id" required>
+                                                                                            <option value="" disabled selected>Choose Category</option>
+                                                                                            @foreach ($tool_categories as $category)
+                                                                                                <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                                                                            @endforeach
+                                                                                        </select>
+                                                                                        <label>Choose Category</label>
+                                                                                    </div>
+                                                                                    <div class="col s6">
+                                                                                        <button type="submit" class="btn btn-large waves-effect waves-light light-green"
+                                                                                        > Cập nhật Category
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </form>
+                                                                        </div>
+
+                                                                    </div>
+                                                                </div>
+                                                            @endif
+                                                            {{-- End cập nhật category--}}
+                                                            {{-- Cập nhật variations--}}
+                                                            @if($list->variation == '')
+                                                                <div class="card">
+                                                                    <div class="card-content">
+                                                                        <div class="row">
+                                                                            <form action="{{ url('working-change-variation') }}" method="post" class="col s12">
+                                                                                {{ csrf_field() }}
+                                                                                <div class="row">
+                                                                                    <div class="input-field col s12">
+                                                                                        <input type="text" style="display: none;" name="design_id" value="{{ $list->design_id }}"/>
+                                                                                    </div>
+                                                                                    <div class="input-field col s6">
+                                                                                        @if ($list->tool_category_id != '')
+                                                                                            <select name="variation_name" required>
+                                                                                                <option value="" disabled selected>Choose Category</option>
+                                                                                                @foreach ($variations as $vari)
+                                                                                                    <?php
+                                                                                                    $variation_name = ($vari->variation_real_name != '')? $vari->variation_real_name : $vari->variation_name;
+                                                                                                    ?>
+                                                                                                        @if ($list->tool_category_id == $vari->tool_category_id)
+                                                                                                        <option value="{{ $vari->variation_name }}">
+                                                                                                            {{ $variation_name }}
+                                                                                                        </option>
+                                                                                                        @endif
+                                                                                                @endforeach
+                                                                                            </select>
+                                                                                        @else
+                                                                                            <select name="variation_name" required>
+                                                                                                <option value="" disabled selected>Choose Category</option>
+                                                                                                @foreach ($variations as $vari)
+                                                                                                    <?php
+                                                                                                    $variation_name = ($vari->variation_real_name != '')? $vari->variation_real_name : $vari->variation_name;
+                                                                                                    ?>
+                                                                                                    <option value="{{ $vari->variation_name }}">{{ $variation_name }}</option>
+                                                                                                @endforeach
+                                                                                            </select>
+                                                                                        @endif
+                                                                                        <label>Choose Variation</label>
+                                                                                    </div>
+                                                                                    <div class="col s6">
+                                                                                        <button type="submit" class="btn btn-large waves-effect waves-light light-blue"
+                                                                                        > Chọn Variation
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </form>
+                                                                        </div>
+
+                                                                    </div>
+                                                                </div>
+                                                            @endif
+                                                            {{-- End cập nhật variations--}}
                                                             <div class="card">
                                                                 <div class="card-content">
                                                                     @if ($list->tool_category_name != '')
