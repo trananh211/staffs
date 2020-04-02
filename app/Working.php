@@ -976,8 +976,13 @@ class Working extends Model
             ['working_files.status', '=', env('STATUS_WORKING_CHECK')]
         ];
         $images = $this->getWorkingFile($where_working_file);
+        $tool_categories = \DB::table('tool_categories')->select('id','name')->get()->toArray();
+        $variations = \DB::table('variations')
+            ->select('id','variation_name', 'variation_real_name','tool_category_id')
+            ->get()->toArray();
         $data = infoShop();
-        return view('admin/checking')->with(compact('lists', 'images', 'data'));
+        return view('admin/checking')
+            ->with(compact('lists', 'images', 'data', 'tool_categories','variations'));
     }
 
     public function checkWorking()
@@ -3674,6 +3679,97 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             ->orderBy('exf.created_at', 'DESC')
             ->get()->toArray();
         return view('/admin/fulfill_category', compact('data','fulfills'));
+    }
+
+    public function updateToolCategory($request)
+    {
+        \DB::beginTransaction();
+        try {
+            $rq = $request->all();
+            $design_id = $rq['design_id'];
+            $tool_category_id = $rq['tool_category_id'];
+            $result = \DB::table('designs')->where('id',$design_id)->update(['tool_category_id' => $tool_category_id]);
+            if ($result)
+            {
+                $alert = 'success';
+                $message = 'Cập nhật category thành công';
+            } else {
+                $alert = 'error';
+                $message = "Cập nhật cateogory thất bại. Mời bạn thử lại";
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $alert = 'error';
+            $message = "Xảy ra lỗi nội bộ. Mời bạn thử lại";
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($alert, $message);
+    }
+
+    public function workingChangeVariation($request)
+    {
+        \DB::beginTransaction();
+        try {
+            $rq = $request->all();
+            $design_id = $rq['design_id'];
+            $variation_name = trim($rq['variation_name']);
+            // lay thong tin design hien tai
+            $design_old = \DB::table('designs')->select('id', 'sku', 'variation')->where('id', $design_id)->first();
+            if ($design_old != NULL) {
+                $design_exist = \DB::table('designs')->select('id')
+                    ->where('sku', $design_old->sku)
+                    ->where('variation', $variation_name)
+                    ->first();
+                // nếu tồn tại design giống yêu cầu
+                if ($design_exist != NULL) {
+                    $new_design_id = $design_exist->id;
+                    $working_files = \DB::table('workings')
+                        ->leftjoin('working_files as wkf', 'workings.id', '=', 'wkf.working_id')
+                        ->select('wkf.id as working_file_id', 'wkf.name', 'wkf.path', 'wkf.thumb', 'workings.id as working_id')
+                        ->where('workings.design_id', $design_id)
+                        ->get()->toArray();
+                    $delete_files = array();
+                    $delete_working_files = array();
+                    $delete_workings = array();
+                    foreach ($working_files as $file) {
+                        $delete_files[] = storage_path($file->path . $file->name);
+                        $delete_files[] = storage_path($file->thumb);
+                        $delete_working_files[$file->working_file_id] = $file->working_file_id;
+                        $delete_workings[$file->working_id] = $file->working_id;
+                    }
+                    if (sizeof($delete_working_files) > 0) {
+                        $result = \DB::table('working_files')->whereIn('id', $delete_working_files)->delete();
+                        if ($result) {
+                            \DB::table('workings')->whereIn('id', $delete_workings)->delete();
+                            \DB::table('designs')->where('id', $design_id)->delete();
+                            \File::delete($delete_files);
+                        }
+                    }
+                } else { // nếu không tồn tại design giống yêu cầu.
+                    \DB::table('designs')->where('id', $design_id)->update(['variation' => $variation_name]);
+                    $new_design_id = $design_id;
+                }
+                //cập nhật woo_orders
+                $update_woo_orders = [
+                    'design_id' => $new_design_id,
+                    'variation_detail' => $variation_name,
+                    'variation_full_detail' => $variation_name . '-;-;-',
+                    'detail' => $variation_name . '-;-;-'
+                ];
+                \DB::table('woo_orders')->where('design_id', $design_id)->update($update_woo_orders);
+                $alert = 'success';
+                $message = 'Cập nhật thành công variations.';
+            } else {
+                $alert = 'error';
+                $message = 'Không tồn tại design này trên hệ thống. Mời bạn kiểm tra lại';
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $alert = 'error';
+            $message = "Xảy ra lỗi nội bộ. Mời bạn thử lại";
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($alert, $message);
     }
     /*End Admin + QC*/
 }

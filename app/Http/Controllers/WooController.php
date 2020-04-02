@@ -611,5 +611,17 @@ class WooController extends Controller
         $work = new Working();
         return $work->dashboardDate($request);
     }
+
+    public function updateToolCategory(Request $request)
+    {
+        $work = new Working();
+        return $work->updateToolCategory($request);
+    }
+
+    public function workingChangeVariation(Request $request)
+    {
+        $work = new Working();
+        return $work->workingChangeVariation($request);
+    }
     /*End Admin + QC*/
 }

@@ -119,6 +119,8 @@ Route::middleware('auth')->group(function () {
     Route::get('woo-deleted-all-product/{woo_template_id}&{type}','WooController@deleteAllProductTemplate');
     Route::post('ajax-redo-new-sku','WooController@axRedoNewSKU');
     Route::post('dashboard-date','WooController@dashboardDate');
+    Route::post('update-tool-category','WooController@updateToolCategory');
+    Route::post('working-change-variation','WooController@workingChangeVariation');
 
     //lấy link về để cào lấy keyword
     Route::get('list-categories','WooController@listCategories');
