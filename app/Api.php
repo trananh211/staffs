@@ -1991,6 +1991,7 @@ class Api extends Model
     {
         $products = \DB::table('woo_products')
             ->select('id','woo_info_id','product_id', 'image')
+            ->where('woo_info_id', 4)
             ->get()->toArray();
         $data_update = array();
         foreach ($products as $item)
