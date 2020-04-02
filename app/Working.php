@@ -262,9 +262,9 @@ class Working extends Model
         $where = [
             ['workings.worker_id', '=', $uid],
         ];
-        $lst_jobs = $this->orderStaff($where);
+//        $lst_jobs = $this->orderStaff($where);
         return view('/staff/dashboard')
-            ->with(compact('data','reports', 'lst_jobs'));
+            ->with(compact('data','reports'));
     }
 
     private function countStaffWorking($where)
