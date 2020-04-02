@@ -89,8 +89,14 @@
                     <div class="card-content">
                         <p class="card-title">Image</p>
                         <div class="material-placeholder" style="">
+                            <?php
+                                $i = 1;
+                            ?>
                             @foreach($images as $key => $image)
-                                <img class="materialboxed responsive-img initialized" src="{{ $image }}" alt="" style="">
+                                @if ($i < 2)
+                                    <img class="materialboxed responsive-img initialized" src="{{ $image }}" alt="" style="">
+                                    @endif
+                                <?php $i++; ?>
                             @endforeach
                         </div>
                     </div>
