@@ -26,6 +26,10 @@ class GoogleController extends Controller
 //        deleteDir('Public');
 //        renameDir('hihi','Hehe');
 //        echo upFile(public_path(env('DIR_DONE').'S247-USA-3156-PID-19.jpg'),'1is5OXHePxYfjym8b0ackAqO0db4ItYpm');
+
+        $path = 'https://molofa.com/wp-content/uploads/2020/02/mc1-5.png';
+        $thumb = genThumb('test_'.date("YmdHms"), $path, env('THUMB'));
+        var_dump($thumb);
     }
 
     /*END GOOGLE API*/
