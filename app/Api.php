@@ -2023,7 +2023,13 @@ class Api extends Model
             {
                 foreach ($data_update as $woo_product_id => $data)
                 {
-                    \DB::table('woo_products')->where('id',$woo_product_id)->update($data);
+                    $result = \DB::table('woo_products')->where('id',$woo_product_id)->update($data);
+                    if ($result)
+                    {
+                        logfile_system('--- Đổi thumb của '.sizeof($data_update). ' thành công');
+                    } else {
+                        logfile_system('--- Đổi thumb của '.sizeof($data_update). ' thất bại');
+                    }
                 }
             }
             $return = false;
