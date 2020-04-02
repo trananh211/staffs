@@ -185,11 +185,13 @@
 <style>
     #loading {
         position: fixed;
-        right: 20px;
-        bottom: 30px;
+        right: 10px;
+        bottom: 20px;
         width: 100px;
-        height: auto;
+        height: 100px;
         z-index: 9999;
+        background: none;
+        border:none;
     }
 </style>
 </body>
