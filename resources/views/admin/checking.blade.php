@@ -101,7 +101,7 @@
                                                                                     <div class="input-field col s6">
                                                                                         @if ($list->tool_category_id != '')
                                                                                             <select name="variation_name" required>
-                                                                                                <option value="" disabled selected>Choose Category</option>
+                                                                                                <option value="" disabled selected>Choose Variation</option>
                                                                                                 @foreach ($variations as $vari)
                                                                                                     <?php
                                                                                                     $variation_name = ($vari->variation_real_name != '')? $vari->variation_real_name : $vari->variation_name;
@@ -115,7 +115,7 @@
                                                                                             </select>
                                                                                         @else
                                                                                             <select name="variation_name" required>
-                                                                                                <option value="" disabled selected>Choose Category</option>
+                                                                                                <option value="" disabled selected>Choose Variation</option>
                                                                                                 @foreach ($variations as $vari)
                                                                                                     <?php
                                                                                                     $variation_name = ($vari->variation_real_name != '')? $vari->variation_real_name : $vari->variation_name;
