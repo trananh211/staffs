@@ -641,7 +641,7 @@ class Working extends Model
     {
         \DB::beginTransaction();
         try {
-            $status = true;
+            $status = 'success';
             $update = [
                 'status' => env('STATUS_SKIP'),
                 'updated_at' => date("Y-m-d H:i:s")
@@ -1259,6 +1259,47 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             compact('lists', 'images', 'data', 'workers', 'variations', 'all_variations'));
     }
 
+    public function keepWorkingJob($working_id)
+    {
+        \DB::beginTransaction();
+        try {
+            $status = 'success';
+            $update = [
+                'status' => env('STATUS_WORKING_NEW'),
+                'updated_at' => date("Y-m-d H:i:s")
+            ];
+            $workings = \DB::table('workings')->select('design_id')->where('id',$working_id)->first();
+            \DB::table('workings')->where('id',$working_id)->update($update);
+            \DB::table('designs')->where('id',$workings->design_id)->update($update);
+            $message = 'Yêu cầu giữ lại Job này thành công. Mời bạn làm job tiếp theo.';
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $status = 'error';
+            $message = 'Yêu cầu giữ lại Job này thất bại. Gửi số Id của Job cho quản lý của bạn ngay.';
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($status, $message);
+    }
+
+    public function jobCancel()
+    {
+        $where = [
+            ['workings.status', '=', env('STATUS_SKIP')]
+        ];
+        $lists = $this->orderStaff($where);
+        $where_working_file = [
+            ['working_files.status', '=', env('STATUS_SKIP')]
+        ];
+        $images = $this->getWorkingFile($where_working_file);
+        $tool_categories = \DB::table('tool_categories')->select('id','name')->get()->toArray();
+        $variations = \DB::table('variations')
+            ->select('id','variation_name', 'variation_real_name','tool_category_id')
+            ->get()->toArray();
+        $data = infoShop();
+        return view('admin/job_cancel')
+            ->with(compact('lists', 'images', 'data', 'tool_categories','variations'));
+    }
+
     private function getVariation()
     {
         $lst = \DB::table('variations')->select('variation_name','variation_real_name','tool_category_id')->get()->toArray();
@@ -1458,7 +1499,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             )
             ->where($where)
             ->orderBy('designs.sku','ASC')
-            ->limit(env('CHECKING_JOB_LIMIT'))
+//            ->limit(env('CHECKING_JOB_LIMIT'))
             ->get()->toArray();
         if (sizeof($lsts) > 0)
         {

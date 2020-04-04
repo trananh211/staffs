@@ -185,6 +185,18 @@ class WooController extends Controller
         return $work->listJobDone();
     }
 
+    public function jobCancel()
+    {
+        $work = new Working();
+        return $work->jobCancel();
+    }
+
+    public function keepWorkingJob($working_id)
+    {
+        $work = new Working();
+        return $work->keepWorkingJob($working_id);
+    }
+
     public function eventQcDone(Request $request)
     {
         $work = new Working();

@@ -52,6 +52,8 @@ Route::middleware('auth')->group(function () {
     Route::post('redo-designer','WooController@redoDesigner');
     Route::get('review-customer','WooController@reviewCustomer');
     Route::get('list-job-done','WooController@listJobDone');
+    Route::get('job-cancel','WooController@jobCancel');
+    Route::get('keep-working-job/{working_id}','WooController@keepWorkingJob');
     Route::post('ajax_done_job/action', 'WooController@eventQcDone')->name('ajaxdonejob.action');
     Route::get('supplier','WooController@supplier');
     Route::get('tracking','TrackingController@tracking');
