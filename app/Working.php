@@ -457,91 +457,6 @@ class Working extends Model
         }
     }
 
-    public function staffGetJob2()
-    {
-        $this->log('=============== GET NEW JOB=================');
-        if (Auth::check()) {
-            $uid = Auth::id();
-            $check_working = \DB::table('workings')
-                ->select('id')
-                ->where([
-                    ['worker_id', '=', $uid],
-                    ['status', '=', env('STATUS_WORKING_NEW')]
-                ])
-                ->count();
-            if ($check_working == 0) {
-                $username = Auth::user()->original['name'];
-                $this->log('-- Nhân viên ' . $username . ' xin job mới.');
-                $jobs = DB::table('woo_orders')
-                    ->select('id', 'woo_info_id', 'order_id', 'product_id', 'number')
-                    ->where('status', env('STATUS_WORKING_NEW'))
-                    ->where('custom_status', '!=', env('STATUS_P_AUTO_PRODUCT'))
-                    ->orderBy('sku', 'ASC')
-                    ->limit(env("STAFF_GET_JOB_LIMIT"))
-                    ->get()->toArray();
-                if (sizeof($jobs) > 0) {
-                    $db = array();
-                    //gộp toàn bộ order vào cùng 1 job
-                    foreach ($jobs as $order) {
-                        $db[$order->order_id][] = [
-                            'woo_info_id' => $order->woo_info_id,
-                            'woocommerce_order_id' => $order->order_id,
-                            'order_id' => $order->id,
-                            'product_id' => $order->product_id,
-                            'number' => $order->number,
-                        ];
-                    }
-                    $i = 0;
-                    $update_order = array();
-                    //lấy job đầu tiên ra trả cho nhân viên
-                    foreach ($db as $woo_order_id => $orders) {
-                        if ($i > 3) break;
-                        foreach ($orders as $value) {
-                            $data[] = [
-                                'woo_info_id' => $value['woo_info_id'],
-                                'woo_order_id' => $value['order_id'],
-                                'product_id' => $value['product_id'],
-                                'number' => $value['number'],
-                                'store_order_id' => $value['woocommerce_order_id'],
-                                'worker_id' => $uid,
-                                'created_at' => date("Y-m-d H:i:s"),
-                                'updated_at' => date("Y-m-d H:i:s")
-                            ];
-                            $update_order[] = $value['order_id'];
-                        }
-                        $i++;
-                    }
-                    $update_order = array_unique($update_order);
-                    if (sizeof($data) > 0) {
-                        \DB::beginTransaction();
-                        try {
-                            \DB::table('workings')->insert($data);
-                            \DB::table('woo_orders')
-                                ->whereIn('id', $update_order)
-                                ->update(['status' => env('STATUS_WORKING_CHECK')]);
-                            $return = true;
-                            $save = "Chia " . sizeof($data) . " order cho '" . $username . "' thanh cong.";
-                            \Session::flash('success', 'Nhận việc thành công. Vui lòng hoành thành sớm.');
-                            \DB::commit(); // if there was no errors, your query will be executed
-                        } catch (\Exception $e) {
-                            $return = false;
-                            $save = "Chia " . sizeof($data) . " order cho '" . $username . "' thất bại.";
-                            \Session::flash('error', 'Xảy ra lỗi. Vui lòng thử lại!');
-                            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
-                        }
-                        $this->log($save);
-                    }
-                } else {
-                    \Session::flash('error', 'Đã hết công việc. Báo với quản lý của bạn để nhận việc mới.!');
-                    $this->log("Đã hết order để chia cho nhân viên. \n");
-                }
-            } else {
-                \Session::flash('error', 'Hãy hoàn thành hết công việc hiện tại trước đã nhé!');
-            }
-            return redirect('staff-dashboard');
-        }
-    }
-
     /*Hàm trả job của nhân viên*/
     public function staffUpload($request)
     {
@@ -998,7 +913,8 @@ class Working extends Model
     public function getWorkingFile($where)
     {
         $return = array();
-        $files = \DB::table('working_files')->select('working_id', 'name', 'thumb')
+        $files = \DB::table('working_files')
+            ->select('working_id', 'name', 'thumb','base_name')
             ->where($where)
             ->get();
         if (sizeof($files) > 0) {
@@ -1006,6 +922,7 @@ class Working extends Model
             foreach ($files as $key => $file) {
                 $return[$file->working_id][$key]['name'] = $file->name;
                 $return[$file->working_id][$key]['thumb'] = $file->thumb;
+                $return[$file->working_id][$key]['base_name'] = $file->base_name;
             }
         }
         return $return;
@@ -1324,11 +1241,13 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     {
         $workers = \DB::table('users')->select('id','name')->where('level',3)->get()->toArray();
         $where = [
-            ['workings.status', '=', env('STATUS_WORKING_DONE')],
+            ['workings.status', '>=', env('STATUS_WORKING_DONE')],
+            ['workings.status', '<=', env('STATUS_WORKING_MOVE')],
         ];
         $lists = $this->reviewWork($where, 1);
         $where_working_file = [
-            ['working_files.status', '=', env('STATUS_WORKING_DONE')],
+            ['working_files.status', '>=', env('STATUS_WORKING_DONE')],
+            ['working_files.status', '<=', env('STATUS_WORKING_MOVE')],
             ['working_files.thumb', '!=', 'NULL']
         ];
         $images = $this->getWorkingFile($where_working_file);

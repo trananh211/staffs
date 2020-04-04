@@ -244,7 +244,13 @@
                                             @if(array_key_exists($list['info']['id'], $images))
                                                 @foreach($images[$list['info']['id']] as $img)
                                                     {!! ($img['thumb'] != '') ? thumb_c($img['thumb'], env('THUMB'), '') : '' !!}
-                                                    <div>{{ $img['name'] }}</div>
+                                                    <?php
+                                                        $path_img = ($img['base_name'] != '')? 'http://drive.google.com/uc?export=view&id='.$img['base_name'] : url(env('DIR_CHECK')).'/'.$img['name'];
+                                                    ?>
+                                                    <a class="tooltipped" data-position="top" data-delay="50"
+                                                       data-tooltip="Click vào đây để xem chi tiết ảnh rõ hơn nữa" href="{{ $path_img }}" target="_blank">
+                                                        <div>{{ $img['name'] }}</div>
+                                                    </a>
                                                 @endforeach
                                                 <?php unset($images[$list['info']['id']]); ?>
                                             @endif
