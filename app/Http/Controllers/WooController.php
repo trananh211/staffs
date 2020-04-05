@@ -185,6 +185,12 @@ class WooController extends Controller
         return $work->listJobDone();
     }
 
+    public function searchWorkJob(Request $request)
+    {
+        $work = new Working();
+        return $work->searchWorkJob($request);
+    }
+
     public function jobCancel()
     {
         $work = new Working();
