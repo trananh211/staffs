@@ -10,13 +10,17 @@
             <div class="header-title col s3 m3">
                 <span class="chapter-title">Alpha</span>
             </div>
-            <form class="left search col s6 hide-on-small-and-down">
+            @if( in_array( Auth::user()->level, array( env('ADMIN'),env('QC'),env('SADMIN')) ) )
+            <form action="{{ url('search-work-job') }}" method="post" class="left search col s6 hide-on-small-and-down">
+                    {{ csrf_field() }}
                 <div class="input-field">
-                    <input id="search" type="search" placeholder="Search" autocomplete="off">
-                    <label for="search"><i class="material-icons search-icon">search</i></label>
+                    <input value="{{ Session::has('search')? Session('search.keyword') : '' }}"
+                        id="search-job" type="search" placeholder="Search" autocomplete="off" name="search_job">
+                    <label for="search-job"><i class="material-icons search-icon">search</i></label>
                 </div>
                 <a href="javascript: void(0)" class="close-search"><i class="material-icons">close</i></a>
             </form>
+            @endif
             <ul class="right col s9 m3 nav-right-menu">
                 <li><a href="javascript:void(0)" data-activates="chat-sidebar" class="chat-button show-on-large"><i
                             class="material-icons">more_vert</i></a></li>

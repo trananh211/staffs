@@ -1259,6 +1259,82 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             compact('lists', 'images', 'data', 'workers', 'variations', 'all_variations'));
     }
 
+    public function searchWorkJob($request)
+    {
+        $rq = $request->all();
+        \Session::put('search.keyword', trim($rq['search_job']));
+        $search = htmlentities(str_replace(" ", "", strtolower(trim($rq['search_job']))));
+        $lists = array();
+        $lsts = \DB::table('designs')
+            ->leftjoin('workings', 'workings.design_id', '=', 'designs.id')
+            ->leftjoin('users as worker', 'workings.worker_id', '=', 'worker.id')
+            ->leftjoin('users as qc', 'workings.qc_id', '=', 'qc.id')
+            ->leftjoin('woo_products', 'workings.product_id', '=', 'woo_products.product_id')
+            ->select(
+                'workings.id as working_id', 'workings.status', 'workings.updated_at',
+                'workings.qc_id', 'workings.worker_id', 'workings.reason', 'workings.redo','workings.updated_at',
+                'designs.sku','designs.variation', 'designs.status', 'designs.tool_category_id', 'designs.id as design_id',
+                'worker.id as worker_id', 'worker.name as worker_name', 'qc.id as qc_id', 'qc.name as qc_name',
+                'woo_products.name', 'woo_products.permalink', 'woo_products.image'
+            )
+            ->where('designs.sku', 'LIKE', '%'.$search.'%')
+            ->orderBy('designs.sku','ASC')
+            ->get()->toArray();
+        if (sizeof($lsts) > 0) {
+            $workers = \DB::table('users')->select('id','name')->where('level',3)->get()->toArray();
+            $lst_design_id = array();
+            $list_working_id = array();
+            foreach ($lsts as $lst) {
+                $lst_design_id[$lst->design_id] = $lst->design_id;
+                $list_working_id[$lst->working_id] = $lst->working_id;
+            }
+            $lst_orders = \DB::table('woo_orders')
+                ->select(
+                    'woo_orders.id', 'woo_orders.number', 'woo_orders.email', 'woo_orders.fullname',
+                    'woo_orders.payment_method', 'woo_orders.sku', 'woo_orders.design_id', 'woo_orders.variation_full_detail'
+                )
+                ->whereIn('design_id', $lst_design_id)
+                ->get()->toArray();
+            if (sizeof($lst_orders) > 0) {
+                $lst_designs = array();
+                foreach ($lst_orders as $lst_order) {
+                    $lst_designs[$lst_order->design_id][] = json_decode(json_encode($lst_order, true), true);
+                }
+            }
+            // dồn toàn bộ woo_orders vào trong 1 array với design
+            $lsts = json_decode(json_encode($lsts, true), true);
+            foreach ($lsts as $key => $lst) {
+                if (array_key_exists($lst['design_id'], $lst_designs)) {
+                    $lists[$key]['info'] = $lst;
+                    $lists[$key]['orders'] = $lst_designs[$lst['design_id']];
+                }
+            }
+            // lấy danh sách image
+            $images = array();
+            $files = \DB::table('working_files')
+                ->select('working_id', 'name', 'thumb','base_name')
+                ->whereIn('working_id', $list_working_id)
+                ->get();
+            if (sizeof($files) > 0) {
+                foreach ($files as $key => $file) {
+                    $images[$file->working_id][$key]['name'] = $file->name;
+                    $images[$file->working_id][$key]['thumb'] = $file->thumb;
+                    $images[$file->working_id][$key]['base_name'] = $file->base_name;
+                }
+            }
+            $tmp_variations = $this->getVariation();
+            $variations = $tmp_variations['variations'];
+            $all_variations = $tmp_variations['all_variations'];
+            $data = infoShop();
+            return view('/admin/search_working_job',
+                compact('lists', 'images', 'data', 'workers', 'variations', 'all_variations'));
+        } else {
+            $status = 'error';
+            $message = 'Không tìm thấy SKU bạn đang tìm kiếm';
+            return view('/admin/search_working_job',compact('lists'))->with($status, $message);
+        }
+    }
+
     public function keepWorkingJob($working_id)
     {
         \DB::beginTransaction();
