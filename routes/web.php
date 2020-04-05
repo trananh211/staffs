@@ -89,6 +89,7 @@ Route::middleware('auth')->group(function () {
     Route::get('action-fulfill-now','WooController@actionFulfillNow');
     Route::get('fulfill-get-file/{id}','WooController@fulfilGetFile');
     Route::get('fulfill-rescan-file/{id}','WooController@fulfillRescanFile');
+    Route::post('search-work-job','WooController@searchWorkJob');
 
     /** Paypal */
     Route::get('paypal-connect','PaypalController@index');
