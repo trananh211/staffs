@@ -1281,7 +1281,7 @@ class GoogleController extends Controller
                                 $path = public_path($file['path'].$file['name']);
                                 if (checkFileExist($file['name'], $file['working_base_dirname'])) {
                                     try {
-                                        $move = Storage::cloud()->move($file['working_base_name'], $parent_path . '/' . $file['name']);
+                                        $move = Storage::cloud()->move($file['working_base_dirname'].'/'.$file['working_base_name'], $parent_path . '/' . $file['name']);
                                         if ($move)
                                         {
                                             $result = true;
