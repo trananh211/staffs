@@ -1312,10 +1312,10 @@ class GoogleController extends Controller
                                             'updated_at' => date("Y-m-d H:i:s")
                                         ];
                                         \DB::table('working_files')->where('id',$file['working_file_id'])->update($update);
-                                        logfile_system('-- Move thành công '.$file['name'].' lên google driver');
+                                        logfile_system('--- Move thành công '.$file['name'].' lên google driver');
                                     } else {
                                         $working_file_error[] = $file['working_file_id'];
-                                        logfile_system('-- Move thất bại '.$file['name'].' lên google driver');
+                                        logfile_system('--- Move thất bại '.$file['name'].' lên google driver');
                                     }
                                 }
                             }
