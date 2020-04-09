@@ -1273,8 +1273,10 @@ class GoogleController extends Controller
 //                        print_r($list_working_files);
                         $working_file_update = array();
                         $working_file_error = array();
+
                         foreach ($list_working_files as $product_code_id => $info)
                         {
+                            logfile_system('-- Đang move '.sizeof($info['info']).' file.');
                             $parent_path = $info['path'];
                             foreach($info['info'] as $file)
                             {
