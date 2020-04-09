@@ -1297,15 +1297,25 @@ class GoogleController extends Controller
                                     }
                                     if ($result) {
                                         // tao data working file google driver cap nhat vao database
-                                        $working_file_update[$file['working_file_id']] = [
+//                                        $working_file_update[$file['working_file_id']] = [
+//                                            'base_name' => $file['working_base_name'],
+//                                            'base_path' => $parent_path . '/'.$file['working_base_name'],
+//                                            'base_dirname' => $parent_path,
+//                                            'status' => 33,
+//                                            'updated_at' => date("Y-m-d H:i:s")
+//                                        ];
+                                        $update = [
                                             'base_name' => $file['working_base_name'],
                                             'base_path' => $parent_path . '/'.$file['working_base_name'],
                                             'base_dirname' => $parent_path,
                                             'status' => 33,
                                             'updated_at' => date("Y-m-d H:i:s")
                                         ];
+                                        \DB::table('working_files')->where('id',$file['working_file_id'])->update($update);
+                                        logfile_system('-- Move thành công '.$file['name'].' lên google driver');
                                     } else {
                                         $working_file_error[] = $file['working_file_id'];
+                                        logfile_system('-- Move thất bại '.$file['name'].' lên google driver');
                                     }
                                 }
                             }
