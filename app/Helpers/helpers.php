@@ -437,6 +437,22 @@ function createDir($name, $parent_path = null)
     return $return;
 }
 
+function createDirFullInfo($name, $parent_path = null)
+{
+    $name = trim($name);
+    $return = false;
+    $recursive = false; // Get subdirectories also?
+    if (Storage::cloud()->makeDirectory($parent_path . '/' . $name)) {
+        $dir = collect(Storage::cloud()->listContents($parent_path, $recursive))
+            ->where('type', '=', 'dir')
+            ->where('filename', '=', $name)
+            ->sortBy('timestamp')
+            ->last();
+        $return = $dir;
+    }
+    return $return;
+}
+
 function checkDirExist($name, $path, $parent_path)
 {
     $name = trim($name);
@@ -630,6 +646,21 @@ function checkFileExist($filename, $parent_path)
         ->first();
     if ($check_before) {
         $return = true;
+    }
+    return $return;
+}
+
+function checkFileExistFullInfo($filename, $parent_path)
+{
+    $return = false;
+    $name = trim($filename);
+    $recursive = false; // Get subdirectories also?
+    $check_before = collect(Storage::cloud()->listContents($parent_path, $recursive))
+        ->where('type', '=', 'file')
+        ->where('name', '=', $filename)
+        ->first();
+    if ($check_before) {
+        $return = $check_before;
     }
     return $return;
 }
