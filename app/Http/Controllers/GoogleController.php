@@ -1276,12 +1276,13 @@ class GoogleController extends Controller
 
                         foreach ($list_working_files as $product_code_id => $info)
                         {
-                            logfile_system('-- Đang move '.sizeof($info['info']).' file.');
+                            logfile_system('-- Đang thực hiện move '.sizeof($info['info']).' file.');
                             $parent_path = $info['path'];
                             foreach($info['info'] as $file)
                             {
                                 $path = public_path($file['path'].$file['name']);
                                 if (checkFileExist($file['name'], $file['working_base_dirname'])) {
+                                    logfile_system('--- Đang move file : '.$file['name']);
                                     try {
                                         $move = Storage::cloud()->move($file['working_base_dirname'].'/'.$file['working_base_name'], $parent_path . '/' . $file['name']);
                                         if ($move)
