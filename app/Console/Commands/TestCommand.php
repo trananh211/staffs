@@ -50,8 +50,8 @@ class TestCommand extends Command
         $google_controller = new GoogleController();
 //        $this->checkTemplateScrap();
 
-        $check= $google_controller->uploadFileWorkingGoogle();
-//        var_dump($check);
+        $check= $google_controller->moveFileWorkingGoogle();
+        var_dump($check);
 //        $check = $api_controller->getAllOrderOld();
 //        $check = $api_controller->changeNameProduct();
 //        $check = $api_controller->changeSkuWooOrder();
