@@ -47,12 +47,13 @@ class TestCommand extends Command
 
         $api_controller = new ApiController();
 //        $api_controller->checkTemplateScrap();
-//        $google_controller = new GoogleController();
+        $google_controller = new GoogleController();
 //        $this->checkTemplateScrap();
 
-
+        $check= $google_controller->moveFileWorkingGoogle();
+        var_dump($check);
 //        $check = $api_controller->getAllOrderOld();
-        $check = $api_controller->changeNameProduct();
+//        $check = $api_controller->changeNameProduct();
 //        $check = $api_controller->changeSkuWooOrder();
 //        $check = $api_controller->imgThumbProduct();
     }

@@ -845,81 +845,497 @@ class GoogleController extends Controller
     {
         logfile_system("======= Upload file design to Google Driver  =========================");
         $return = false;
-        $files = \DB::table('workings')
-            ->leftjoin('working_files as wf', 'workings.id', '=', 'wf.working_id')
-            ->select(
-                'workings.id as working_id',
-                'wf.id as working_file_id', 'wf.name', 'wf.path'
-            )
-            ->where([
-                ['workings.status', '=', env('STATUS_WORKING_DONE')]
-            ])
-            ->limit(env('GOOGLE_LIMIT_UPLOAD_FILE'))
+        $categories = \DB::table('tool_categories')->select('id','name','base_name')
             ->get()->toArray();
-        $query_update = '';
-        if (sizeof($files) > 0)
+        if (sizeof($categories) > 0)
         {
-            $working_file_error = array(); $working_error = array();
-            $working_file_update = array(); $working_update = array();
-            $file_delete = array();
-            logfile_system('-- Tồn tại '.sizeof($files). ' files cần upload');
-            foreach ($files as $file){
-                $path = public_path($file->path.$file->name);
-                if (\File::exists($path)) {
-                    try {
-                        $info = upFile_FullInfo($path, env('GOOGLE_DRIVER_FOLDER_JOB'));
-                        $result = true;
-                    } catch (\Exception $e) {
-                        $result = false;
-                        logfile_system(' -- Xảy ra lỗi nội bộ : '.$e->getMessage());
-                    }
-                    if ($result) {
-                        // xóa file local đi cho đỡ nặng
-                        $file_delete[] = $path;
-                        // tao data working file google driver cap nhat vao database
-                        $base_name = $info['basename'];
-                        $base_path = $info['path'];
-                        $base_dirname = $info['dirname'];
-                        $working_file_update[$file->working_file_id] = [
-                            'base_name' => $base_name,
-                            'base_path' => $base_path,
-                            'base_dirname' => $base_dirname,
-                            'status' => env('STATUS_WORKING_MOVE'),
+            $lst_categories = array();
+            $update_categories = array();
+            foreach ($categories as $category)
+            {
+                //neu chua ton tai folder tren google driver. Tao moi
+                if($category->base_name == '')
+                {
+                    $check_exist = getDirExist($category->name, '', env('GOOGLE_DRIVER_FOLDER_JOB'));
+                    if(!$check_exist){
+                        try {
+                            $new_dir = createDirFullInfo($category->name, env('GOOGLE_DRIVER_FOLDER_JOB'));
+                            $update_categories[$category->id] = [
+                                'parent_path' => $new_dir['dirname'],
+                                'base_path' => $new_dir['path'],
+                                'base_name' => $new_dir['basename'],
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                            $lst_categories[$category->id] = [
+                                'category_name' => $category->name,
+                                'category_basename' => $new_dir['path']
+                            ];
+                        } catch (\Exception $e) {
+                            logfile_system('-- Không thể tạo thư mục :'.$category->name.' trên driver vào thời điểm này');
+                        }
+                    } else {
+                        $update_categories[$category->id] = [
+                            'parent_path' => $check_exist['dirname'],
+                            'base_path' => $check_exist['path'],
+                            'base_name' => $check_exist['basename'],
                             'updated_at' => date("Y-m-d H:i:s")
                         ];
-                        $working_update[$file->working_id] = $file->working_id;
-                    } else {
-                        $working_file_error[] = $file->working_file_id;
-                        $working_error[] = $file->working_id;
+                        $lst_categories[$category->id] = [
+                            'category_name' => $category->name,
+                            'category_basename' => $check_exist['path']
+                        ];
                     }
+                } else {
+                    $lst_categories[$category->id] = [
+                        'category_name' => $category->name,
+//                        'category_basename' => env('GOOGLE_DRIVER_FOLDER_JOB').'/'.$category->base_path
+                        'category_basename' => $category->base_name
+                    ];
                 }
             }
-            if (sizeof($file_delete) > 0)
+            // cập nhật thông tin base path nếu có vào database
+            if (sizeof($update_categories) > 0)
             {
-                \File::delete($file_delete);
-            }
-            if(sizeof($working_file_update) > 0)
-            {
-                foreach ($working_file_update as $working_file_id => $data_update)
+                foreach ($update_categories as $category_id => $update)
                 {
-                    \DB::table('working_files')->where('id',$working_file_id)->update($data_update);
+                    \DB::table('tool_categories')->where('id',$category_id)->update($update);
                 }
-                \DB::table('workings')->whereIn('id',$working_update)->update(['status' => env('STATUS_WORKING_MOVE')]);
-                logfile_system('-- Upload thành công '.sizeof($working_file_update).' files lên google driver');
             }
-            if (sizeof($working_file_error) > 0)
+            // chuẩn bị category xong
+            if (sizeof($lst_categories) > 0)
             {
-                logfile_system(' -- Xảy ra '.sizeof($working_file_error).' job bị lỗi. Không thể up lên google driver');
-                $update = [
-                    'status' => env('STATUS_WORKING_ERROR'),
-                    'updated_at' => date("Y-m-d H:i:s")
-                ];
-                \DB::table('working_files')->whereIn('id',$working_file_error)->update($update);
-                \DB::table('workings')->whereIn('id',$working_error)->update($update);
+                // lấy danh sách file cần upload
+                $files = \DB::table('workings')
+                    ->leftjoin('working_files as wf', 'workings.id', '=', 'wf.working_id')
+                    ->leftjoin('designs', 'designs.id', '=', 'workings.design_id')
+                    ->leftjoin('product_codes as pdc', 'designs.product_code_id', '=', 'pdc.id')
+                    ->select(
+                        'workings.id as working_id',
+                        'wf.id as working_file_id', 'wf.name', 'wf.path','wf.base_name as working_base_name','wf.base_dirname as working_base_dirname',
+                        'designs.id as design_id', 'designs.product_name', 'designs.tool_category_id',
+                        'pdc.id as product_code_id', 'pdc.base_name as product_code_base_name'
+                    )
+                    ->where([
+                        ['wf.status', '=', env('STATUS_WORKING_DONE')]
+                    ])
+                    ->limit(env('GOOGLE_LIMIT_UPLOAD_FILE'))
+                    ->get()->toArray();
+                // predata product code id
+                if (sizeof($files) > 0)
+                {
+                    $lst_product_code = array();
+                    $product_codes = array();
+                    $update_designs = array();
+                    $list_working_files = array();
+                    foreach ($files as $file)
+                    {
+                        if($file->tool_category_id == '') {
+                            continue;
+                        }
+                        if($file->product_code_id == '')
+                        {
+                            $tmp = explode(' ', $file->product_name);
+                            $product_code = $tmp[sizeof($tmp) - 1];
+                            if (!array_key_exists($product_code, $product_codes))
+                            {
+                                $product_codes[$product_code] = [
+                                    'product_code' => $product_code,
+                                    'dir_path' => $lst_categories[$file->tool_category_id]['category_basename']
+                                ];
+                            }
+                            $lst_product_code[$product_code]['design'][$file->design_id] = $file->design_id;
+                        }
+                        if( $file->product_code_id != '')
+                        {
+                            $list_working_files[$file->product_code_id]['path'] = $file->product_code_base_name;
+                            $list_working_files[$file->product_code_id]['info'][] = json_decode(json_encode($file, true), true);
+                        }
+                    }
+                    // vẫn chưa chuẩn bị xong product code. cần chuẩn bị luôn
+                    if (sizeof($lst_product_code) > 0)
+                    {
+                        // lấy danh sách product code
+                        $list_codes = \DB::table('product_codes')->pluck('id','product_code')->toArray();
+                        foreach ($product_codes as $product_code => $item)
+                        {
+                            $data_product_code = array();
+                            // nếu chưa tồn tại product code. Tạo mới trên google driver. Lưu vào db
+                            if( !array_key_exists($product_code, $list_codes))
+                            {
+                                $check_exist = getDirExist($product_code, '', $item['dir_path']);
+                                // nếu tồn tại dir trên google driver rồi
+                                if ($check_exist)
+                                {
+                                    $data_product_code = [
+                                        'product_code' => $product_code,
+                                        'parent_path' => $check_exist['dirname'],
+                                        'base_path' => $check_exist['path'],
+                                        'base_name' => $check_exist['basename'],
+                                        'created_at' => date("Y-m-d H:i:s"),
+                                        'updated_at' => date("Y-m-d H:i:s")
+                                    ];
+                                } else { // nếu chưa tồn tại dir trên google driver
+                                    try {
+                                        $new_dir = createDirFullInfo($product_code, $item['dir_path']);
+                                        $data_product_code = [
+                                            'product_code' => $product_code,
+                                            'parent_path' => $new_dir['dirname'],
+                                            'base_path' => $new_dir['path'],
+                                            'base_name' => $new_dir['basename'],
+                                            'created_at' => date("Y-m-d H:i:s"),
+                                            'updated_at' => date("Y-m-d H:i:s")
+                                        ];
+                                    } catch (\Exception $e) {
+                                        logfile_system('-- Không thể tạo thư mục : '.$product_code.' trên driver vào thời điểm này');
+                                    }
+                                }
+                                // nếu tồn tại data để lưu vào db
+                                if(sizeof($data_product_code) > 0)
+                                {
+                                    $product_code_id = \DB::table('product_codes')->insertGetId($data_product_code);
+                                    $lst_product_code[$product_code]['product_code_id'] = $product_code_id;
+                                }
+                            } else { // nếu đã từng tồn tại product code trong database
+                                if(array_key_exists($product_code, $lst_product_code))
+                                {
+                                    $lst_product_code[$product_code]['product_code_id'] = $list_codes[$product_code];
+                                }
+                            }
+                        }
+
+                        // nếu tồn tại thông tin về thư mục trên google driver để lưu vào table product code
+                        if (sizeof($lst_product_code) > 0)
+                        {
+                            foreach ($lst_product_code as $item)
+                            {
+                                \DB::table('designs')->whereIn('id',$item['design'])
+                                    ->update(['product_code_id' => $item['product_code_id']]);
+                            }
+                            logfile_system('-- Chuẩn bị thành công product code id. Chuyển sang tạo mới thư mục SKU');
+                        }
+                    } else { // đã chuẩn bị xong product code id vào design. Kiểm tra xem đã tạo mới
+                        logfile_system('-- Tạo mới thư mục SKU');
+//                        print_r($list_working_files);
+                        $working_file_update = array();
+                        $working_file_error = array();
+                        foreach ($list_working_files as $product_code_id => $info)
+                        {
+                            $parent_path = $info['path'];
+                            foreach($info['info'] as $file)
+                            {
+                                $path = public_path($file['path'].$file['name']);
+                                if (\File::exists($path)) {
+                                    try {
+                                        $check_exist = checkFileExistFullInfo($file['name'], $parent_path);
+                                        if (!$check_exist)
+                                        {
+                                            $info = upFile_FullInfo($path, $parent_path);
+                                        } else {
+                                            $info = $check_exist;
+                                        }
+                                        $result = true;
+                                    } catch (\Exception $e) {
+                                        $result = false;
+                                        logfile_system(' -- Xảy ra lỗi nội bộ : '.$e->getMessage());
+                                    }
+                                    if ($result) {
+                                        // xóa file local đi cho đỡ nặng
+                                        $file_delete[] = $path;
+                                        // tao data working file google driver cap nhat vao database
+                                        $base_name = $info['basename'];
+                                        $base_path = $info['path'];
+                                        $base_dirname = $info['dirname'];
+                                        $working_file_update[$file['working_file_id']] = [
+                                            'base_name' => $base_name,
+                                            'base_path' => $base_path,
+                                            'base_dirname' => $base_dirname,
+                                            'status' => env('STATUS_WORKING_MOVE'),
+                                            'updated_at' => date("Y-m-d H:i:s")
+                                        ];
+                                    } else {
+                                        $working_file_error[] = $file['working_file_id'];
+                                    }
+                                }
+                            }
+                        }
+                        // bat dau kiem tra lai
+                        if (sizeof($file_delete) > 0)
+                        {
+                            \File::delete($file_delete);
+                        }
+                        if(sizeof($working_file_update) > 0)
+                        {
+                            foreach ($working_file_update as $working_file_id => $data_update)
+                            {
+                                \DB::table('working_files')->where('id',$working_file_id)->update($data_update);
+                            }
+                            logfile_system('-- Upload thành công '.sizeof($working_file_update).' files lên google driver');
+                        }
+                        if (sizeof($working_file_error) > 0)
+                        {
+                            logfile_system(' -- Xảy ra '.sizeof($working_file_error).' job bị lỗi. Không thể up lên google driver');
+                            $update = [
+                                'status' => env('STATUS_WORKING_ERROR'),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                            \DB::table('working_files')->whereIn('id',$working_file_error)->update($update);
+                        }
+                    }
+                } else {
+                    logfile_system('-- Đã hết job hoàn thành cần up lên google driver. Chuyển sang công việc tiếp theo');
+                    $return = true;
+                }
+            } else {
+                logfile_system('-- Không thể lấy được data path để gửi file lên. Kiểm tra lại');
+                $return = true;
             }
         } else {
             $return = true;
-            logfile_system('-- Đã hết file cần upload lên google driver. Chuyển sang việc tiếp theo');
+            logfile_system('-- Chưa tồn tại categories nào. Mời bạn tạo mới để fulfills');
+        }
+        return $return;
+    }
+
+    public function moveFileWorkingGoogle()
+    {
+        logfile_system("======= Move file design to Google Driver  =========================");
+        $return = false;
+        $categories = \DB::table('tool_categories')->select('id','name','base_name')
+            ->get()->toArray();
+        if (sizeof($categories) > 0)
+        {
+            $lst_categories = array();
+            $update_categories = array();
+            foreach ($categories as $category)
+            {
+                //neu chua ton tai folder tren google driver. Tao moi
+                if($category->base_name == '')
+                {
+                    $check_exist = getDirExist($category->name, '', env('GOOGLE_DRIVER_FOLDER_JOB'));
+                    if(!$check_exist){
+                        try {
+                            $new_dir = createDirFullInfo($category->name, env('GOOGLE_DRIVER_FOLDER_JOB'));
+                            $update_categories[$category->id] = [
+                                'parent_path' => $new_dir['dirname'],
+                                'base_path' => $new_dir['path'],
+                                'base_name' => $new_dir['basename'],
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                            $lst_categories[$category->id] = [
+                                'category_name' => $category->name,
+                                'category_basename' => $new_dir['path']
+                            ];
+                        } catch (\Exception $e) {
+                            logfile_system('-- Không thể tạo thư mục :'.$category->name.' trên driver vào thời điểm này');
+                        }
+                    } else {
+                        $update_categories[$category->id] = [
+                            'parent_path' => $check_exist['dirname'],
+                            'base_path' => $check_exist['path'],
+                            'base_name' => $check_exist['basename'],
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
+                        $lst_categories[$category->id] = [
+                            'category_name' => $category->name,
+                            'category_basename' => $check_exist['path']
+                        ];
+                    }
+                } else {
+                    $lst_categories[$category->id] = [
+                        'category_name' => $category->name,
+                        'category_basename' => $category->base_name
+                    ];
+                }
+            }
+            // cập nhật thông tin base path nếu có vào database
+            if (sizeof($update_categories) > 0)
+            {
+                foreach ($update_categories as $category_id => $update)
+                {
+                    \DB::table('tool_categories')->where('id',$category_id)->update($update);
+                }
+            }
+            // chuẩn bị category xong
+            if (sizeof($lst_categories) > 0)
+            {
+                // lấy danh sách file cần upload
+                $files = \DB::table('workings')
+                    ->leftjoin('working_files as wf', 'workings.id', '=', 'wf.working_id')
+                    ->leftjoin('designs', 'designs.id', '=', 'workings.design_id')
+                    ->leftjoin('product_codes as pdc', 'designs.product_code_id', '=', 'pdc.id')
+                    ->select(
+                        'workings.id as working_id',
+                        'wf.id as working_file_id', 'wf.name', 'wf.path','wf.base_name as working_base_name',
+                        'wf.base_dirname as working_base_dirname',
+                        'designs.id as design_id', 'designs.product_name', 'designs.tool_category_id',
+                        'pdc.id as product_code_id', 'pdc.base_name as product_code_base_name'
+                    )
+                    ->where([
+                        ['wf.status', '=', env('STATUS_WORKING_MOVE')]
+                    ])
+                    ->limit(env('GOOGLE_LIMIT_UPLOAD_FILE'))
+                    ->get()->toArray();
+                // predata product code id
+                if (sizeof($files) > 0)
+                {
+                    $lst_product_code = array();
+                    $product_codes = array();
+                    $update_designs = array();
+                    $list_working_files = array();
+                    foreach ($files as $file)
+                    {
+                        if($file->tool_category_id == '') {
+                            continue;
+                        }
+                        if($file->product_code_id == '')
+                        {
+                            $tmp = explode(' ', $file->product_name);
+                            $product_code = $tmp[sizeof($tmp) - 1];
+                            if (!array_key_exists($product_code, $product_codes))
+                            {
+                                $product_codes[$product_code] = [
+                                    'product_code' => $product_code,
+                                    'dir_path' => $lst_categories[$file->tool_category_id]['category_basename']
+                                ];
+                            }
+                            $lst_product_code[$product_code]['design'][$file->design_id] = $file->design_id;
+                        }
+                        if( $file->product_code_id != '')
+                        {
+                            $list_working_files[$file->product_code_id]['path'] = $file->product_code_base_name;
+                            $list_working_files[$file->product_code_id]['info'][] = json_decode(json_encode($file, true), true);
+                        }
+                    }
+                    // vẫn chưa chuẩn bị xong product code. cần chuẩn bị luôn
+                    if (sizeof($lst_product_code) > 0)
+                    {
+                        // lấy danh sách product code
+                        $list_codes = \DB::table('product_codes')->pluck('id','product_code')->toArray();
+                        foreach ($product_codes as $product_code => $item)
+                        {
+                            $data_product_code = array();
+                            // nếu chưa tồn tại product code. Tạo mới trên google driver. Lưu vào db
+                            if( !array_key_exists($product_code, $list_codes))
+                            {
+                                $check_exist = getDirExist($product_code, '', $item['dir_path']);
+                                // nếu tồn tại dir trên google driver rồi
+                                if ($check_exist)
+                                {
+                                    $data_product_code = [
+                                        'product_code' => $product_code,
+                                        'parent_path' => $check_exist['dirname'],
+                                        'base_path' => $check_exist['path'],
+                                        'base_name' => $check_exist['basename'],
+                                        'created_at' => date("Y-m-d H:i:s"),
+                                        'updated_at' => date("Y-m-d H:i:s")
+                                    ];
+                                } else { // nếu chưa tồn tại dir trên google driver
+                                    try {
+                                        $new_dir = createDirFullInfo($product_code, $item['dir_path']);
+                                        $data_product_code = [
+                                            'product_code' => $product_code,
+                                            'parent_path' => $new_dir['dirname'],
+                                            'base_path' => $new_dir['path'],
+                                            'base_name' => $new_dir['basename'],
+                                            'created_at' => date("Y-m-d H:i:s"),
+                                            'updated_at' => date("Y-m-d H:i:s")
+                                        ];
+                                    } catch (\Exception $e) {
+                                        logfile_system('-- Không thể tạo thư mục : '.$product_code.' trên driver vào thời điểm này');
+                                    }
+                                }
+                                // nếu tồn tại data để lưu vào db
+                                if(sizeof($data_product_code) > 0)
+                                {
+                                    $product_code_id = \DB::table('product_codes')->insertGetId($data_product_code);
+                                    $lst_product_code[$product_code]['product_code_id'] = $product_code_id;
+                                }
+                            } else { // nếu đã từng tồn tại product code trong database
+                                if(array_key_exists($product_code, $lst_product_code))
+                                {
+                                    $lst_product_code[$product_code]['product_code_id'] = $list_codes[$product_code];
+                                }
+                            }
+                        }
+
+                        // nếu tồn tại thông tin về thư mục trên google driver để lưu vào table product code
+                        if (sizeof($lst_product_code) > 0)
+                        {
+                            foreach ($lst_product_code as $item)
+                            {
+                                \DB::table('designs')->whereIn('id',$item['design'])
+                                    ->update(['product_code_id' => $item['product_code_id']]);
+                            }
+                            logfile_system('-- Chuẩn bị thành công product code id. Chuyển sang tạo mới thư mục SKU');
+                        }
+                    } else { // đã chuẩn bị xong product code id vào design. Kiểm tra xem đã tạo mới
+                        logfile_system('-- Tạo mới thư mục SKU');
+//                        print_r($list_working_files);
+                        $working_file_update = array();
+                        $working_file_error = array();
+                        foreach ($list_working_files as $product_code_id => $info)
+                        {
+                            $parent_path = $info['path'];
+                            foreach($info['info'] as $file)
+                            {
+                                $path = public_path($file['path'].$file['name']);
+                                if (checkFileExist($file['name'], $file['working_base_dirname'])) {
+                                    try {
+                                        $move = Storage::cloud()->move($file['working_base_name'], $parent_path . '/' . $file['name']);
+                                        if ($move)
+                                        {
+                                            $result = true;
+                                        } else {
+                                            $result = false;
+                                        }
+                                    } catch (\Exception $e) {
+                                        $result = false;
+                                        logfile_system(' -- Xảy ra lỗi nội bộ : '.$e->getMessage());
+                                    }
+                                    if ($result) {
+                                        // tao data working file google driver cap nhat vao database
+                                        $working_file_update[$file['working_file_id']] = [
+                                            'base_name' => $file['working_base_name'],
+                                            'base_path' => $parent_path . '/'.$file['working_base_name'],
+                                            'base_dirname' => $parent_path,
+                                            'status' => 33,
+                                            'updated_at' => date("Y-m-d H:i:s")
+                                        ];
+                                    } else {
+                                        $working_file_error[] = $file['working_file_id'];
+                                    }
+                                }
+                            }
+                        }
+                        if(sizeof($working_file_update) > 0)
+                        {
+                            foreach ($working_file_update as $working_file_id => $data_update)
+                            {
+                                \DB::table('working_files')->where('id',$working_file_id)->update($data_update);
+                            }
+                            logfile_system('-- Move thành công '.sizeof($working_file_update).' files lên google driver');
+                        }
+                        if (sizeof($working_file_error) > 0)
+                        {
+                            logfile_system(' -- Xảy ra '.sizeof($working_file_error).' job bị lỗi. Không thể up lên google driver');
+                            $update = [
+                                'status' => env('STATUS_WORKING_ERROR'),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                            \DB::table('working_files')->whereIn('id',$working_file_error)->update($update);
+                        }
+                    }
+                } else {
+                    logfile_system('-- Đã hết job hoàn thành cần move sang google driver thư mục. Chuyển sang công việc tiếp theo');
+                    $return = true;
+                }
+            } else {
+                logfile_system('-- Không thể lấy được data path để gửi file lên. Kiểm tra lại');
+                $return = true;
+            }
+        } else {
+            $return = true;
+            logfile_system('-- Chưa tồn tại categories nào. Mời bạn tạo mới để fulfills');
         }
         return $return;
     }
