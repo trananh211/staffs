@@ -1273,15 +1273,18 @@ class GoogleController extends Controller
 //                        print_r($list_working_files);
                         $working_file_update = array();
                         $working_file_error = array();
+
                         foreach ($list_working_files as $product_code_id => $info)
                         {
+                            logfile_system('-- Đang thực hiện move '.sizeof($info['info']).' file.');
                             $parent_path = $info['path'];
                             foreach($info['info'] as $file)
                             {
                                 $path = public_path($file['path'].$file['name']);
                                 if (checkFileExist($file['name'], $file['working_base_dirname'])) {
+                                    logfile_system('--- Đang move file : '.$file['name']);
                                     try {
-                                        $move = Storage::cloud()->move($file['working_base_name'], $parent_path . '/' . $file['name']);
+                                        $move = Storage::cloud()->move($file['working_base_dirname'].'/'.$file['working_base_name'], $parent_path . '/' . $file['name']);
                                         if ($move)
                                         {
                                             $result = true;
@@ -1294,15 +1297,25 @@ class GoogleController extends Controller
                                     }
                                     if ($result) {
                                         // tao data working file google driver cap nhat vao database
-                                        $working_file_update[$file['working_file_id']] = [
+//                                        $working_file_update[$file['working_file_id']] = [
+//                                            'base_name' => $file['working_base_name'],
+//                                            'base_path' => $parent_path . '/'.$file['working_base_name'],
+//                                            'base_dirname' => $parent_path,
+//                                            'status' => 33,
+//                                            'updated_at' => date("Y-m-d H:i:s")
+//                                        ];
+                                        $update = [
                                             'base_name' => $file['working_base_name'],
                                             'base_path' => $parent_path . '/'.$file['working_base_name'],
                                             'base_dirname' => $parent_path,
                                             'status' => 33,
                                             'updated_at' => date("Y-m-d H:i:s")
                                         ];
+                                        \DB::table('working_files')->where('id',$file['working_file_id'])->update($update);
+                                        logfile_system('--- Move thành công '.$file['name'].' lên google driver');
                                     } else {
                                         $working_file_error[] = $file['working_file_id'];
+                                        logfile_system('--- Move thất bại '.$file['name'].' lên google driver');
                                     }
                                 }
                             }
