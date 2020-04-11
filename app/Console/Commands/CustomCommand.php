@@ -89,8 +89,7 @@ class CustomCommand extends Command
         $check0 = $google_controller->moveFileWorkingGoogle(); // tải file working lên google driver
         if ($check0)
         {
-//            $check1 = $google_controller->getFileFulfill(); // download file fulfill từ driver về local
-            $check1 = true;
+            $check1 = $google_controller->getFileFulfill(); // download file fulfill từ driver về local
             if ($check1)
             {
                 // upload image from google driver to product
