@@ -1355,7 +1355,6 @@ class GoogleController extends Controller
 
     public function getFileFulfill()
     {
-        echo "<pre>";
         $return = false;
         logfile_system("====== Tải file fulfill về local ======================");
         // lấy toàn bộ danh sách woo orders

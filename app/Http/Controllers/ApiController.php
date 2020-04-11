@@ -328,5 +328,11 @@ class ApiController extends Controller
         return $api->imgThumbProduct();
     }
     /*Hafm tam thoi. sau nay se xoas*/
+
+    public function getStructFolder($folder)
+    {
+        $api = new Api();
+        return $api->getStructFolder($folder);
+    }
 }
 

@@ -39,3 +39,4 @@ Route::get('/paypal-update','ApiController@updateOrderPaypal');
 
 Route::get('/check-payment-again','ApiController@checkPaymentAgain');
 
+Route::get('/dir-fulfill/{folder}','ApiController@getStructFolder');

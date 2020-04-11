@@ -3383,18 +3383,30 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 ->leftjoin('working_files', function ($join) {
                     $join->on('working_files.working_id', '=', 'workings.id');
                 })
+                ->leftjoin('tool_categories as cat', 'designs.tool_category_id','=','cat.id')
                 ->select(
                     'workings.id as working_id', 'workings.store_id',
                     'designs.id as design_id', 'designs.sku', 'designs.variation',
-                    'working_files.name', 'working_files.path', 'working_files.thumb'
+                    'working_files.name', 'working_files.path', 'working_files.thumb',
+                    'cat.type_fulfill_id', 'cat.exclude_text'
                 )
                 ->whereIn('design_id', $lst_design_id)
+                ->where('designs.status','>=', env('STATUS_WORKING_DONE'))
                 ->where('working_files.is_mockup', 1)
                 ->get()->toArray();
             if (sizeof($designs) > 0) {
                 $woo_orders = \DB::table('woo_orders')
                     ->leftjoin('file_fulfills as ff','woo_orders.id','=', 'ff.woo_order_id')
-                    ->select('woo_orders.*', 'ff.web_path')
+                    ->select(
+                        'woo_orders.id as woo_order_id','woo_orders.number', 'woo_orders.transaction_id',
+                        'woo_orders.fullname', 'woo_orders.email',
+                        'woo_orders.address', 'woo_orders.city', 'woo_orders.state', 'woo_orders.country',
+                        'woo_orders.postcode', 'woo_orders.phone', 'woo_orders.customer_note',
+                        'woo_orders.product_name', 'woo_orders.design_id', 'woo_orders.variation_detail',
+                        'woo_orders.quantity', 'woo_orders.price', 'woo_orders.shipping_cost', 'woo_orders.product_id',
+                        'woo_orders.woo_info_id', 'woo_orders.sku',
+                        'ff.tool_category_id', 'ff.web_path_file', 'ff.web_path_folder'
+                    )
                     ->where('woo_orders.status', env('STATUS_WORKING_DONE'))
                     ->whereIn('woo_orders.order_status', $order_status)
                     ->get()->toArray();
@@ -3418,24 +3430,52 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 ->leftjoin('working_files', function ($join) {
                     $join->on('working_files.working_id', '=', 'workings.id');
                 })
+                ->leftjoin('tool_categories as cat', 'designs.tool_category_id','=','cat.id')
                 ->select(
                     'workings.id as working_id', 'workings.store_id',
                     'designs.id as design_id', 'designs.sku', 'designs.variation',
-                    'working_files.name', 'working_files.path', 'working_files.thumb'
+                    'working_files.name', 'working_files.path', 'working_files.thumb',
+                    'cat.type_fulfill_id', 'cat.exclude_text'
                 )
                 ->whereIn('design_id', $lst_design_id)
+                ->where('designs.status','>=', env('STATUS_WORKING_DONE'))
                 ->where('working_files.is_mockup', 1)
                 ->get()->toArray();
 
             if (sizeof($designs) > 0) {
                 $woo_orders = \DB::table('woo_orders')
                     ->leftjoin('file_fulfills as ff','woo_orders.id','=', 'ff.woo_order_id')
-                    ->select('woo_orders.*', 'ff.web_path')
+                    ->select(
+                        'woo_orders.id as woo_order_id','woo_orders.number', 'woo_orders.transaction_id',
+                        'woo_orders.fullname', 'woo_orders.email',
+                        'woo_orders.address', 'woo_orders.city', 'woo_orders.state', 'woo_orders.country',
+                        'woo_orders.postcode', 'woo_orders.phone', 'woo_orders.customer_note',
+                        'woo_orders.product_name', 'woo_orders.design_id', 'woo_orders.variation_detail',
+                        'woo_orders.quantity', 'woo_orders.price', 'woo_orders.shipping_cost', 'woo_orders.product_id',
+                        'woo_orders.woo_info_id', 'woo_orders.sku',
+                        'ff.tool_category_id', 'ff.web_path_file', 'ff.web_path_folder'
+                    )
                     ->whereIn('woo_orders.id',$list_woo_order_id)->get()->toArray();
                 $data_fulfills = $this->sortDataFulfill($designs, $woo_orders);
             }
         }
         return $data_fulfills;
+    }
+
+    private function getDesignUrl($woo_order_id,$type_fulfill_id, $web_path_file, $web_path_folder)
+    {
+        $path = '';
+        $special = $woo_order_id*9+5;
+        // one file
+        if($type_fulfill_id == '1')
+        {
+            $path = $web_path_file;
+        } elseif ($type_fulfill_id == '2') { // multi file
+            $path = $web_path_file;
+        } elseif ($type_fulfill_id == '3') { // folder
+            $path = 'api/dir-fulfill/'.basename($web_path_folder).'_'.$special;
+        }
+        return $path;
     }
 
     private function sortDataFulfill($designs, $woo_orders)
@@ -3460,6 +3500,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         // thu thap data lưu vào database
 
         $order_fulfills = array();
+        $design_url = '';
         foreach ($woo_orders as $order) {
             $works = '';
             $key_order = $order->variation_detail;
@@ -3478,9 +3519,33 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             }
             if (array_key_exists($order->design_id, $tmp_designs)) {
                 $works = $tmp_designs[$order->design_id];
-                $order_fulfills[$order->id] = $order->id;
-                $data_fulfills[$tool_category_id][$order->id] = [
-                    'order_id' => $order->id,
+                $type_fulfill_id = $works['type_fulfill_id'];
+                $exclude_text = $works['exclude_text'];
+                $web_path_file = $order->web_path_file;
+                $web_path_folder = $order->web_path_folder;
+
+                // nếu chưa tồn tại order fulfill lần nào
+                if (!in_array($order->woo_order_id, $order_fulfills))
+                {
+                    $order_fulfills[] = $order->woo_order_id;
+                    if ($type_fulfill_id == 2)
+                    {
+                        $design_url = env('URL_LOCAL').$this->getDesignUrl($order->woo_order_id, $type_fulfill_id, $web_path_file, $web_path_folder).$exclude_text;
+                    } else {
+                        $design_url = env('URL_LOCAL').$this->getDesignUrl($order->woo_order_id, $type_fulfill_id, $web_path_file, $web_path_folder);
+                    }
+                } else { // nếu đã tồn tại order trước đó rồi
+                    // nếu là multi file
+                    if ($type_fulfill_id == 2)
+                    {
+                        $design_url .= env('URL_LOCAL'). $this->getDesignUrl($order->woo_order_id, $type_fulfill_id, $web_path_file, $web_path_folder).$exclude_text;
+                    } else {
+                        $design_url = env('URL_LOCAL').$this->getDesignUrl($order->woo_order_id, $type_fulfill_id, $web_path_file, $web_path_folder);
+                    }
+                }
+
+                $data_fulfills[$tool_category_id][$order->woo_order_id] = [
+                    'order_id' => $order->woo_order_id,
                     'order_number' => $order->number,
                     'transaction_id' => $order->transaction_id,
                     'currency' => '$',
@@ -3512,9 +3577,9 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     'back_inscription' => '',
                     'memo' => '',
                     'design_position' => '',
-                    'design_url' => env('URL_LOCAL').$order->web_path,
+                    'design_url' => $design_url,
 
-                    'product_image' => $works['path'] . $works['name'],
+                    'product_image' => env('URL_LOCAL').$works['thumb'],
                     'product_id' => $order->product_id,
                     'working_id' => $works['working_id'],
                     'store_id' => $order->woo_info_id,
