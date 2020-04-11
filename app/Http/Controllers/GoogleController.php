@@ -1355,17 +1355,20 @@ class GoogleController extends Controller
 
     public function getFileFulfill()
     {
+        echo "<pre>";
         $return = false;
         logfile_system("====== Tải file fulfill về local ======================");
         // lấy toàn bộ danh sách woo orders
         $file_fufills = \DB::table('woo_orders')
-            ->join('designs', 'woo_orders.design_id', '=', 'designs.id')
-            ->join('workings', 'workings.design_id', '=', 'designs.id')
-            ->join('working_files as wf', 'workings.id', '=', 'wf.working_id')
+            ->leftjoin('designs', 'woo_orders.design_id', '=', 'designs.id')
+            ->leftjoin('workings', 'workings.design_id', '=', 'designs.id')
+            ->leftjoin('working_files as wf', 'workings.id', '=', 'wf.working_id')
+            ->leftjoin('tool_categories as category','category.id', '=', 'designs.tool_category_id')
             ->select(
                 'woo_orders.id','woo_orders.number', 'woo_orders.sku',
                 'wf.id as working_file_id', 'wf.is_mockup',
-                'wf.name', 'wf.path', 'wf.base_name', 'wf.base_path', 'wf.base_dirname'
+                'wf.name', 'wf.path', 'wf.base_name', 'wf.base_path', 'wf.base_dirname',
+                'category.type_fulfill_id', 'category.exclude_text', 'category.id as tool_category_id'
             )
             ->where('woo_orders.status', env('STATUS_WORKING_NEW'))
             ->where('wf.is_mockup',0)
@@ -1373,7 +1376,6 @@ class GoogleController extends Controller
         if (sizeof($file_fufills) > 0)
         {
             $dt_insert_file_fulfill = array();
-            print_r($file_fufills);
             $name_dirfulfill = 'file_fulfill';
             $dir_fulfill = public_path($name_dirfulfill);
             // tạo thư mục fulfill
@@ -1386,33 +1388,74 @@ class GoogleController extends Controller
             foreach ($file_fufills as $file)
             {
                 $extension = pathinfo($file->name)['extension'];
-                $new_name = $file->number.'.'.$extension;
-                $check_exist_before = checkFileExist($file->name, $file->base_dirname);
-                if ($check_exist_before) {
-                    $rawData = \Storage::cloud()->get($file->base_path);
-                    $result = \Storage::disk('public_local')->put($name_dirfulfill.'/'.$new_name, $rawData);
-                    if ($result)
+                $new_name = $file->number.'_'.$file->working_file_id.'.'.$extension;
+                $destinationPath = $dir_fulfill.'/'.$file->number.'/'.$new_name;
+                $name_destinationPath = $name_dirfulfill.'/'.$file->number.'/'.$new_name;
+                // nếu chưa up lên google driver
+                if ($file->base_name == '')
+                {
+                    $path = public_path($file->path.$file->name);
+                    if(\File::exists($path))
                     {
-                        $path = $dir_fulfill.'/'.$new_name;
-                        $data_file_fulfill[] = [
-                            'order_number' => $file->number,
-                            'woo_order_id' => $file->id,
-                            'working_file_id' => $file->working_file_id,
-                            'path' => $path,
-                            'web_path' => $name_dirfulfill.'/'.$new_name,
-                            'created_at' => date("Y-m-d H:i:s"),
-                            'updated_at' => date("Y-m-d H:i:s")
-                        ];
-                        $woo_order_update[] = $file->id;
+                        logfile_system('-- Tồn tại file : '.$file->name.' trên local');
+                        if (!\File::exists(dirname($destinationPath))) {
+                            \File::makeDirectory(dirname($destinationPath), $mode = 0777, true, true);
+                        }
+                        $result = \File::copy($path,$destinationPath);
+                        if ($result)
+                        {
+                            $data_file_fulfill[] = [
+                                'order_number' => $file->number,
+                                'woo_order_id' => $file->id,
+                                'working_file_id' => $file->working_file_id,
+                                'tool_category_id' => $file->tool_category_id,
+                                'path' => $destinationPath,
+                                'web_path_file' => $name_destinationPath,
+                                'web_path_folder' => dirname($name_destinationPath),
+                                'created_at' => date("Y-m-d H:i:s"),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                            $woo_order_update[] = $file->id;
+                        } else {
+                            logfile_system('--- Không thể tải job '.$new_name.' về local. Thử lại lần sau');
+                        }
                     } else {
-                        logfile_system('--- Không thể tải job '.$new_name.' về local. Thử lại lần sau');
+                        logfile_system('-- Không tồn tại file : '.$file->name.' trên local');
+                        $working_file_error[] = $file->working_file_id;
                     }
-                } else {
-                    logfile_system('-- Không tồn tại file : '.$file->name.' trên google driver');
-                    $working_file_error[] = $file->working_file_id;
+                } else { // nếu đã up lên google driver rồi
+                    $check_exist_before = checkFileExist($file->name, $file->base_dirname);
+                    if ($check_exist_before) {
+                        if (!\File::exists(dirname($destinationPath))) {
+                            \File::makeDirectory(dirname($destinationPath), $mode = 0777, true, true);
+                        }
+
+                        $rawData = \Storage::cloud()->get($file->base_path);
+                        $result = \Storage::disk('public_local')->put($name_destinationPath, $rawData);
+                        if ($result)
+                        {
+                            $path = $dir_fulfill.'/'.$new_name;
+                            $data_file_fulfill[] = [
+                                'order_number' => $file->number,
+                                'woo_order_id' => $file->id,
+                                'working_file_id' => $file->working_file_id,
+                                'tool_category_id' => $file->tool_category_id,
+                                'path' => $destinationPath,
+                                'web_path_file' => $name_destinationPath,
+                                'web_path_folder' => dirname($name_destinationPath),
+                                'created_at' => date("Y-m-d H:i:s"),
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                            $woo_order_update[] = $file->id;
+                        } else {
+                            logfile_system('--- Không thể tải job '.$new_name.' về local. Thử lại lần sau');
+                        }
+                    } else {
+                        logfile_system('-- Không tồn tại file : '.$file->name.' trên google driver');
+                        $working_file_error[] = $file->working_file_id;
+                    }
                 }
             }
-
             //nếu tải về được hết
             if (sizeof($data_file_fulfill) > 0)
             {

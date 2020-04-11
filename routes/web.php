@@ -90,6 +90,7 @@ Route::middleware('auth')->group(function () {
     Route::get('fulfill-get-file/{id}','WooController@fulfilGetFile');
     Route::get('fulfill-rescan-file/{id}','WooController@fulfillRescanFile');
     Route::post('search-work-job','WooController@searchWorkJob');
+    Route::post('edit-category-fulfill','WooController@editCategoryFulfill');
 
     /** Paypal */
     Route::get('paypal-connect','PaypalController@index');

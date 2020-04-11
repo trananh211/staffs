@@ -191,6 +191,12 @@ class WooController extends Controller
         return $work->searchWorkJob($request);
     }
 
+    public function editCategoryFulfill(Request $request)
+    {
+        $work = new Working();
+        return $work->editCategoryFulfill($request);
+    }
+
     public function jobCancel()
     {
         $work = new Working();

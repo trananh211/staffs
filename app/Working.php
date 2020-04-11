@@ -1335,6 +1335,28 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         }
     }
 
+    public function editCategoryFulfill($request)
+    {
+        $rq = $request->all();
+        \DB::beginTransaction();
+        try {
+            $status = 'success';
+            $update = [
+                'type_fulfill_id' => $rq['type_fulfill_id'],
+                'exclude_text' => (trim($rq['exclude_text']) !== '')? trim($rq['exclude_text']): NULL,
+                'updated_at' => date("Y-m-d H:i:s")
+            ];
+            \DB::table('tool_categories')->where('id',$rq['tool_category_id'])->update($update);
+            $message = 'Cập nhật thông tin cho category này thành công. Mời bạn làm job tiếp theo.';
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $status = 'error';
+            $message = 'Cập nhật thông tin cho category này thất bại.';
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return \Redirect::back()->with($status, $message);
+    }
+
     public function keepWorkingJob($working_id)
     {
         \DB::beginTransaction();
@@ -2918,8 +2940,9 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     public function listTemplateCategory()
     {
         $data = infoShop();
-        $categories = \DB::table('tool_categories')->select('id','name')->get()->toArray();
-        return view('admin/list_tool_category',compact('data','categories'));
+        $categories = \DB::table('tool_categories')->select('id', 'name', 'type_fulfill_id', 'exclude_text')->get()->toArray();
+        $list_type = typeFulfill();
+        return view('admin/list_tool_category',compact('data','categories','list_type'));
     }
 
     public function makeTemplateCategory($tool_category_id)
