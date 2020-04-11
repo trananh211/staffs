@@ -2063,4 +2063,32 @@ class Api extends Model
     }
 
 
+    public function getStructFolder($folder)
+    {
+        if(strlen($folder) > 0 && (strpos($folder, '_') !== false))
+        {
+            $tmp = explode('_', trim($folder));
+            if(sizeof($tmp) == 2)
+            {
+                $number_order = $tmp[0];
+                $woo_order_id = (int)($tmp[1]-5)/9;
+                $check = \DB::table('file_fulfills')
+                    ->leftjoin('working_files','file_fulfills.working_file_id', '=', 'working_files.id')
+                    ->select('file_fulfills.web_path_file','working_files.thumb')
+                    ->where('file_fulfills.order_number', $number_order)
+                    ->where('file_fulfills.woo_order_id', $woo_order_id)
+                    ->get()->toArray();
+                if (sizeof($check) > 0)
+                {
+                    return view('/addon/show_file_fulfill',compact('check', 'number_order'));
+                } else {
+                    die("Error. Not Right.");
+                }
+            } else {
+                die("Error. Not Right.");
+            }
+        } else {
+            die("Error. Not Right.");
+        }
+    }
 }

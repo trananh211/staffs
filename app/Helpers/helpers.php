@@ -14,7 +14,7 @@ function logfile_system($str)
 {
     $datetime = Carbon::now('Asia/Ho_Chi_Minh');
     $log_str = $datetime . '==> ' . $str;
-    \Log::channel('hasu')->info($log_str);
+//    \Log::channel('hasu')->info($log_str);
     echo $log_str."\n";
 }
 
@@ -108,6 +108,16 @@ function getListTitle()
         'Customer' => $customer,
         'Order' => $order,
         'Others' => $others
+    ];
+    return $lists;
+}
+
+function typeFulfill()
+{
+    $lists = [
+        '1' => 'One File',
+        '2' => 'Multi File',
+        '3' => 'Folder'
     ];
     return $lists;
 }
