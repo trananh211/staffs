@@ -33,7 +33,7 @@ class CustomCommand extends Command
         parent::__construct();
     }
 
-    protected $array_minute = [59, 19, 6, 4, 1];
+    protected $array_minute = [59, 19, 4, 1];
     /**
      * Execute the console command.
      *
@@ -85,8 +85,7 @@ class CustomCommand extends Command
     {
         $api_controller = new ApiController(); // make sure to import the controller
         $google_controller = new GoogleController(); // make sure to import the controller
-//        $check0 = $google_controller->uploadFileWorkingGoogle(); // tải file working lên google driver
-        $check0 = $google_controller->moveFileWorkingGoogle(); // tải file working lên google driver
+        $check0 = $google_controller->uploadFileWorkingGoogle(); // tải file working lên google driver
         if ($check0)
         {
             $check1 = $google_controller->getFileFulfill(); // download file fulfill từ driver về local
