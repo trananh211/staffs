@@ -33,7 +33,7 @@ class CustomCommand extends Command
         parent::__construct();
     }
 
-    protected $array_minute = [59, 19, 4, 1];
+    protected $array_minute = [59, 4, 1];
     /**
      * Execute the console command.
      *
