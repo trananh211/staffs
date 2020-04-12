@@ -85,8 +85,8 @@ class CustomCommand extends Command
     {
         $api_controller = new ApiController(); // make sure to import the controller
         $google_controller = new GoogleController(); // make sure to import the controller
-//        $check0 = $google_controller->uploadFileWorkingGoogle(); // tải file working lên google driver
-        $check0 = true;
+        $check0 = $google_controller->uploadFileWorkingGoogle(); // tải file working lên google driver
+//        $check0 = true;
         if ($check0)
         {
             $check1 = $google_controller->getFileFulfill(); // download file fulfill từ driver về local
