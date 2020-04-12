@@ -1018,6 +1018,7 @@ class GoogleController extends Controller
 //                        print_r($list_working_files);
                         $working_file_update = array();
                         $working_file_error = array();
+                        $file_delete = array();
                         foreach ($list_working_files as $product_code_id => $info)
                         {
                             $parent_path = $info['path'];
