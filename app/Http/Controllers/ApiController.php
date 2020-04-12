@@ -327,6 +327,12 @@ class ApiController extends Controller
         $api = new Api();
         return $api->imgThumbProduct();
     }
+
+    public function fixedSkuWrong()
+    {
+        $api = new Api();
+        return $api->fixedSkuWrong();
+    }
     /*Hafm tam thoi. sau nay se xoas*/
 
     public function getStructFolder($folder)
