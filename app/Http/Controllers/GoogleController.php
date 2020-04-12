@@ -1045,15 +1045,26 @@ class GoogleController extends Controller
                                         $base_name = $info['basename'];
                                         $base_path = $info['path'];
                                         $base_dirname = $info['dirname'];
-                                        $working_file_update[$file['working_file_id']] = [
+//                                        $working_file_update[$file['working_file_id']] = [
+//                                            'base_name' => $base_name,
+//                                            'base_path' => $base_path,
+//                                            'base_dirname' => $base_dirname,
+//                                            'status' => env('STATUS_WORKING_MOVE'),
+//                                            'updated_at' => date("Y-m-d H:i:s")
+//                                        ];
+
+                                        $update[] = [
                                             'base_name' => $base_name,
                                             'base_path' => $base_path,
                                             'base_dirname' => $base_dirname,
                                             'status' => env('STATUS_WORKING_MOVE'),
                                             'updated_at' => date("Y-m-d H:i:s")
                                         ];
+                                        \DB::table('working_files')->where('id',$file['working_file_id'])->update($update);
+                                        logfile_system('--- Upload thành công '.$file['name'].' lên google driver');
                                     } else {
                                         $working_file_error[] = $file['working_file_id'];
+                                        logfile_system('--- Upload thất bại '.$file['name'].' lên google driver');
                                     }
                                 }
                             }
