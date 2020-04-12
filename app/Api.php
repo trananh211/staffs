@@ -2041,6 +2041,54 @@ class Api extends Model
         return $return;
     }
 
+    public function fixedSkuWrong()
+    {
+        echo "<pre>";
+        $lists = \DB::table('woo_orders')
+            ->select('id','woo_info_id as store_id','product_id','product_name','sku','variation_detail','detail')
+            ->get()->toArray();
+        $list_wrongs = array();
+        foreach ($lists as $item)
+        {
+            if (strpos($item->detail, '_add_') !== false)
+            {
+                $tmp = explode('-;-;-', $item->detail);
+                foreach ($tmp as $value)
+                {
+                    if (strpos($value, '_add_') !== false)
+                    {
+                        $name = trim(explode(':', $value)[1]);
+                    }
+                }
+            } else {
+                $name = null;
+            }
+            $sku = $this->getSku('', $item->product_id, $item->product_name, $name);
+            if ($sku !== $item->sku)
+            {
+                $list_wrongs[] = [
+                    'id' => $item->id,
+                    'store_id' => $item->store_id,
+                    'product_id' => $item->product_id,
+                    'product_name' => $item->product_name,
+                    'old_sku' => $item->sku,
+                    'sku' => $sku,
+                    'variation_detail' => $item->variation_detail,
+                    'detail' => $item->detail
+                ];
+                $resutl = \DB::table('woo_orders')->where('id',$item->id)->update([
+                    'sku' => $sku,
+                    'design_id' => null
+                ]);
+            }
+        }
+
+        if (sizeof($list_wrongs) > 0)
+        {
+            /*get designs SKU*/
+            $this->getDesignNew();
+        }
+    }
     /* End ham tam thoi sau nay se xoa*/
 
     /*End WooCommerce API*/

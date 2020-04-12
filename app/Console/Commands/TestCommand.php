@@ -49,11 +49,12 @@ class TestCommand extends Command
 //        $api_controller->checkTemplateScrap();
         $google_controller = new GoogleController();
 //        $this->checkTemplateScrap();
-        $check0 = $google_controller->uploadFileWorkingGoogle();
+//        $check0 = $google_controller->uploadFileWorkingGoogle();
 //        if($check0)
 //        {
 //            $check2= $google_controller->getFileFulfill();
 //        }
+        $check = $api_controller->fixedSkuWrong();
 //        $check = $api_controller->getAllOrderOld();
 //        $check = $api_controller->changeNameProduct();
 //        $check = $api_controller->changeSkuWooOrder();
