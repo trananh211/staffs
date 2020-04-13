@@ -1294,6 +1294,9 @@ class GoogleController extends Controller
                             {
                                 $path = public_path($file['path'].$file['name']);
                                 if (\File::exists($path)) {
+                                    \DB::table('working_files')->where('id',$file['working_file_id'])
+                                        ->update(['status' => 18]);
+                                    logfile_system('--- Đang upload file: '.$file['name'].' lên google driver');
                                     try {
                                         $check_exist = checkFileExistFullInfo($file['name'], $parent_path);
                                         if (!$check_exist)
