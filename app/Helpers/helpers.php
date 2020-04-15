@@ -660,6 +660,21 @@ function checkFileExist($filename, $parent_path)
     return $return;
 }
 
+function checkFileExistByBaseName($basename, $parent_path)
+{
+    $return = false;
+    $path = trim($basename);
+    $recursive = false; // Get subdirectories also?
+    $check_before = collect(Storage::cloud()->listContents($parent_path, $recursive))
+        ->where('type', '=', 'file')
+        ->where('path', '=', $path)
+        ->first();
+    if ($check_before) {
+        $return = true;
+    }
+    return $return;
+}
+
 function checkFileExistFullInfo($filename, $parent_path)
 {
     $return = false;

@@ -1640,6 +1640,7 @@ class GoogleController extends Controller
 
     public function getFileFulfill()
     {
+        echo "<pre>";
         $return = false;
         logfile_system("====== Tải file fulfill về local ======================");
         // lấy toàn bộ danh sách woo orders
@@ -1655,10 +1656,13 @@ class GoogleController extends Controller
                 'category.type_fulfill_id', 'category.exclude_text', 'category.id as tool_category_id'
             )
             ->where('woo_orders.status', env('STATUS_WORKING_NEW'))
+            ->whereIn('woo_orders.order_status', order_status())
             ->where('wf.is_mockup',0)
+            ->limit(env('GOOGLE_LIMIT_UPLOAD_FILE'))
             ->get()->toArray();
         if (sizeof($file_fufills) > 0)
         {
+            logfile_system('-- Bắt đầu tải '.sizeof($file_fufills).' file về local để fulfill');
             $dt_insert_file_fulfill = array();
             $name_dirfulfill = 'file_fulfill';
             $dir_fulfill = public_path($name_dirfulfill);
@@ -1671,10 +1675,12 @@ class GoogleController extends Controller
             $woo_order_update = array();
             foreach ($file_fufills as $file)
             {
+                print_r($file);
                 $extension = pathinfo($file->name)['extension'];
                 $new_name = $file->number.'_'.$file->working_file_id.'.'.$extension;
                 $destinationPath = $dir_fulfill.'/'.$file->number.'/'.$new_name;
                 $name_destinationPath = $name_dirfulfill.'/'.$file->number.'/'.$new_name;
+                logfile_system('-- Đang tải file: '.$new_name.' về local');
                 // nếu chưa up lên google driver
                 if ($file->base_name == '')
                 {
@@ -1708,14 +1714,18 @@ class GoogleController extends Controller
                         $working_file_error[] = $file->working_file_id;
                     }
                 } else { // nếu đã up lên google driver rồi
-                    $check_exist_before = checkFileExist($file->name, $file->base_dirname);
+//                    $check_exist_before = checkFileExistByBaseName($file->name, $file->base_dirname);
+                    $check_exist_before = true;
                     if ($check_exist_before) {
                         if (!\File::exists(dirname($destinationPath))) {
                             \File::makeDirectory(dirname($destinationPath), $mode = 0777, true, true);
                         }
-
-                        $rawData = \Storage::cloud()->get($file->base_path);
-                        $result = \Storage::disk('public_local')->put($name_destinationPath, $rawData);
+                        try {
+                            $rawData = \Storage::cloud()->get($file->base_path);
+                            $result = \Storage::disk('public_local')->put($name_destinationPath, $rawData);
+                        } catch (\Exception $e) {
+                            $result = false;
+                        }
                         if ($result)
                         {
                             $path = $dir_fulfill.'/'.$new_name;
