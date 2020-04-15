@@ -1659,6 +1659,7 @@ class GoogleController extends Controller
             ->whereIn('woo_orders.order_status', order_status())
             ->where('wf.is_mockup',0)
             ->limit(env('GOOGLE_LIMIT_UPLOAD_FILE'))
+            ->orderBy('woo_orders.id')
             ->get()->toArray();
         if (sizeof($file_fufills) > 0)
         {
