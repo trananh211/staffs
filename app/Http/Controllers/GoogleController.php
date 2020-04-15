@@ -1680,14 +1680,14 @@ class GoogleController extends Controller
                 $new_name = $file->number.'_'.$file->working_file_id.'.'.$extension;
                 $destinationPath = $dir_fulfill.'/'.$file->number.'/'.$new_name;
                 $name_destinationPath = $name_dirfulfill.'/'.$file->number.'/'.$new_name;
-                logfile_system('-- Đang tải file: '.$new_name.' về local');
+                logfile_system('--- Đang tải file: '.$new_name.' về local');
                 // nếu chưa up lên google driver
                 if ($file->base_name == '')
                 {
                     $path = public_path($file->path.$file->name);
                     if(\File::exists($path))
                     {
-                        logfile_system('-- Tồn tại file : '.$file->name.' trên local');
+                        logfile_system('--- Tồn tại file : '.$file->name.' trên local');
                         if (!\File::exists(dirname($destinationPath))) {
                             \File::makeDirectory(dirname($destinationPath), $mode = 0777, true, true);
                         }
@@ -1710,7 +1710,7 @@ class GoogleController extends Controller
                             logfile_system('--- Không thể tải job '.$new_name.' về local. Thử lại lần sau');
                         }
                     } else {
-                        logfile_system('-- Không tồn tại file : '.$file->name.' trên local');
+                        logfile_system('--- Không tồn tại file : '.$file->name.' trên local');
                         $working_file_error[] = $file->working_file_id;
                     }
                 } else { // nếu đã up lên google driver rồi
@@ -1745,7 +1745,7 @@ class GoogleController extends Controller
                             logfile_system('--- Không thể tải job '.$new_name.' về local. Thử lại lần sau');
                         }
                     } else {
-                        logfile_system('-- Không tồn tại file : '.$file->name.' trên google driver');
+                        logfile_system('--- Không tồn tại file : '.$file->name.' trên google driver');
                         $working_file_error[] = $file->working_file_id;
                     }
                 }
