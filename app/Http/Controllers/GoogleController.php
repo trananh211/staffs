@@ -1706,6 +1706,7 @@ class GoogleController extends Controller
                                 'updated_at' => date("Y-m-d H:i:s")
                             ];
                             $woo_order_update[] = $file->id;
+                            logfile_system('--- Tải thành công job '.$new_name.' về local.');
                         } else {
                             logfile_system('--- Không thể tải job '.$new_name.' về local. Thử lại lần sau');
                         }
