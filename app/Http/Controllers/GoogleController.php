@@ -1672,11 +1672,11 @@ class GoogleController extends Controller
                 File::makeDirectory($dir_fulfill, $mode = 0777, true, true);
             }
             $working_file_error = array();
+            $woo_order_error = array();
             $data_file_fulfill = array();
             $woo_order_update = array();
             foreach ($file_fufills as $file)
             {
-                print_r($file);
                 $extension = pathinfo($file->name)['extension'];
                 $new_name = $file->number.'_'.$file->working_file_id.'.'.$extension;
                 $destinationPath = $dir_fulfill.'/'.$file->number.'/'.$new_name;
@@ -1714,6 +1714,7 @@ class GoogleController extends Controller
                     } else {
                         logfile_system('--- Không tồn tại file : '.$file->name.' trên local');
                         $working_file_error[] = $file->working_file_id;
+                        $woo_order_error[] = $file->id;
                     }
                 } else { // nếu đã up lên google driver rồi
 //                    $check_exist_before = checkFileExistByBaseName($file->name, $file->base_dirname);
@@ -1750,6 +1751,7 @@ class GoogleController extends Controller
                     } else {
                         logfile_system('--- Không tồn tại file : '.$file->name.' trên google driver');
                         $working_file_error[] = $file->working_file_id;
+                        $woo_order_error[] = $file->id;
                     }
                 }
             }
@@ -1771,6 +1773,7 @@ class GoogleController extends Controller
                     'updated_at' => date("Y-m-d H:i:s")
                 ];
                 \DB::table('working_files')->whereIn('id', $working_file_error)->update($update);
+                \DB::table('woo_orders')->whereIn('id', $woo_order_error)->update($update);
             }
         } else {
             logfile_system('-- Đã hết file để tải về local. Chuyển sang công việc khác.');
