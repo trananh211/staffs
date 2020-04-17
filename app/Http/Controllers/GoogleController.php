@@ -1658,6 +1658,7 @@ class GoogleController extends Controller
             ->where('woo_orders.status', env('STATUS_WORKING_NEW'))
             ->whereIn('woo_orders.order_status', order_status())
             ->where('wf.is_mockup',0)
+            ->where('designs.status', env('STATUS_WORKING_DONE'))
             ->limit(env('GOOGLE_LIMIT_DOWNLOAD_FILE'))
             ->orderBy('woo_orders.id')
             ->get()->toArray();

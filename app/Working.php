@@ -1627,6 +1627,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 ->whereIn('design_id',$lst_design_id)
                 ->where($where_order)
                 ->get()->toArray();
+            $lst_designs = array();
             if (sizeof($lst_orders) > 0)
             {
                 $lst_designs = array();
