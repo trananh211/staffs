@@ -280,7 +280,7 @@
         @else
             <tr>
                 <td colspan="8" class="center">
-                    Đã hết phản hồi khách hàng. Liên hệ với quản lý để làm công việc tiếp theo.
+                    Không tìm thấy Job mà bạn tìm kiếm. Mời bạn thử lại với từ khóa khác.
                 </td>
             </tr>
         @endif

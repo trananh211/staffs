@@ -1329,9 +1329,10 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             return view('/admin/search_working_job',
                 compact('lists', 'images', 'data', 'workers', 'variations', 'all_variations'));
         } else {
+            $data = infoShop();
             $status = 'error';
             $message = 'Không tìm thấy SKU bạn đang tìm kiếm';
-            return view('/admin/search_working_job',compact('lists'))->with($status, $message);
+            return view('/admin/search_working_job',compact('lists','data'))->with($status, $message);
         }
     }
 
