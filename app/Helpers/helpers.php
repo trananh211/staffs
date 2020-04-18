@@ -752,10 +752,11 @@ function getNewWorking()
 function getNewOrder()
 {
     $where = [
-        ['status', '=', env('STATUS_WORKING_NEW')]
+        ['status', '=', env('STATUS_WORKING_NEW')],
     ];
     return \DB::table('woo_orders')
         ->where($where)
+        ->whereIn('order_status', order_status())
         ->count();
 }
 
