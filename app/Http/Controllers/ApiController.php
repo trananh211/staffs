@@ -68,7 +68,7 @@ class ApiController extends Controller
     {
         /*Get Header Request*/
         $header = getallheaders();
-        logfile('[New Order] Phát hiện thấy order mới');
+        logfile('[Update Order] Phát hiện thấy order có cập nhật');
         if (is_array($header))
         {
             $woo_id = false;
@@ -81,7 +81,7 @@ class ApiController extends Controller
                     $url = $value;
                     if (array_key_exists($url, $woo_infos))
                     {
-                        logfile('[New Order] from '.$url);
+                        logfile('[Update Order] from '.$url);
                         $woo_id = $woo_infos[$url];
                         break;
                     }
