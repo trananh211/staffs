@@ -346,7 +346,10 @@ class Working extends Model
     private static function orderStaff($where)
     {
         $lists = \DB::table('workings')
-            ->leftjoin('woo_products', 'workings.product_id', '=', 'woo_products.product_id')
+            ->leftjoin('woo_products', function ($join) {
+                $join->on('workings.product_id', '=', 'woo_products.product_id')
+                    ->on('workings.store_id', '=', 'woo_products.woo_info_id');
+            })
             ->leftjoin('designs', 'workings.design_id', '=', 'designs.id')
             ->leftjoin('woo_orders', function ($join) {
                 $join->on('workings.design_id', '=', 'woo_orders.design_id')
