@@ -46,20 +46,20 @@ class TestCommand extends Command
 //        $controller->autoUploadImage();
 
         $api_controller = new ApiController();
-//        $api_controller->checkTemplateScrap();
         $google_controller = new GoogleController();
 //        $this->checkTemplateScrap();
 //        $check0 = $google_controller->uploadFileWorkingGoogle();
 //        if($check0)
 //        {
-            $check2= $google_controller->getFileFulfill();
-            var_dump($check2);
+//            $check2= $google_controller->getFileFulfill();
+//            var_dump($check2);
 //        }
 //        $check = $api_controller->fixedSkuWrong();
 //        $check = $api_controller->getAllOrderOld();
 //        $check = $api_controller->changeNameProduct();
 //        $check = $api_controller->changeSkuWooOrder();
 //        $check = $api_controller->imgThumbProduct();
+        $check = $api_controller->checkPaymentAgain();
     }
 
     private function checkTemplateScrap()
