@@ -483,7 +483,7 @@ class Api extends Model
                     'consumer_secret' => $item->consumer_secret
                 ];
                 $list_stores[$item->woo_info_id]['list_order'][$item->order_id] = [
-                    'order_id' => $item->order_id,
+                    'order_id' => $item->id,
                     'woo_order_id' => $item->order_id,
                     'order_status' => $item->order_status,
                     'number' => $item->number
@@ -527,7 +527,10 @@ class Api extends Model
                             'transaction_id' => $data['transaction_id'],
                             'updated_at' => date("Y-m-d H:i:s")
                         ];
-                        $order_update[$order_id] = $update;
+                        \DB::table('woo_orders')
+                            ->where('order_id',$woo_order_id)
+                            ->where('woo_info_id', $store_id)
+                            ->update($update);
                     } else {
                         $order_error[] = $order_id;
                     }
@@ -537,13 +540,6 @@ class Api extends Model
             {
                 // Cập nhật trạng thái order là bỏ qua
                 \DB::table('woo_orders')->whereIn('id',$order_error)->update(['status' => env('STATUS_SKIP')]);
-            }
-            if (sizeof($order_update) > 0)
-            {
-                foreach ($order_update as $order_id => $update)
-                {
-                    \DB::table('woo_orders')->where('id',$order_id)->update($update);
-                }
             }
         }
     }
