@@ -462,37 +462,89 @@ class Api extends Model
 
     public function checkPaymentAgain()
     {
-        logfile('---------------- [Payment Again]------------------');
+        logfile_system('---------------- [Payment Again]------------------');
         $lists = \DB::table('woo_orders')
             ->join('woo_infos', 'woo_orders.woo_info_id', '=', 'woo_infos.id')
             ->select(
                 'woo_orders.id', 'woo_orders.woo_info_id', 'woo_orders.order_id', 'woo_orders.order_status',
-                'woo_infos.url', 'woo_infos.consumer_key', 'woo_infos.consumer_secret'
+                'woo_infos.url', 'woo_infos.consumer_key', 'woo_infos.consumer_secret', 'woo_orders.number'
             )
-            ->where('woo_orders.status', env('STATUS_NOTFULFILL'))
-            ->get();
+//            ->where('woo_orders.created_at', '>', date('Y-m-d', strtotime("-30 days")))
+            ->where('woo_orders.status', '<>', env('STATUS_SKIP'))
+            ->whereNotIn('woo_orders.order_status', order_status())
+            ->get()->toArray();
         if (sizeof($lists) > 0) {
-            $status = env('STATUS_WORKING_DONE');
-            $this->checkPaymentAgain($lists, $status);
-        } else {
-            logfile('-- [Payment Again] Chuyển sang kiểm tra đơn hàng auto');
-//
-//            $list_auto = \DB::table('woo_orders')
-//                ->join('woo_infos', 'woo_orders.woo_info_id', '=', 'woo_infos.id')
-//                ->select(
-//                    'woo_orders.id', 'woo_orders.woo_info_id', 'woo_orders.order_id', 'woo_orders.order_status',
-//                    'woo_infos.url', 'woo_infos.consumer_key', 'woo_infos.consumer_secret'
-//                )
-//                ->where('woo_orders.status', env('STATUS_WORKING_NEW'))
-//                ->where('woo_orders.custom_status', '<>',env('STATUS_P_CUSTOM_PRODUCT'))
-//                ->get();
-//            if (sizeof($list_auto) > 0)
-//            {
-//                $this->checkPaymentAgain($list_auto);
-//            } else {
-//                logfile('-- [Payment Again] Check Payment không tìm thấy pending');
-//            }
-            logfile('-- [Payment Again] Check Payment không tìm thấy pending');
+            $list_stores = array();
+            foreach($lists as $item)
+            {
+                $list_stores[$item->woo_info_id]['info'] = [
+                    'url' => $item->url,
+                    'consumer_key' => $item->consumer_key,
+                    'consumer_secret' => $item->consumer_secret
+                ];
+                $list_stores[$item->woo_info_id]['list_order'][$item->order_id] = [
+                    'order_id' => $item->order_id,
+                    'woo_order_id' => $item->order_id,
+                    'order_status' => $item->order_status,
+                    'number' => $item->number
+                ];
+            }
+
+            $order_update = array();
+            $order_error = array();
+            // bat dau cap nhat
+            foreach ($list_stores as $store_id => $list)
+            {
+                $info = $list['info'];
+                $woocommerce = $this->getConnectStore($info['url'], $info['consumer_key'], $info['consumer_secret']);
+                foreach ($list['list_order'] as $order)
+                {
+                    $order_id = $order['order_id'];
+                    $woo_order_id = $order['woo_order_id'];
+                    $order_status = $order['order_status'];
+                    try {
+                        $info = $woocommerce->get('orders/' . $woo_order_id);
+                        logfile_system('--- Đã tìm thấy thông tin order : '.$order['number']);
+                        $result = true;
+                    } catch (\Exception $e) {
+                        logfile_system('--- Không tìm thấy order : '.$order['number']);
+                        $result = false;
+                    }
+                    if ($result)
+                    {
+                        $data = json_decode(json_encode($info, true), true);
+                        $update = [
+                            'order_status' => $data['status'],
+                            'customer_note' => trim(htmlentities($data['customer_note'])),
+                            'email' => $data['billing']['email'],
+                            'fullname' => $data['shipping']['first_name'] . ' ' . $data['shipping']['last_name'],
+                            'address' => (strlen($data['shipping']['address_2']) > 0) ? $data['shipping']['address_1'] . ', ' . $data['shipping']['address_2'] : $data['shipping']['address_1'],
+                            'city' => $data['shipping']['city'],
+                            'postcode' => $data['shipping']['postcode'],
+                            'country' => $data['shipping']['country'],
+                            'state' => $data['shipping']['state'],
+                            'phone' => $data['billing']['phone'],
+                            'transaction_id' => $data['transaction_id'],
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
+                        $order_update[$order_id] = $update;
+                    } else {
+                        $order_error[] = $order_id;
+                    }
+                }
+            }
+            if (sizeof($order_error) > 0)
+            {
+                // Cập nhật trạng thái order là bỏ qua
+                \DB::table('woo_orders')->whereIn('id',$order_error)->update(['status' => env('STATUS_SKIP')]);
+            }
+            if (sizeof($order_update) > 0)
+            {
+                foreach ($order_update as $order_id => $update)
+                {
+                    \DB::table('woo_orders')->where('id',$order_id)->update($update);
+                }
+            }
         }
     }
 
