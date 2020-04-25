@@ -33,7 +33,7 @@ class CustomCommand extends Command
         parent::__construct();
     }
 
-    protected $array_minute = [59, 4, 1];
+    protected $array_minute = [59, 6, 4, 1];
     /**
      * Execute the console command.
      *
@@ -69,9 +69,9 @@ class CustomCommand extends Command
             case 6:
                 $this->run6Minute();
                 break;
-            case 19:
-                $this->run19Minute();
-                break;
+//            case 19:
+//                $this->run19Minute();
+//                break;
             case 59:
                 $this->run59Minute();
                 break;
@@ -107,11 +107,6 @@ class CustomCommand extends Command
         }
     }
 
-    private function run2Minute()
-    {
-        echo 'run 2 phut';
-    }
-
     private function run4Minute()
     {
         echo 'run 4 phut';
@@ -128,10 +123,9 @@ class CustomCommand extends Command
     private function run6Minute()
     {
         echo 'run 6 phut';
-        $api_controller = new ApiController();
-        // up load product from google driver
-        $check = $api_controller->autoUploadProduct();
-
+        // delete file fulfill in system
+        $tracking_controller = new TrackingController();
+        $check = $tracking_controller->deleteFulfillFile();
         if ($check)
         {
             $google_controller = new GoogleController();

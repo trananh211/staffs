@@ -315,6 +315,55 @@ class Tracking extends Model
         ]);
     }
 
+    public function deleteFulfillFile()
+    {
+        \DB::beginTransaction();
+        try {
+            $return = false;
+            $file_fulfills = \DB::table('file_fulfills')->select('id', 'order_number', 'path')
+                ->where('status', 0)
+                ->limit(env('GOOGLE_LIMIT_DOWNLOAD_FILE'))
+                ->get()->toArray();
+            if (sizeof($file_fulfills) > 0) {
+                $update_file_done = array();
+                $update_file_error = array();
+                foreach ($file_fulfills as $file) {
+                    if (\File::exists($file->path)) {
+                        if (\File::delete($file->path)) {
+                            \Storage::deleteDirectory(dirname($file->path));
+                            $update_file_done[] = $file->id;
+                            logfile_system('-- Xóa thành công Order Id: ' . $file->order_number);
+                        } else {
+                            $update_file_error[] = $file->id;
+                            logfile_system('-- Không thể xóa Order Id: ' . $file->order_number);
+                        }
+                    } else {
+                        logfile_system('-- Order Id: ' . $file->order_number . ' không tồn tại hoặc bị xóa trước đó rồi.');
+                        $update_file_done[] = $file->id;
+                    }
+                }
+                if (sizeof($update_file_error) > 0) {
+                    \DB::table('file_fulfills')->whereIn('id', $update_file_error)->update([
+                        'status' => 10
+                    ]);
+                }
+                if (sizeof($update_file_done) > 0) {
+                    \DB::table('file_fulfills')->whereIn('id', $update_file_done)->update([
+                        'status' => 2
+                    ]);
+                }
+            } else {
+                $return = true;
+                logfile_system('-- Đã hết toàn bộ file fulfill đẻ xóa trên hệ thống. Chuyển sang công việc khác');
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            logfile_system('-- [Error] Xảy ra lỗi nội bộ : ' . $e->getMessage());
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return $return;
+    }
+
     /*Hàm lấy info tracking*/
     public function getInfoTracking()
     {
