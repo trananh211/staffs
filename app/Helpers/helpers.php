@@ -867,3 +867,59 @@ function createFileExcel($name_file, $data, $path, $sheet_name = null)
         return false;
     }
 }
+
+/*
+ *  $ext = ['jpg', 'jpeg', 'png'];
+ *  $str_compare = '-PID-';
+ * */
+function filterFileUploadBefore($files, $str_compare = null, $ext_array = null)
+{
+    if ($ext_array == null)
+    {
+        $ext = ['jpg', 'jpeg', 'png'];
+    } else {
+        $ext = $ext_array;
+    }
+
+    if ($str_compare == null)
+    {
+        $str_compare = '';
+    }
+
+    $message = '';
+    $paths = array(
+        env('DIR_TMP'),
+        env('DIR_NEW'),
+        env('DIR_WORKING'),
+        env('DIR_CHECK'),
+        env('DIR_THUMB')
+    );
+    foreach ($paths as $path) {
+        if (!\File::exists(public_path($path))) {
+            \File::makeDirectory(public_path($path), $mode = 0777, true, true);
+        }
+    }
+    $filter_files = array();
+    foreach ($files as $file) {
+        $extension = strtolower($file->getClientOriginalExtension());
+        $filename = $file->getClientOriginalName();
+        if ($file->getSize() <= env('UPLOAD_SIZE_MAX')) {
+            if (in_array(strtolower($extension), $ext)) {
+                if (strlen($str_compare) > 0 && strpos($filename, $str_compare) === false) {
+                    $message .= getErrorMessage('File ' . $filename . ' sai định dạng tên. Mời đổi lại tên.');
+                    continue;
+                }
+                if ($file->move(public_path(env('DIR_TMP')), $filename)) {
+                    $filter_files[] = $filename;
+                } else {
+                    $message .= getErrorMessage('Upload lỗi file :' . $filename . '. Làm ơn thử lại nhé.');
+                }
+            } else {
+                $message .= getErrorMessage('File ' . $filename . ' không đúng định dạng file dưới đây: '.implode(',', $ext_array));
+            }
+        } else {
+            $message .= getErrorMessage('File ' . $filename . ' lớn hơn '.(int)(env('UPLOAD_SIZE_MAX')/1000000).' MB');
+        }
+    }
+    return array('message' => $message, 'files' => $filter_files);
+}

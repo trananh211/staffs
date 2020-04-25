@@ -303,12 +303,6 @@ class WooController extends Controller
         return $api->updateOrder($request);
     }
 
-    public function upDesignNormal(Request $request)
-    {
-//        $work = new Working();
-//        return $work->upDesignNormal($request);
-    }
-
     public function axSkipProduct(Request $request)
     {
         $work = new Working();

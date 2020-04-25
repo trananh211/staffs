@@ -4,6 +4,28 @@
         <div class="col s12">
             <div class="page-title">Fulfill Orders</div>
             <div class="right">
+                <!-- Modal Trigger -->
+                <a class="waves-effect waves-light btn modal-trigger blue" href="#modal-uptracking">Up Tracking</a>
+
+                <!-- Modal Structure -->
+                <div id="modal-uptracking" class="modal">
+                    <div class="modal-content">
+                        <ul id="js-noti" class="text-darken-2"></ul>
+                        <form class="col s12" method="post" id="form-up-tracking" data-url="{{ url('action-up-tracking') }}">
+                            {{ csrf_field() }}
+                            <div class="row">
+                                <div class="input-field col s6">
+                                    <input type="file" multiple name="files[]" required />
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col s12">
+                                    <button type="submit" class="right waves-effect waves-light btn blue">Update</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
                 <a href="{{ url('action-fulfill-now') }}" class="waves-effect waves-light btn green">Fullfill Now</a>
             </div>
         </div>
