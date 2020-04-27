@@ -148,6 +148,9 @@ class ScrapProducts extends Command
                     case 19:
                         $text_exclude = ' - PREMIUM - BLANKET - B450';
                         $this->getProductMerchKing_excludeText($dt, array(1,2,3,4,7), $text_exclude);
+                    case 20:
+                        $text_exclude = 'PREMIUM BLANKET - B750';
+                        $this->getProductMerchKing_excludeText($dt, array(1,2,3,4,7), $text_exclude);
                     default:
                         $str = "-- Không có website nào cần được up sản phẩm.";
                         logfile_system($str);

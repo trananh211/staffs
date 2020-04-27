@@ -14,7 +14,7 @@ function logfile_system($str)
 {
     $datetime = Carbon::now('Asia/Ho_Chi_Minh');
     $log_str = $datetime . '==> ' . $str;
-    \Log::channel('hasu')->info($log_str);
+//    \Log::channel('hasu')->info($log_str);
     echo $log_str."\n";
 }
 
@@ -45,7 +45,8 @@ function website()
         '16' => 'https://creationslaunch.com/search?q=low+top&type=product',
         '17' => 'https://anzgiftshop.com/search?q=blanket',
         '18' => 'https://ble-store.com/search?q=B6L2AF01',
-        '19' => 'http://icefrogshoe.com/search?q=B450'
+        '19' => 'http://icefrogshoe.com/search?q=B450',
+        '20' => 'https://molofa.net/search?q=B750'
     ];
     return $website;
 }

@@ -96,6 +96,10 @@ class NameStory extends Command
                         $text_exclude = 'B450';
                         $this->scanMerchKing_getTag_excludeText($website_id, $template_id, $store_id, $woo_template_id, $text_exclude);
                         break;
+                    case 20:
+                        $text_exclude = '- B750';
+                        $this->scanMerchKing_getTag_excludeText($website_id, $template_id, $store_id, $woo_template_id, $text_exclude);
+                        break;
                     default:
                         $str = "-- Không có website nào cần được cào.";
                         logfile_system($str);
@@ -646,9 +650,10 @@ class NameStory extends Command
         $domain_origin = explode('/search', $domain)[0];
         $link = $domain.'&page=';
         echo $link."\n";
-        $page = 1;
+        $page = 87;
         $data = array();
         $text_exclude = ucwords($text_exclude);
+        $links = array();
         do {
             echo $page . '-page' . "\n";
             $url = $link . $page;
@@ -663,34 +668,38 @@ class NameStory extends Command
             if ($products > 0) {
                 $crawler->filter('section.site-content div.container div.col-md-3')
                     ->each(function ($node) use (&$data, &$website_id, &$template_id, &$store_id, &$url, &$domain_origin,
-                        &$products_old, &$text_exclude) {
+                        &$products_old, &$links, &$text_exclude) {
                         $link = $domain_origin . trim($node->filter('a')->attr('href'));
                         if (!in_array($link, $products_old))
                         {
-                            $name = ucwords(trim($node->filter('a')->text()));
-                            $name = str_replace($text_exclude, '', $name);
-                            $tmp_tag = explode(' ', strtolower($name));
-                            if (sizeof($tmp_tag) > 0 && $tmp_tag[0] != '')
+                            if (!in_array($link, $links))
                             {
-                                $tag = explode(' ', strtolower($name))[0];
-                            } else {
-                                $tag = $tmp_tag[1];
+                                $links[] = $link;
+                                $name = ucwords(trim($node->filter('a')->text()));
+                                $name = str_replace($text_exclude, '', $name);
+                                $tmp_tag = explode(' ', strtolower($name));
+                                if (sizeof($tmp_tag) > 0 && $tmp_tag[0] != '')
+                                {
+                                    $tag = explode(' ', strtolower($name))[0];
+                                } else {
+                                    $tag = $tmp_tag[1];
+                                }
+                                $tag_name = preg_replace('/[^a-z\d]/i', '-', sanitizer($tag));
+                                $tag_name = rtrim($tag_name, '-');
+                                $category_name = 'Fleece Blanket';
+                                $data[] = [
+                                    'category_name' => $category_name,
+                                    'tag_name' => $tag_name,
+                                    'link' => $link,
+                                    'website_id' => $website_id,
+                                    'website' => $url,
+                                    'template_id' => $template_id,
+                                    'store_id' => $store_id,
+                                    'status' => 0,
+                                    'created_at' => date("Y-m-d H:i:s"),
+                                    'updated_at' => date("Y-m-d H:i:s")
+                                ];
                             }
-                            $tag_name = preg_replace('/[^a-z\d]/i', '-', sanitizer($tag));
-                            $tag_name = rtrim($tag_name, '-');
-                            $category_name = 'Fleece Blanket';
-                            $data[] = [
-                                'category_name' => $category_name,
-                                'tag_name' => $tag_name,
-                                'link' => $link,
-                                'website_id' => $website_id,
-                                'website' => $url,
-                                'template_id' => $template_id,
-                                'store_id' => $store_id,
-                                'status' => 0,
-                                'created_at' => date("Y-m-d H:i:s"),
-                                'updated_at' => date("Y-m-d H:i:s")
-                            ];
                         }
                     });
             }
