@@ -68,7 +68,6 @@ Route::middleware('auth')->group(function () {
     Route::get('list-order','WooController@listAllOrder');
     Route::get('list-product','WooController@listAllProduct');
     Route::post('update-order','WooController@updateOrder');
-    Route::post('up-design-normal','WooController@upDesignNormal');
     Route::post('ajax-skip-product','WooController@axSkipProduct');
     Route::post('ajax-re-send-email','WooController@axReSendEmail');
     Route::post('action-deleted-categories','WooController@actionDeletedCategories');
@@ -91,6 +90,7 @@ Route::middleware('auth')->group(function () {
     Route::get('fulfill-rescan-file/{id}','WooController@fulfillRescanFile');
     Route::post('search-work-job','WooController@searchWorkJob');
     Route::post('edit-category-fulfill','WooController@editCategoryFulfill');
+    Route::post('action-up-tracking','TrackingController@actionUpTracking');
 
     /** Paypal */
     Route::get('paypal-connect','PaypalController@index');

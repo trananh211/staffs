@@ -47,6 +47,7 @@ class TestCommand extends Command
 
         $api_controller = new ApiController();
         $google_controller = new GoogleController();
+        $tracking_controller = new TrackingController();
 //        $this->checkTemplateScrap();
 //        $check0 = $google_controller->uploadFileWorkingGoogle();
 //        if($check0)
@@ -59,7 +60,9 @@ class TestCommand extends Command
 //        $check = $api_controller->changeNameProduct();
 //        $check = $api_controller->changeSkuWooOrder();
 //        $check = $api_controller->imgThumbProduct();
-        $check = $api_controller->checkPaymentAgain();
+//        $check = $api_controller->checkPaymentAgain();
+        $check = $tracking_controller->deleteFulfillFile();
+        var_dump($check);
     }
 
     private function checkTemplateScrap()

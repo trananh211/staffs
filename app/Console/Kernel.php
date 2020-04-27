@@ -35,8 +35,8 @@ class Kernel extends ConsoleKernel
         /** Run every minute specified queue if not already started */
         $schedule->command('queue:work --stop-when-empty')->everyMinute();
         /*Export file excel lên thư mục fulfill*/
-        $schedule->call('App\Http\Controllers\GoogleController@fulfillment')->twiceDaily(1,5);
-        $schedule->call('App\Http\Controllers\GoogleController@fulfillment')->twiceDaily(2,6);
+//        $schedule->call('App\Http\Controllers\GoogleController@fulfillment')->twiceDaily(1,5);
+//        $schedule->call('App\Http\Controllers\GoogleController@fulfillment')->twiceDaily(2,6);
         /*Upload file image lên thư mục fulfill*/
 //        $schedule->call('App\Http\Controllers\GoogleController@uploadFileDriver')->everyFiveMinutes()
 //            ->between('1:00', '23:00');

@@ -36,4 +36,17 @@ class TrackingController extends Controller
         $track = new Tracking();
         return $track->postTrackingNumber($request);
     }
+
+    public function actionUpTracking(Request $request)
+    {
+        $track = new Tracking();
+        return $track->actionUpTracking($request);
+    }
+
+    //xóa file sau khi up tracking
+    public function deleteFulfillFile()
+    {
+        $track = new Tracking();
+        return $track->deleteFulfillFile();
+    }
 }

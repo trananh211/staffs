@@ -660,4 +660,29 @@ $(document).ready(function () {
     });
 
     /*End Keyword*/
+
+    $('#form-up-tracking').on('submit', function (event) {
+        event.preventDefault();
+        var url = $('#form-up-tracking').attr('data-url');
+        $.ajax({
+            url: url,
+            method: "POST",
+            data: new FormData(this),
+            // dataType: 'html',
+            dataType: 'JSON',
+            contentType: false,
+            cache: false,
+            processData: false,
+            beforeSend: function(){
+                $("#loading").show();
+            },
+            complete: function(){
+                $("#loading").hide();
+            },
+            success: function (data) {
+                $('#js-noti').html(data.message);
+                console.log(data);
+            }
+        });
+    });
 });

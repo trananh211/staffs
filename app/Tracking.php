@@ -173,6 +173,206 @@ class Tracking extends Model
         }
     }
 
+    /*Hàm upload tracking và lưu vào cơ sở dữ liệu*/
+    public function actionUpTracking($request)
+    {
+        \DB::beginTransaction();
+        try {
+            $message = '';
+            $rq = $request->all();
+            $ext_array = ['csv', 'xls', 'xlsx'];
+            $tmp = filterFileUploadBefore($rq['files'], '', $ext_array);
+            $message = $tmp['message'];
+            $files = $tmp['files'];
+            if (sizeof($files) > 0) {
+                $tracking_check = array();
+                $tracking_new = array();
+                $insert_tracking_new = array();
+                foreach ($files as $file) {
+                    // lấy đường dẫn file
+                    $path = env('DIR_TMP') . $file;
+                    // đọc file excel
+                    $reads = readFileExcel($path);
+                    if ($reads) {
+                        foreach ($reads as $key => $row) {
+                            if (!array_key_exists('tracking_number', $row)) {
+                                $message .= getErrorMessage('File : ' . $file . ' không tìm thấy tiêu đề Tracking Number');
+                                \File::delete($path);
+                                break;
+                            } else if (!array_key_exists('order_id', $row)) {
+                                $message .= getErrorMessage('File : ' . $file . ' không tìm thấy tiêu đề Order Id');
+                                \File::delete($path);
+                                break;
+                            } else if (!array_key_exists('shipping_method', $row)) {
+                                $message .= getErrorMessage('File : ' . $file . ' không tìm thấy tiêu đề Shipping Method');
+                                \File::delete($path);
+                                break;
+                            } else {
+                                $woo_order_id = $row['order_id'];
+                                $tracking_number = trim($row['tracking_number']);
+                                $shipping_method = trim($row['shipping_method']);
+                                if ($woo_order_id == '')
+                                {
+                                    $message .= getErrorMessage('-- Dòng ' . $key . 'của file '.$file.' thiếu Order Id');
+                                } else if ($tracking_number == '') {
+                                    $message .= getErrorMessage('-- Order ' . $woo_order_id . ' thiếu tracking number');
+                                } else if ($shipping_method == '') {
+                                    $message .= getErrorMessage('-- Order ' . $woo_order_id . ' thiếu đơn vị vận chuyển');
+                                } else {
+                                    $tracking_check[$woo_order_id] = $woo_order_id;
+                                    $insert_tracking_new[$woo_order_id] = [
+                                        'order_id' => $woo_order_id,
+                                        'tracking_number' => $tracking_number,
+                                        'shipping_method' => $shipping_method,
+                                        'status' => env('TRACK_NEW'),
+                                        'is_check' => 0,
+                                        'time_upload' => date("Y-m-d H:i:s"),
+                                        'created_at' => date("Y-m-d H:i:s"),
+                                        'updated_at' => date("Y-m-d H:i:s")
+                                    ];
+                                    $tracking_new[$woo_order_id] = [
+                                        'order_id' => $woo_order_id,
+                                        'tracking_number' => $tracking_number
+                                    ];
+                                }
+                            }
+                        }
+                    } else {
+                        $message .= getErrorMessage('Không thể đọc được file ' . $file . '. Mời bạn thử định dạng khác và tải lên lại');
+                        \File::delete($path);
+                    }
+                }
+                if (sizeof($tracking_check) > 0) {
+                    // Kiểm tra xem có tồn tại file tracking nào trước đó hay không.
+                    $check = \DB::table('trackings')
+                        ->select('tracking_number', 'order_id')
+                        ->whereIn('order_id', $tracking_check)
+                        ->get()->toArray();
+                    $check_woo_orders = \DB::table('woo_orders')
+                        ->whereIn('status',array(env('STATUS_WORKING_DONE'), env('STATUS_WORKING_MOVE')))
+                        ->whereIn('number',$tracking_check)->pluck('number')->toArray();
+                    $check_woo_orders = json_decode(json_encode($check_woo_orders, true), true);
+                    if (sizeof($check_woo_orders) > 0)
+                    {
+                        $update_file_fulfill = array();
+                        // nếu tồn tại 1 số tracking trước đó rồi.
+                        if (sizeof($check) > 0) {
+                            $old_tracking = array();
+                            foreach ($check as $item) {
+                                $old_tracking[$item->order_id][] = $item->tracking_number;
+                            }
+                            foreach ($tracking_new as $order_id => $item) {
+                                // kiểm tra xem Order Id có tồn tại trong hệ thống hay không
+                                if (in_array($order_id, $check_woo_orders))
+                                {
+                                    // nếu tồn tại order_id đã từng up lên trước đó rồi
+                                    if (array_key_exists($order_id, $old_tracking)) {
+                                        // kiểm tra tiếp tracking có trùng hay không.
+                                        if (in_array($item['tracking_number'], $old_tracking[$order_id])) {
+                                            unset($insert_tracking_new[$order_id]);
+                                            unset($tracking_check[$order_id]);
+                                        }
+                                    }
+                                } else {
+                                    unset($insert_tracking_new[$order_id]);
+                                    unset($tracking_check[$order_id]);
+                                    $message .= getErrorMessage('Order '.$order_id.' không tồn tại trên hệ thống hoặc chưa chuẩn bị xong.');
+                                }
+                            }
+                        } else {
+                            foreach ($tracking_new as $order_id => $item) {
+                                // kiểm tra xem Order Id có tồn tại trong hệ thống hay không
+                                if (!in_array($order_id, $check_woo_orders))
+                                {
+                                    unset($insert_tracking_new[$order_id]);
+                                    unset($tracking_check[$order_id]);
+                                    $message .= getErrorMessage('Order '.$order_id.' không tồn tại trên hệ thống hoặc chưa chuẩn bị xong.');
+                                }
+                            }
+                        }
+                        // nếu vẫn còn tracking mới
+                        if (sizeof($insert_tracking_new) > 0) {
+                            $result = \DB::table('trackings')->insert($insert_tracking_new);
+                            if ($result) {
+                                $message .= getSuccessMessage('Toàn bộ tracking mới đã được lưu thành công.');
+                                \DB::table('file_fulfills')->whereIn('order_number', $tracking_check)->update([
+                                    'status' => 1,
+                                    'updated_at' => date("Y-m-d H:i:s")
+                                ]);
+                            } else {
+                                $message .= getErrorMessage('Xảy ra lỗi hệ thống. Không thể lưu tracking number vào thời điểm này. Mời bạn tải lại trang và thực hiện lại.');
+                            }
+                        } else {
+                            $message .= getErrorMessage('Bạn đã up file tracking cũ. Đã tồn tại hết tracking này trên hệ thống trước đó rồi.');
+                        }
+                    } else {
+                        $message .= getErrorMessage('Toàn bộ Order ID đều không khớp với hệ thống. Mời bạn kiểm tra lại.');
+                    }
+
+                }
+            } else {
+                $message .= getErrorMessage('File ảnh bạn tải lên không đúng định dạng yêu cầu. Sai định dạng file.');
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $alert = 'error';
+            $message = "Xảy ra lỗi nội bộ. Mời bạn thử lại";
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return response()->json([
+            'message' => $message
+        ]);
+    }
+
+    public function deleteFulfillFile()
+    {
+        \DB::beginTransaction();
+        try {
+            $return = false;
+            $file_fulfills = \DB::table('file_fulfills')->select('id', 'order_number', 'path')
+                ->where('status', 0)
+                ->limit(env('GOOGLE_LIMIT_DOWNLOAD_FILE'))
+                ->get()->toArray();
+            if (sizeof($file_fulfills) > 0) {
+                $update_file_done = array();
+                $update_file_error = array();
+                foreach ($file_fulfills as $file) {
+                    if (\File::exists($file->path)) {
+                        if (\File::delete($file->path)) {
+                            \Storage::deleteDirectory(dirname($file->path));
+                            $update_file_done[] = $file->id;
+                            logfile_system('-- Xóa thành công Order Id: ' . $file->order_number);
+                        } else {
+                            $update_file_error[] = $file->id;
+                            logfile_system('-- Không thể xóa Order Id: ' . $file->order_number);
+                        }
+                    } else {
+                        logfile_system('-- Order Id: ' . $file->order_number . ' không tồn tại hoặc bị xóa trước đó rồi.');
+                        $update_file_done[] = $file->id;
+                    }
+                }
+                if (sizeof($update_file_error) > 0) {
+                    \DB::table('file_fulfills')->whereIn('id', $update_file_error)->update([
+                        'status' => 10
+                    ]);
+                }
+                if (sizeof($update_file_done) > 0) {
+                    \DB::table('file_fulfills')->whereIn('id', $update_file_done)->update([
+                        'status' => 2
+                    ]);
+                }
+            } else {
+                $return = true;
+                logfile_system('-- Đã hết toàn bộ file fulfill đẻ xóa trên hệ thống. Chuyển sang công việc khác');
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            logfile_system('-- [Error] Xảy ra lỗi nội bộ : ' . $e->getMessage());
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return $return;
+    }
+
     /*Hàm lấy info tracking*/
     public function getInfoTracking()
     {
