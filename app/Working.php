@@ -858,7 +858,7 @@ class Working extends Model
                     $message .= getErrorMessage('File ' . $filename . ' không phải là file ảnh');
                 }
             } else {
-                $message .= getErrorMessage('File ' . $filename . ' lớn hơn 10MB');
+                $message .= getErrorMessage('File ' . $filename . ' lớn hơn '.(int)(env('UPLOAD_SIZE_MAX')/1000000).' MB');
             }
         }
         return array('message' => $message, 'files' => $filter_files);
@@ -2095,20 +2095,6 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         $list_products = $this->getListProduct();
         return view('/admin/list_product')
             ->with(compact('list_products', 'data'));
-    }
-
-    public function upDesignNormal($request)
-    {
-        $rq = $request->all();
-        //ham lọc file ảnh trước khi upload - sẽ move vào DIR_TMP trước tiên
-        $tmp = $this->filterFileUpload($rq['files'], '');
-        $message = $tmp['message'];
-        $files = $tmp['files'];
-        $img = '';
-        if (sizeof($files) > 0) {
-            print_r($files);
-        }
-        return redirect('list-product')->with('success', getMessage($message));
     }
 
     /*Scrap web */
