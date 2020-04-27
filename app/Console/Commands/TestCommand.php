@@ -61,8 +61,11 @@ class TestCommand extends Command
 //        $check = $api_controller->changeSkuWooOrder();
 //        $check = $api_controller->imgThumbProduct();
 //        $check = $api_controller->checkPaymentAgain();
-        $check = $tracking_controller->deleteFulfillFile();
-        var_dump($check);
+//        $check = $tracking_controller->deleteFulfillFile();
+//        var_dump($check);
+
+        $this->call('scan:website');
+//        $this->call('scrap:product');
     }
 
     private function checkTemplateScrap()

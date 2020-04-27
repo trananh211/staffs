@@ -311,7 +311,7 @@ class Working extends Model
         ];
         $lists = \DB::table('woo_orders')
             ->join('woo_infos', 'woo_orders.woo_info_id', '=', 'woo_infos.id')
-            ->leftJoin('trackings as t', 'woo_orders.id', '=', 't.woo_order_id')
+            ->leftJoin('trackings as t', 'woo_orders.number', '=', 't.order_id')
             ->leftjoin('workings', function ($join) {
                 $join->on('workings.design_id', '=', 'woo_orders.design_id')
                     ->on('workings.product_id', '=', 'woo_orders.product_id')

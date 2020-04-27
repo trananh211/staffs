@@ -744,7 +744,7 @@ class Api extends Model
                 $path = $r['path'];
                 // Nếu tạo file json thành công. Luu thông tin template vao database
                 if ($result) {
-                    logfile('-- Tạo json file template thành công. chuyển sang tạo variantions file json');
+//                    logfile('-- Tạo json file template thành công. chuyển sang tạo variantions file json');
                     $woo_template_id = \DB::table('woo_templates')->insertGetId([
                         'product_name' => $template_name,
                         'template_id' => $template_id,
@@ -762,7 +762,7 @@ class Api extends Model
                         $variation_data = $woocommerce->get('products/' . $template_id . '/variations/' . $varid);
                         $result = writeFileJson($variation_path, $variation_data);
                         if ($result) {
-                            logfile('-- Tạo json file variations thành công. ' . $variation_path);
+//                            logfile('-- Tạo json file variations thành công. ' . $variation_path);
                         }
                         chmod($variation_path, 0777);
                         $insert_variation[] = [
