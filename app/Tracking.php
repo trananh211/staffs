@@ -194,7 +194,7 @@ class Tracking extends Model
                     // đọc file excel
                     $reads = readFileExcel($path);
                     if ($reads) {
-                        foreach ($reads as $row) {
+                        foreach ($reads as $key => $row) {
                             if (!array_key_exists('tracking_number', $row)) {
                                 $message .= getErrorMessage('File : ' . $file . ' không tìm thấy tiêu đề Tracking Number');
                                 \File::delete($path);
@@ -203,12 +203,21 @@ class Tracking extends Model
                                 $message .= getErrorMessage('File : ' . $file . ' không tìm thấy tiêu đề Order Id');
                                 \File::delete($path);
                                 break;
+                            } else if (!array_key_exists('shipping_method', $row)) {
+                                $message .= getErrorMessage('File : ' . $file . ' không tìm thấy tiêu đề Shipping Method');
+                                \File::delete($path);
+                                break;
                             } else {
                                 $woo_order_id = $row['order_id'];
                                 $tracking_number = trim($row['tracking_number']);
-                                $shipping_method = (in_array('shipping_method', $row) ? $row['shipping_method'] : '');
-                                if ($tracking_number == '') {
+                                $shipping_method = trim($row['shipping_method']);
+                                if ($woo_order_id == '')
+                                {
+                                    $message .= getErrorMessage('-- Dòng ' . $key . 'của file '.$file.' thiếu Order Id');
+                                } else if ($tracking_number == '') {
                                     $message .= getErrorMessage('-- Order ' . $woo_order_id . ' thiếu tracking number');
+                                } else if ($shipping_method == '') {
+                                    $message .= getErrorMessage('-- Order ' . $woo_order_id . ' thiếu đơn vị vận chuyển');
                                 } else {
                                     $tracking_check[$woo_order_id] = $woo_order_id;
                                     $insert_tracking_new[$woo_order_id] = [
