@@ -91,6 +91,8 @@ Route::middleware('auth')->group(function () {
     Route::post('search-work-job','WooController@searchWorkJob');
     Route::post('edit-category-fulfill','WooController@editCategoryFulfill');
     Route::post('action-up-tracking','TrackingController@actionUpTracking');
+    Route::post('edit-tracking-number','TrackingController@editTrackingNumber');
+    Route::get('view-fulfill-detail/{id}','WooController@fulfillDetail');
 
     /** Paypal */
     Route::get('paypal-connect','PaypalController@index');

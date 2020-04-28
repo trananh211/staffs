@@ -49,4 +49,10 @@ class TrackingController extends Controller
         $track = new Tracking();
         return $track->deleteFulfillFile();
     }
+
+    public function editTrackingNumber(Request $request)
+    {
+        $track = new Tracking();
+        return $track->editTrackingNumber($request);
+    }
 }

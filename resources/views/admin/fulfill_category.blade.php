@@ -40,7 +40,9 @@
                             <th>Category</th>
                             <th>File</th>
                             <th>Order</th>
+                            <th>Tracking</th>
                             <th>Time</th>
+                            <th>Info</th>
                             <th>Action</th>
                         </tr>
                         </thead>
@@ -51,7 +53,9 @@
                             <th>Category</th>
                             <th>File</th>
                             <th>Order</th>
+                            <th>Tracking</th>
                             <th>Time</th>
+                            <th>Info</th>
                             <th>Action</th>
                         </tr>
                         </tfoot>
@@ -63,7 +67,13 @@
                             <td>{{ $fulfill->name }}</td>
                             <td>{{ $fulfill->date_fulfill }}</td>
                             <td>{{ $fulfill->count }}</td>
+                            <td>{{ $fulfill->count_tracking }}</td>
                             <td>{!! compareTime($fulfill->updated_at, date("Y-m-d H:i:s")) !!}</td>
+                            <td>
+                                <a class="waves-effect waves-light btn" target="_blank"
+                                   onclick="newWindow('{{ url('view-fulfill-detail').'/'.$fulfill->id }}', 1200, 800)"
+                                >Chi Tiết</a>
+                            </td>
                             <td>
                                 <a class="waves-effect waves-light green btn" href="{{ url('fulfill-get-file').'/'.$fulfill->id }}">Download</a>
                                 <a class="waves-effect waves-light blue btn" href="{{ url('fulfill-rescan-file').'/'.$fulfill->id }}">Re Scan</a>

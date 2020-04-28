@@ -716,7 +716,44 @@ class Tracking extends Model
         }
 
     }
-
-
     /*End Paypal tracking*/
+
+    public function editTrackingNumber($request)
+    {
+        \DB::beginTransaction();
+        try {
+            $status = 'error';
+            $rq = $request->all();
+            $tracking_id = $rq['tracking_id'];
+            $tracking_number = $rq['tracking_number'];
+            $shipping_method = $rq['shipping_method'];
+            if ($tracking_number == '')
+            {
+                $message = 'Tracking Number không được rỗng.';
+            } else if ($shipping_method == '')
+            {
+                $message = 'Shipping Method không được rỗng';
+            } else {
+                $result = \DB::table('trackings')->where('id', $tracking_id)->update([
+                    'tracking_number' => $tracking_number,
+                    'shipping_method' => $shipping_method,
+                    'time_upload' => date("Y-m-d H:i:s"),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+                if ($result)
+                {
+                    $status = 'success';
+                    $message = 'Cập nhật tracking thành công.';
+                } else {
+                    $message = 'Không thể lưu vào cơ sở dữ liệu. Mời bạn tải lại trang và thử lại lần nữa.';
+                }
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $status = 'error';
+            $message = '-- [Error] Xảy ra lỗi nội bộ : ' . $e->getMessage();
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return back()->with($status, $message);
+    }
 }

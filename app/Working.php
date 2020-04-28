@@ -3785,10 +3785,12 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         $fulfills = \DB::table('excel_fulfills as exf')
             ->join('tool_categories', 'exf.tool_category_id', '=', 'tool_categories.id')
             ->join('woo_orders', 'exf.id', '=', 'woo_orders.excel_fulfill_id')
+            ->leftjoin('trackings','trackings.order_id', '=', 'woo_orders.number')
             ->select(
                 'exf.id', 'exf.date_fulfill', 'exf.path', 'exf.status', 'exf.created_at', 'exf.updated_at',
                 'tool_categories.name',
-                DB::raw("count(woo_orders.excel_fulfill_id) as count")
+                DB::raw("count(woo_orders.excel_fulfill_id) as count"),
+                DB::raw("count(trackings.id) as count_tracking")
             )
             ->groupBy('woo_orders.excel_fulfill_id')
             ->orderBy('exf.created_at', 'DESC')
@@ -3885,6 +3887,21 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
         }
         return \Redirect::back()->with($alert, $message);
+    }
+
+    public function fulfillDetail($excel_fulfill_id)
+    {
+        $data = infoShop();
+        $lists = \DB::table('woo_orders')
+            ->leftjoin('trackings as t','woo_orders.number', '=', 't.order_id')
+            ->select(
+                't.id as tracking_id','woo_orders.number as order_id', 't.tracking_number', 't.status',
+                't.shipping_method', 't.time_upload'
+            )
+            ->where('excel_fulfill_id', $excel_fulfill_id)
+            ->orderBy('woo_orders.id')
+            ->get()->toArray();
+        return view('addon.view_tracking_detail', compact('data', 'lists'));
     }
     /*End Admin + QC*/
 }

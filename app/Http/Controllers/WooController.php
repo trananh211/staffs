@@ -641,5 +641,11 @@ class WooController extends Controller
         $work = new Working();
         return $work->workingChangeVariation($request);
     }
+
+    public function fulfillDetail($excel_fulfill_id)
+    {
+        $work = new Working();
+        return $work->fulfillDetail($excel_fulfill_id);
+    }
     /*End Admin + QC*/
 }
