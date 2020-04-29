@@ -405,7 +405,7 @@ class Tracking extends Model
                 }
             }
             $url = env('TRACK_URL') . rtrim($str_url, ',');
-            logfile($url);
+            logfile_system($url);
             //Gui request den API App
             $client = new \GuzzleHttp\Client(); //GuzzleHttp\Clientsssss
             $response = $client->request('GET', $url);
@@ -429,7 +429,7 @@ class Tracking extends Model
                             'shipping_method' => $shipping_method,
                             'updated_at' => date("Y-m-d H:i:s")
                         ];
-                        logfile('-- [Tracking] Cập nhật đơn hàng : ' . $ar_data[$tracking_number]->order_id .
+                        logfile_system('-- [Tracking] Cập nhật đơn hàng : ' . $ar_data[$tracking_number]->order_id .
                             ' có mã tracking : ' . $tracking_number . ' thay đổi thành ' . $info_track['value']);
                         //                        if (in_array($result, array(
 //                            env('TRACK_INTRANSIT'), env('TRACK_PICKUP'), env('TRACK_DELIVERED')
@@ -446,7 +446,7 @@ class Tracking extends Model
 ////                            $lst_order_update[] = $ar_data[$tracking_number]->woo_order_id;
 //                        }
                     } else {
-                        logfile('-- [Tracking] Đơn hàng : ' . $ar_data[$tracking_number]->order_id .
+                        logfile_system('-- [Tracking] Đơn hàng : ' . $ar_data[$tracking_number]->order_id .
                             ' có mã tracking : ' . $tracking_number . ' chưa thay đổi trạng thái ' . $info_track['value']);
                     }
                 }
@@ -480,7 +480,7 @@ class Tracking extends Model
                     ]);
             }
         } else {
-            logfile('-- [Tracking] Đã hết file tracking. Cập nhật lại danh sách order chưa DELIVERED');
+            logfile_system('-- [Tracking] Đã hết file tracking. Cập nhật lại danh sách order chưa DELIVERED');
             \DB::table('trackings')
                 ->whereNotIn('status', array(env('TRACK_DELIVERED', env('TRACK_EXPIRED'))))
                 ->update([
