@@ -451,8 +451,6 @@ class Tracking extends Model
                     }
                 }
 //                $this->sendPaypalDetail($lst_order_update, $paypal_array);
-                echo "<pre>";
-                print_r($ar_update);
                 if (sizeof($ar_update) > 0) {
                     //Cap nhật trạng thái mới
                     foreach ($ar_update as $tracking_number => $update) {
