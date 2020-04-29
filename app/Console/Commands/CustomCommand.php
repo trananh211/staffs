@@ -129,7 +129,7 @@ class CustomCommand extends Command
         if ($check)
         {
             // kiểm tra thông tin tracking supplier đưa và cập nhật vào database nếu thay đổi.
-//            $check = $tracking_controller->getInfoTracking();
+            $check = $tracking_controller->getInfoTracking();
         }
     }
 
