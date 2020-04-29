@@ -99,8 +99,13 @@ class CustomCommand extends Command
                     $check3 = $api_controller->reCheckProductInfo();
                     if ($check3)
                     {
-                        //Cào sản phẩm
-                        $this->call('scrap:product');
+                        $tracking_controller = new TrackingController();
+                        $check4 = $tracking_controller->getInfoTracking();
+                        if ($check4)
+                        {
+                            //Cào sản phẩm
+                            $this->call('scrap:product');
+                        }
                     }
                 }
             }
