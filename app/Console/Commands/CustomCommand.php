@@ -115,7 +115,7 @@ class CustomCommand extends Command
         if ($check) {
             $check1 = $api_controller->changeInfoProduct(); // thay đổi thông tin product theo template
             if ($check1) {
-                $api_controller->getCategoryChecking();
+                $check2 = $api_controller->getCategoryChecking();
             }
         }
     }
@@ -128,9 +128,8 @@ class CustomCommand extends Command
         $check = $tracking_controller->deleteFulfillFile();
         if ($check)
         {
-            $google_controller = new GoogleController();
-            // up load product fullfill from google driver
-//            $check2 = $google_controller->uploadFileDriver();
+            // kiểm tra thông tin tracking supplier đưa và cập nhật vào database nếu thay đổi.
+            $check = $tracking_controller->getInfoTracking();
         }
     }
 

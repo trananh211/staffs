@@ -376,9 +376,11 @@ class Tracking extends Model
     /*Hàm lấy info tracking*/
     public function getInfoTracking()
     {
+//        echo "<pre>";
+        $result = false;
         //Kiểm tra xem có file tracking nào đang không tồn tại hay không
         $lists = \DB::table('trackings')
-            ->select('id', 'tracking_number', 'status', 'order_id', 'woo_order_id', 'payment_status')
+            ->select('id', 'tracking_number', 'status', 'order_id', 'payment_status')
             ->where('is_check', 0)
             ->where('status', '!=', env('TRACK_DELIVERED'))
             ->orderBy('updated_at', 'DESC')
@@ -404,68 +406,69 @@ class Tracking extends Model
             }
             $url = env('TRACK_URL') . rtrim($str_url, ',');
             logfile($url);
-//            //Gui request den API App
-//            $client = new \GuzzleHttp\Client(); //GuzzleHttp\Clientsssss
-//            $response = $client->request('GET', $url);
+            //Gui request den API App
+            $client = new \GuzzleHttp\Client(); //GuzzleHttp\Clientsssss
+            $response = $client->request('GET', $url);
 //            var_dump($response->getContent());
-//            $json_data = json_decode($response->getBody(), true);
-            $json_data = $this->getInfo17Track(rtrim($str_url, ','));
-            die();
-            $data = file_get_contents($url);
-            $json_data = json_decode($data, true);
-            foreach ($json_data as $info_track) {
-                if (!is_array($info_track)) {
-                    continue;
-                }
-                $tracking_number = trim($info_track['title']);
-                if (!array_key_exists($tracking_number, $ar_data)) {
-                    continue;
-                }
-                $result = $this->checkTrackingResult($info_track['value'], $ar_data[$tracking_number]->status);
-                if ($result) {
-                    $ar_update[$result][] = $tracking_number;
-                    if (in_array($result, array(
-                        env('TRACK_INTRANSIT'), env('TRACK_PICKUP'), env('TRACK_DELIVERED')
-                    ))) {
-                        $carries_name = trim($info_track['carrier_to']);
-                        $paypal_array[$ar_data[$tracking_number]->woo_order_id] = [
-                            'order_id' => $ar_data[$tracking_number]->woo_order_id,
-                            'tracking_number' => $tracking_number,
-                            'status_tracking' => $result,
-                            'carriers_name' => $carries_name,
-                            'payment_status' => $ar_data[$tracking_number]->payment_status,
-                            'tracking_id' => $ar_data[$tracking_number]->id
+            $json_data = json_decode($response->getBody(), true);
+            if (sizeof($json_data) > 0)
+            {
+                foreach ($json_data as $info_track) {
+                    if (!is_array($info_track)) {
+                        continue;
+                    }
+                    $tracking_number = trim($info_track['title']);
+                    if (!array_key_exists($tracking_number, $ar_data)) {
+                        continue;
+                    }
+                    $result = $this->checkTrackingResult($info_track['value'], $ar_data[$tracking_number]->status);
+                    $shipping_method = ($info_track['carrier_to'] != '')? trim($info_track['carrier_to']): trim($info_track['carrier_from']);
+                    if ($result) {
+                        $ar_update[$tracking_number] = [
+                            'status' => $result,
+                            'shipping_method' => $shipping_method,
+                            'updated_at' => date("Y-m-d H:i:s")
                         ];
-                        $lst_order_update[] = $ar_data[$tracking_number]->woo_order_id;
-                    }
-                    logfile('-- [Tracking] Cập nhật đơn hàng : ' . $ar_data[$tracking_number]->order_id .
-                        ' có mã tracking : ' . $tracking_number . ' thay đổi thành ' . $info_track['value']);
-                } else {
-                    logfile('-- [Tracking] Đơn hàng : ' . $ar_data[$tracking_number]->order_id .
-                        ' có mã tracking : ' . $tracking_number . ' chưa thay đổi trạng thái ' . $info_track['value']);
-                }
-            }
-            $this->sendPaypalDetail($lst_order_update, $paypal_array);
-
-            if (sizeof($ar_update) > 0) {
-                //Cap nhật trạng thái mới
-                foreach ($ar_update as $tracking_status => $list_tracking) {
-                    \DB::table('trackings')->whereIn('tracking_number', $list_tracking)
-                        ->update([
-                            'status' => $tracking_status,
-                            'updated_at' => date("Y-m-d H:i:s")
-                        ]);
-                    if ($tracking_status == env('TRACK_DELIVERED')) {
-                        \DB::table('woo_orders')->whereIn('id', function ($query) use ($list_tracking) {
-                            $query->select('woo_order_id')
-                                ->from('trackings')
-                                ->whereIn('tracking_number', $list_tracking);
-                        })->update([
-                            'status' => env('STATUS_FINISH'),
-                            'updated_at' => date("Y-m-d H:i:s")
-                        ]);
+                        logfile('-- [Tracking] Cập nhật đơn hàng : ' . $ar_data[$tracking_number]->order_id .
+                            ' có mã tracking : ' . $tracking_number . ' thay đổi thành ' . $info_track['value']);
+                        //                        if (in_array($result, array(
+//                            env('TRACK_INTRANSIT'), env('TRACK_PICKUP'), env('TRACK_DELIVERED')
+//                        ))) {
+//                            $carries_name = ($info_track['carrier_to'] != '')? trim($info_track['carrier_to']): trim($info_track['carrier_from']);
+////                            $paypal_array[$ar_data[$tracking_number]->woo_order_id] = [
+////                                'order_id' => $ar_data[$tracking_number]->woo_order_id,
+////                                'tracking_number' => $tracking_number,
+////                                'status_tracking' => $result,
+////                                'carriers_name' => $carries_name,
+////                                'payment_status' => $ar_data[$tracking_number]->payment_status,
+////                                'tracking_id' => $ar_data[$tracking_number]->id
+////                            ];
+////                            $lst_order_update[] = $ar_data[$tracking_number]->woo_order_id;
+//                        }
+                    } else {
+                        logfile('-- [Tracking] Đơn hàng : ' . $ar_data[$tracking_number]->order_id .
+                            ' có mã tracking : ' . $tracking_number . ' chưa thay đổi trạng thái ' . $info_track['value']);
                     }
                 }
+//                $this->sendPaypalDetail($lst_order_update, $paypal_array);
+                if (sizeof($ar_update) > 0) {
+                    //Cap nhật trạng thái mới
+                    foreach ($ar_update as $tracking_number => $update) {
+                        \DB::table('trackings')->where('tracking_number', $tracking_number)->update($update);
+//                        if ($tracking_status == env('TRACK_DELIVERED')) {
+//                            \DB::table('woo_orders')->whereIn('number', function ($query) use ($list_tracking) {
+//                                $query->select('order_id')
+//                                    ->from('trackings')
+//                                    ->whereIn('tracking_number', $list_tracking);
+//                            })->update([
+//                                'status' => env('STATUS_FINISH'),
+//                                'updated_at' => date("Y-m-d H:i:s")
+//                            ]);
+//                        }
+                    }
+                }
+            } else {
+                logfile_system('-- Hiện tại không tracking được list tracking này: '.$str_url);
             }
 
             //Cập nhật trạng thái đã checking
@@ -484,61 +487,9 @@ class Tracking extends Model
                     'is_check' => 0,
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
-
+            $result = true;
         }
-    }
-
-    private function getInfo17Track2($url)
-    {
-        $link = 'https://t.17track.net/en#nums=' . $url;
-        echo $link . "\n";
-
-        $html = '';
-        // Send an asynchronous request.
-        $client = new \GuzzleHttp\Client();
-        $request = new \GuzzleHttp\Psr7\Request('GET', $link);
-        $promise = $client->sendAsync($request)->then(function ($response) use (&$html) {
-            echo 'I completed! ' . "\n";
-            $contents = $response->getBody()->getContents();
-            $crawler = new Crawler($contents);
-//            var_dump($crawler);
-            echo $crawler->filter('.tracklist-item')->count();
-//            $newCrawler = new Crawler($response);
-//            print_r($newCrawler);
-//            $crawler = new \Symfony\Component\DomCrawler\Crawler($response->getBody());
-//            echo $crawler->filter('.jcTrackContainer .tracklist-item')->count();
-        });
-        $promise->wait();
-//        echo "<pre>";
-//        $stream = $html;
-//        $contents = $stream->getContents();
-//        $crawler = new Crawler($contents);
-//        echo $crawler->filter('.jcTrackContainer')->count();
-//        echo $html;
-//
-
-//        $crawler = $response;
-//        echo $crawler->filter('.jcTrackContainer .tracklist-item')->count();
-    }
-
-    private function getInfo17Track($url)
-    {
-        $link = 'https://t.17track.net/en#nums=' . $url;
-        echo $link . "\n";
-        $client = new \GuzzleHttp\Client();
-
-        $promise1 = $client->getAsync($link)->then(
-            function ($response) {
-                return $response->getBody();
-            },
-            function ($exception) {
-                return $exception->getMessage();
-            }
-        );
-        $response1 = $promise1->wait();
-        $contents = $response1->getContents();
-        $crawler = new Crawler($contents);
-        echo $crawler->filter('.tracklist-item')->count();
+        return $result;
     }
 
     private function checkTrackingResult($text, $value_old)

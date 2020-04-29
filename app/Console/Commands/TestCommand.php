@@ -56,12 +56,12 @@ class TestCommand extends Command
 //            var_dump($check2);
 //        }
 //        $check = $api_controller->fixedSkuWrong();
-        $check = $api_controller->getAllOrderOld();
+//        $check = $api_controller->getAllOrderOld();
 //        $check = $api_controller->changeNameProduct();
 //        $check = $api_controller->changeSkuWooOrder();
 //        $check = $api_controller->imgThumbProduct();
 //        $check = $api_controller->checkPaymentAgain();
-//        $check = $tracking_controller->deleteFulfillFile();
+        $check = $tracking_controller->getInfoTracking();
 //        var_dump($check);
 
 //        $this->call('scan:website');
