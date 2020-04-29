@@ -6,6 +6,7 @@ use App\Http\Controllers\GoogleController;
 use Illuminate\Console\Command;
 use App\Http\Controllers\ApiController;
 use App\Http\Controllers\WooController;
+use App\Http\Controllers\TrackingController;
 
 class CustomCommand extends Command
 {
