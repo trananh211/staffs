@@ -100,8 +100,13 @@ class CustomCommand extends Command
                     $check3 = $api_controller->reCheckProductInfo();
                     if ($check3)
                     {
-                        //Cào sản phẩm
-                        $this->call('scrap:product');
+                        $tracking_controller = new TrackingController();
+                        $check4 = $tracking_controller->deleteFulfillFile();
+                        if ($check4)
+                        {
+                            //Cào sản phẩm
+                            $this->call('scrap:product');
+                        }
                     }
                 }
             }
@@ -126,7 +131,8 @@ class CustomCommand extends Command
         echo 'run 6 phut';
         // delete file fulfill in system
         $tracking_controller = new TrackingController();
-        $check = $tracking_controller->deleteFulfillFile();
+//        $check = $tracking_controller->deleteFulfillFile();
+        $check = true;
         if ($check)
         {
             // kiểm tra thông tin tracking supplier đưa và cập nhật vào database nếu thay đổi.
