@@ -331,7 +331,7 @@ class Tracking extends Model
             $return = false;
             $file_fulfills = \DB::table('file_fulfills')->select('id', 'order_number', 'path')
                 ->where('status', 0)
-                ->limit(env('GOOGLE_LIMIT_DOWNLOAD_FILE'))
+                ->limit(35)
                 ->get()->toArray();
             if (sizeof($file_fulfills) > 0) {
                 $update_file_done = array();
