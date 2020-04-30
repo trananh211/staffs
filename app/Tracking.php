@@ -329,8 +329,11 @@ class Tracking extends Model
         \DB::beginTransaction();
         try {
             $return = false;
-            $file_fulfills = \DB::table('file_fulfills')->select('id', 'order_number', 'path')
-                ->where('status', 0)
+            $file_fulfills = \DB::table('file_fulfills as fff')
+                ->join('trackings', 'fff.order_number', '=', 'trackings.order_id')
+                ->select('fff.id', 'fff.order_number', 'fff.path')
+                ->where('fff.status', 0)
+                ->where('trackings.status', '>=', env('TRACK_INTRANSIT'))
                 ->limit(35)
                 ->get()->toArray();
             if (sizeof($file_fulfills) > 0) {
