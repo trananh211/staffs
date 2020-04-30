@@ -410,10 +410,12 @@ class Tracking extends Model
             $url = env('TRACK_URL') . rtrim($str_url, ',');
             logfile_system($url);
             //Gui request den API App
-            $client = new \GuzzleHttp\Client(); //GuzzleHttp\Clientsssss
-            $response = $client->request('GET', $url);
-//            var_dump($response->getContent());
-            $json_data = json_decode($response->getBody(), true);
+////            $client = new \GuzzleHttp\Client(); //GuzzleHttp\Clientsssss
+////            $response = $client->request('GET', $url);
+//////            var_dump($response->getContent());
+//            $json_data = json_decode($response->getBody(), true);
+            $data = file_get_contents($url);
+            $json_data = json_decode($data, true);
             if (sizeof($json_data) > 0)
             {
                 foreach ($json_data as $info_track) {
