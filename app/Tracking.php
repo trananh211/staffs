@@ -677,19 +677,25 @@ class Tracking extends Model
                 }
 //                $this->sendPaypalDetail($lst_order_update, $paypal_array);
                 if (sizeof($ar_update) > 0) {
+                    $order_delivered = array();
                     //Cap nhật trạng thái mới
                     foreach ($ar_update as $tracking_number => $update) {
                         \DB::table('trackings')->where('tracking_number', $tracking_number)->update($update);
-//                        if ($tracking_status == env('TRACK_DELIVERED')) {
-//                            \DB::table('woo_orders')->whereIn('number', function ($query) use ($list_tracking) {
-//                                $query->select('order_id')
-//                                    ->from('trackings')
-//                                    ->whereIn('tracking_number', $list_tracking);
-//                            })->update([
-//                                'status' => env('STATUS_FINISH'),
-//                                'updated_at' => date("Y-m-d H:i:s")
-//                            ]);
-//                        }
+                        if($update['status'] == env('TRACK_DELIVERED'))
+                        {
+                            $order_delivered[] = $tracking_number;
+                        }
+                    }
+                    if(sizeof($order_delivered) > 0)
+                    {
+                        $list_order_delivered = \DB::table('trackings')->whereIn('tracking_number',$order_delivered)
+                            ->pluck('order_id')->toArray();
+                        if (sizeof($list_order_delivered) > 0)
+                        {
+                            \DB::table('woo_orders')->whereIn('number',$list_order_delivered)->update([
+                                'status' => env('STATUS_FINISH')
+                            ]);
+                        }
                     }
                 }
             } else {
