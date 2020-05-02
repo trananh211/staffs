@@ -180,6 +180,20 @@ class Tracking extends Model
                                 $lists['data'][$key] = array_merge($order, $more);
                             }
                         }
+                    } else {
+                        if (sizeof($lists) > 0)
+                        {
+                            foreach ($lists['data'] as $key => $order)
+                            {
+                                $more = [
+                                    'tracking_number' => '',
+                                    'tracking_status' => '',
+                                    'time_upload' => '',
+                                    'shipping_method' => ''
+                                ];
+                                $lists['data'][$key] = array_merge($order, $more);
+                            }
+                        }
                     }
                 } else {
                     $lists = \DB::table('woo_orders as wod')
