@@ -154,52 +154,69 @@ class Tracking extends Model
                         ->whereBetween('wod.status', [env('STATUS_WORKING_MOVE'), env('STATUS_WORKING_MOVE')])
                         ->orderBy('wod.number','ASC')
                         ->paginate($paginate)->toArray();
-                    $where_status = [ env('TRACK_NEW'), env('TRACK_NOTFOUND')];
-                    $trackings = \DB::table('trackings as t')
-                        ->select(
-                            't.id as tracking_id','t.tracking_number', 't.status as tracking_status', 't.time_upload',
-                            't.shipping_method', 't.order_id'
-                        )
-                        ->whereIn('t.status', $where_status)
-                        ->get()->toArray();
                     $lists = json_decode(json_encode($lists, true), true);
-                    if (sizeof($trackings) > 0)
+                    $list_orders = array();
+                    foreach ($lists['data'] as $item) {
+                        $list_orders[] = $item['number'];
+                    }
+                    if (sizeof($list_orders) > 0)
                     {
-                        $lst_tracks = array();
-                        foreach ($trackings as $item)
+                        $where_status = [ env('TRACK_NEW'), env('TRACK_NOTFOUND')];
+                        $trackings = \DB::table('trackings as t')
+                            ->select(
+                                't.id as tracking_id','t.tracking_number', 't.status as tracking_status', 't.time_upload',
+                                't.shipping_method', 't.order_id'
+                            )
+                            ->whereIn('t.order_id', $list_orders)
+                            ->get()->toArray();
+                        if (sizeof($trackings) > 0)
                         {
-                            $lst_tracks[$item->order_id] = json_decode(json_encode($item, true), true);
-                        }
-                        if (sizeof($lists) > 0)
-                        {
-                            foreach ($lists['data'] as $key => $order)
+                            $lst_tracks = array();
+                            $lst_track_available = array();
+                            foreach ($trackings as $item)
                             {
-                                if(array_key_exists($order['number'], $lst_tracks))
+                                if (!in_array($item->tracking_status, $where_status))
                                 {
-                                    $more = $lst_tracks[$order['number']];
-                                } else {
+                                    $lst_track_available[] = $item->order_id;
+                                }
+                                $lst_tracks[$item->order_id] = json_decode(json_encode($item, true), true);
+                            }
+                            if (sizeof($lists['data']) > 0)
+                            {
+                                foreach ($lists['data'] as $key => $order)
+                                {
+                                    if (in_array($order['number'], $lst_track_available))
+                                    {
+                                        unset($lists['data'][$key]);
+                                        continue;
+                                    }
+                                    if(array_key_exists($order['number'], $lst_tracks))
+                                    {
+                                        $more = $lst_tracks[$order['number']];
+                                    } else {
+                                        $more = [
+                                            'tracking_number' => '',
+                                            'tracking_status' => '',
+                                            'time_upload' => '',
+                                            'shipping_method' => ''
+                                        ];
+                                    }
+                                    $lists['data'][$key] = array_merge($order, $more);
+                                }
+                            }
+                        } else {
+                            if (sizeof($lists) > 0)
+                            {
+                                foreach ($lists['data'] as $key => $order)
+                                {
                                     $more = [
                                         'tracking_number' => '',
                                         'tracking_status' => '',
                                         'time_upload' => '',
                                         'shipping_method' => ''
                                     ];
+                                    $lists['data'][$key] = array_merge($order, $more);
                                 }
-                                $lists['data'][$key] = array_merge($order, $more);
-                            }
-                        }
-                    } else {
-                        if (sizeof($lists) > 0)
-                        {
-                            foreach ($lists['data'] as $key => $order)
-                            {
-                                $more = [
-                                    'tracking_number' => '',
-                                    'tracking_status' => '',
-                                    'time_upload' => '',
-                                    'shipping_method' => ''
-                                ];
-                                $lists['data'][$key] = array_merge($order, $more);
                             }
                         }
                     }
