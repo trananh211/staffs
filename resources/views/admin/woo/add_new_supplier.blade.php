@@ -31,10 +31,12 @@
                                     <label for="textarea1" class="">Ghi chú - <small>Aliexpress link, skype, wechat, có sản phẩm gì ...</small></label>
                                     <span class="character-counter" style="float: right; font-size: 12px; height: 1px;"></span></div>
                             </div>
-                            <div class="col s12">
-                                <button type="submit" class="right waves-effect waves-light btn blue">
-                                    Tạo mới
-                                </button>
+                            <div class="row">
+                                <div class="col s12">
+                                    <button type="submit" class="right waves-effect waves-light btn blue">
+                                        Tạo mới
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </div>

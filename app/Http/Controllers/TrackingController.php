@@ -25,6 +25,18 @@ class TrackingController extends Controller
         return $track->tracking();
     }
 
+    public function viewFilterTracking(Request $request)
+    {
+        $track = new Tracking();
+        return $track->viewFilterTracking($request);
+    }
+
+    public function getFileTrackingNow($status = null, $order_id = null)
+    {
+        $track = new Tracking();
+        return $track->getFileTrackingNow($status, $order_id);
+    }
+
     public function getTrackingNumber()
     {
         $data = array();

@@ -57,6 +57,8 @@ Route::middleware('auth')->group(function () {
     Route::post('ajax_done_job/action', 'WooController@eventQcDone')->name('ajaxdonejob.action');
     Route::get('supplier','WooController@supplier');
     Route::get('tracking','TrackingController@tracking');
+    Route::get('view-filter-tracking','TrackingController@viewFilterTracking')->name('search-tracking');
+    Route::get('get-file-tracking-now/{status}/{order_id?}','TrackingController@getFileTrackingNow');
     Route::get('new-job-idea','WooController@createNewJob');
     Route::post('new-job-idea','WooController@saveNewJob')->name('ajaxnewjob.action');
     Route::get('list-idea','WooController@listIdea');
