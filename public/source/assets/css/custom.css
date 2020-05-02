@@ -67,3 +67,15 @@
 .example-table {
     overflow: scroll;
 }
+
+.pagination a {
+    border: 1px solid #ccc;
+}
+
+.pagination a.active {
+    background-color: #a5d6a7 ;
+}
+
+.pagination a:hover {
+    background-color: #66bb6a ;
+}

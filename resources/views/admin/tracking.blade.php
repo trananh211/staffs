@@ -40,6 +40,25 @@
         <div class="col s12 m12 l12">
             <div class="card">
                 <div class="card-content">
+                    <div class="row">
+                        <div aria-label="Page navigation">
+                            <ul class="pagination">
+                                <li class="page-item">
+                                    <a class="page-link"
+                                       href="{{ ($lists['prev_page_url'] != '')? $lists['prev_page_url'].$lists['param_url']: '#'  }}">Previous</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link active" href="#">{{ $lists['current_page'] }}</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link"
+                                       href="{{ ($lists['next_page_url'] != '')? $lists['next_page_url'].$lists['param_url']: '#'  }}">Next</a>
+                                </li>
+                                <a class="page-link right"> Page {{ $lists['current_page'] }} / {{ $lists['last_page'] }}</a>
+
+                            </ul>
+                        </div>
+                    </div>
                     <table id="review-job" class="display responsive-table datatable-example">
                         <thead>
                         <tr>

@@ -25,6 +25,12 @@ class Tracking extends Model
         '3' => 'Đã Nhận Hàng'
     ];
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+
     public function tracking()
     {
         $data = infoShop();
@@ -41,13 +47,14 @@ class Tracking extends Model
     {
         $data = infoShop();
         $rq = $request->all();
+        $url = $request->fullUrl();
         $order_id = $rq['order_id'];
         $status = ($rq['status'] != '')? $rq['status'] : '5';
         $arr_trackings = $this->arr_trackings;
         $url_download = '/'.$status.(($order_id != null)? '/'.$order_id : '');
         $lists = $this->filterViewTracking($status, $order_id);
         return view('/admin/tracking')
-            ->with(compact('lists', 'data', 'arr_trackings', 'status', 'order_id', 'url_download' ,'rq'));
+            ->with(compact('lists', 'data', 'arr_trackings', 'status', 'order_id', 'url_download'));
     }
 
     public function getFileTrackingNow($status, $order_id)
@@ -124,6 +131,7 @@ class Tracking extends Model
     {
         $lists = array();
         $paginate = 100;
+        $url = '&order_id='.$order_id.'&status='.$status;
         if ($order_id != '')
         {
             $lists = \DB::table('woo_orders as wod')
@@ -234,6 +242,10 @@ class Tracking extends Model
             } else {
                 $lists = array();
             }
+        }
+        if (sizeof($lists) > 0)
+        {
+            $lists['param_url'] = $url;
         }
         return $lists;
     }
