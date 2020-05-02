@@ -681,7 +681,7 @@ $(document).ready(function () {
             },
             success: function (data) {
                 $('#js-noti').html(data.message);
-                console.log(data);
+                // console.log(data);
             }
         });
     });
