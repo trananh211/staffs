@@ -399,10 +399,12 @@ class Tracking extends Model
             $tmp = filterFileUploadBefore($rq['files'], '', $ext_array);
             $message = $tmp['message'];
             $files = $tmp['files'];
+            $type_upload = $rq['type_upload']; // 1: Update 2: create new
             if (sizeof($files) > 0) {
                 $tracking_check = array();
                 $tracking_new = array();
                 $insert_tracking_new = array();
+                $delete_tracking_old = array();
                 foreach ($files as $file) {
                     // lấy đường dẫn file
                     $path = env('DIR_TMP') . $file;
@@ -418,10 +420,6 @@ class Tracking extends Model
                                 $message .= getErrorMessage('File : ' . $file . ' không tìm thấy tiêu đề Order Id');
                                 \File::delete($path);
                                 break;
-                            } else if (!array_key_exists('shipping_method', $row)) {
-                                $message .= getErrorMessage('File : ' . $file . ' không tìm thấy tiêu đề Shipping Method');
-                                \File::delete($path);
-                                break;
                             } else {
                                 $woo_order_id = $row['order_id'];
                                 $tracking_number = trim($row['tracking_number']);
@@ -431,8 +429,6 @@ class Tracking extends Model
                                     $message .= getErrorMessage('-- Dòng ' . $key . 'của file '.$file.' thiếu Order Id');
                                 } else if ($tracking_number == '') {
                                     $message .= getErrorMessage('-- Order ' . $woo_order_id . ' thiếu tracking number');
-                                } else if ($shipping_method == '') {
-                                    $message .= getErrorMessage('-- Order ' . $woo_order_id . ' thiếu đơn vị vận chuyển');
                                 } else {
                                     $tracking_check[$woo_order_id] = $woo_order_id;
                                     $insert_tracking_new[$woo_order_id] = [
@@ -469,7 +465,6 @@ class Tracking extends Model
                     $check_woo_orders = json_decode(json_encode($check_woo_orders, true), true);
                     if (sizeof($check_woo_orders) > 0)
                     {
-                        $update_file_fulfill = array();
                         // nếu tồn tại 1 số tracking trước đó rồi.
                         if (sizeof($check) > 0) {
                             $old_tracking = array();
@@ -486,6 +481,11 @@ class Tracking extends Model
                                         if (in_array($item['tracking_number'], $old_tracking[$order_id])) {
                                             unset($insert_tracking_new[$order_id]);
                                             unset($tracking_check[$order_id]);
+                                        } else {
+                                            if ($type_upload == 1) // change tracking old => new
+                                            {
+                                                $delete_tracking_old[] = $order_id;
+                                            }
                                         }
                                     }
                                 } else {
@@ -507,6 +507,11 @@ class Tracking extends Model
                         }
                         // nếu vẫn còn tracking mới
                         if (sizeof($insert_tracking_new) > 0) {
+                            //xóa tracking cũ trước khi insert mới
+                            if (sizeof($delete_tracking_old) > 0)
+                            {
+                                \DB::table('trackings')->whereIn('order_id',$delete_tracking_old)->delete();
+                            }
                             $result = \DB::table('trackings')->insert($insert_tracking_new);
                             if ($result) {
                                 $message .= getSuccessMessage('Toàn bộ tracking mới đã được lưu thành công.');
