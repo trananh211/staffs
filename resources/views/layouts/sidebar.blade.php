@@ -414,13 +414,12 @@
                                     {!! (array_key_exists('private', $data)) ? notiSideBar($data['private']['order_review']) : '' !!}
                                 </a>
                             </li>
-                            <li>
-                                <a href="{{ url('list-job-done') }}">Job Done</a>
-                            </li>
                             <li><a href="{{ url('fulfill-category') }}">Fulfill Order</a></li>
+                            <li><a href="{{ url('tracking') }}">Tracking</a></li>
+                            <li><a href="{{ url('list-job-done') }}">Job Done</a></li>
                             <li><a href="{{ url('job-cancel') }}">Job Cancel</a></li>
                             <li class="hidden"><a href="{{ url('supplier') }}">Supplier</a></li>
-                            <li class="hidden"><a href="{{ url('tracking') }}">Tracking</a></li>
+
                             <li class="hidden"><a href="{{ url('list-product') }}">Danh sách sản phẩm</a></li>
                         </ul>
                     </div>

@@ -123,6 +123,7 @@ function typeFulfill()
     return $lists;
 }
 
+
 function dynamic_website()
 {
     $website = [
@@ -302,17 +303,17 @@ function showTracking($tracking_number, $status)
         case env('TRACK_NOTFOUND'):
             $class = 'grey lighten-3';
             $icon = '<i class="material-icons dp48">visibility_off</i>';
-            $title = 'NOTFOUND';
+            $title = 'NOT FOUND';
             break;
         case env('TRACK_INTRANSIT'):
             $class = 'blue lighten-2';
             $icon = '<i class="material-icons dp48">trending_up</i>';
-            $title = 'INTRANSIT';
+            $title = 'IN TRANSIT';
             break;
         case env('TRACK_PICKUP'):
             $class = 'blue darken-4';
             $icon = '<i class="material-icons dp48">system_update_alt</i>';
-            $title = 'PICKUP';
+            $title = 'PICK UP';
             break;
         case env('TRACK_UNDELIVERED'):
             $class = 'red lighten-1';
@@ -335,8 +336,8 @@ function showTracking($tracking_number, $status)
             $title = 'EXPIRED';
             break;
     }
-    $str = '<a href="https://t.17track.net/en#nums=' . $tracking_number . '" target="_blank" style="color: #555;" class="center ' . $class . '" 
-    title="' . $title . '">' . $icon . '<span>' . $tracking_number . '</span></a>';
+    $str = '<a href="https://t.17track.net/en#nums=' . $tracking_number . '" target="_blank" style="color: #555;" class="tooltipped center ' . $class . '" 
+     data-position="top" data-delay="50" data-tooltip="' . $title . '">' . $icon . '<span>' . $tracking_number . '</span></a>';
     return $str;
 }
 

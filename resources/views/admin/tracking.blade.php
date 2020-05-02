@@ -2,57 +2,112 @@
 @section('content')
     <div class="row">
         <div class="col s12">
-            <div class="page-title">Status Supplier</div>
+            <div class="card">
+                <div class="card-content">
+                    <div class="row">
+                        <div class="col s10">
+                            <form class="col s12" action="{{ route('search-tracking') }}" method="get">
+                                {{ csrf_field() }}
+                                <div class="input-field col s3">
+                                    <input placeholder="MLF-6868-USA" name="order_id" type="text" class="validate"
+                                        value="{{ (isset($order_id) && $order_id != null)? $order_id : '' }}">
+                                    <label for="first_name">Tìm kiếm Order</label>
+                                </div>
+                                <div class="input-field col s5">
+                                    <select name="status">
+                                        <option value="5">Choose Status</option>
+                                        @foreach( $arr_trackings as $key => $value)
+                                            <option value="{{ $key }}" {{ (isset($status) && $status == $key )? 'selected' : '' }}>{{ $value }}</option>
+                                        @endforeach
+                                    </select>
+                                    <label>Trạng thái tracking</label>
+                                </div>
+                                <div class="col s4">
+                                    <button type="submit" class="right waves-effect waves-light btn blue">
+                                        <i class="material-icons dp48">search</i> <span>Tìm kiếm</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col s2">
+                            <a href="{{ url('get-file-tracking-now'.$url_download) }}" class="waves-effect waves-light btn green">
+                                Download File</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="col s12 m12 l12">
             <div class="card">
                 <div class="card-content">
+                    <div class="row">
+                        <div aria-label="Page navigation">
+                            <ul class="pagination">
+                                <li class="page-item">
+                                    <a class="page-link"
+                                       href="{{ ($lists['prev_page_url'] != '')? $lists['prev_page_url'].$lists['param_url']: '#'  }}">Previous</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link active" href="#">{{ $lists['current_page'] }}</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link"
+                                       href="{{ ($lists['next_page_url'] != '')? $lists['next_page_url'].$lists['param_url']: '#'  }}">Next</a>
+                                </li>
+                                <a class="page-link right"> Page {{ $lists['current_page'] }} / {{ $lists['last_page'] }}</a>
+
+                            </ul>
+                        </div>
+                    </div>
                     <table id="review-job" class="display responsive-table datatable-example">
                         <thead>
                         <tr>
                             <th class="center">#</th>
                             <th class="center">Order</th>
-                            <th class="center">Name</th>
-                            <th class="center">Design Up</th>
-                            <th class="center">Quantity</th>
-                            <th class="center">Supplier Up</th>
+                            <th class="center">Design Done</th>
+                            <th class="center">Time Up Tracking</th>
                             <th class="center">Tracking</th>
+                            <th class="center">Carrier</th>
+                            <th class="center">Action</th>
                         </tr>
                         </thead>
                         <tfoot>
                         <tr>
                             <th class="center">#</th>
                             <th class="center">Order</th>
-                            <th class="center">Name</th>
-                            <th class="center">Design Up</th>
-                            <th class="center">Quantity</th>
-                            <th class="center">Supplier Up</th>
+                            <th class="center">Design Done</th>
+                            <th class="center">Time Up Tracking</th>
                             <th class="center">Tracking</th>
+                            <th class="center">Carrier</th>
+                            <th class="center">Action</th>
                         </tr>
                         </tfoot>
                         <tbody>
-                        @if(sizeof($lists) > 0)
-                            @foreach($lists as $key => $list)
+                        @if(sizeof($lists) > 0 && sizeof($lists['data']) > 0)
+                            <?php $i= 1; ?>
+                            @foreach($lists['data'] as $list)
                                 <tr>
-                                    <td class="center">{{ $key+1 }}</td>
-                                    <td class="center"> {{ $list->number }}{{ ($list->working_id != '')? '-'.$list->working_id : '' }}</td>
-                                    <td class="center">{{ $list->product_name }}</td>
+                                    <td class="center">{{ $i++ }}</td>
+                                    <td class="center"> {{ $list['number'] }}</td>
                                     <td class="center">
-                                        {!! compareTime($list->updated_at, date("Y-m-d H:i:s")) !!}
-                                    </td>
-                                    <td class="center">{{ $list->quantity }}</td>
-                                    <td class="center">
-                                        {!! ($list->time_upload != null)? compareTime($list->time_upload, date("Y-m-d H:i:s")) : '' !!}
+                                        {!! compareTime($list['updated_at'], date("Y-m-d H:i:s")) !!}
                                     </td>
                                     <td class="center">
-                                        {!! showTracking($list->tracking_number, $list->tracking_status) !!}
+                                        {!! ($list['time_upload'] != null)? compareTime($list['time_upload'], date("Y-m-d H:i:s")) : '' !!}
+                                    </td>
+                                    <td class="center">
+                                        {!! showTracking($list['tracking_number'], $list['tracking_status']) !!}
+                                    </td>
+                                    <td class="center">{{ $list['shipping_method'] }}</td>
+                                    <td class="center">
+                                        Edit | Delete
                                     </td>
                                 </tr>
                             @endforeach
                         @else
                             <tr>
                                 <td colspan="7" class="center">
-                                    Hiện tại chưa có đơn hàng nào cần tracking number.
+                                    Không tồn tại. Mời bạn thử lại
                                 </td>
                             </tr>
                         @endif

@@ -19,20 +19,235 @@ class Tracking extends Model
     public $timestamps = true;
     protected $table = 'trackings';
 
+    protected $arr_trackings = [
+        '1' => 'Chưa có Tracking - Không Track Được',
+        '2' => 'Đang giao hàng',
+        '3' => 'Đã Nhận Hàng'
+    ];
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+
     public function tracking()
     {
-        $lists = \DB::table('woo_orders as wod')
-            ->leftJoin('trackings', 'trackings.woo_order_id', '=', 'wod.id')
-            ->leftJoin('workings', 'wod.id', '=', 'workings.woo_order_id')
-            ->select(
-                'wod.id as woo_order_id', 'wod.number', 'wod.product_name', 'wod.quantity', 'wod.updated_at', 'wod.status',
-                'trackings.tracking_number', 'trackings.status as tracking_status', 'trackings.time_upload',
-                'workings.id as working_id'
-            )
-            ->whereIn('wod.status', [env('STATUS_UPLOADED'), env('STATUS_WORKING_MOVE')])
-            ->get();
         $data = infoShop();
-        return view('/admin/tracking')->with(compact('lists', 'data'));
+        $status = 1;
+        $order_id = null;
+        $url_download = '/'.$status.(($order_id != null)? '/'.$order_id : '');
+        $arr_trackings = $this->arr_trackings;
+        $lists = $this->filterViewTracking($status, $order_id);
+        return view('/admin/tracking')
+            ->with(compact('lists', 'data', 'arr_trackings', 'status', 'order_id', 'url_download'));
+    }
+
+    public function viewFilterTracking($request)
+    {
+        $data = infoShop();
+        $rq = $request->all();
+        $url = $request->fullUrl();
+        $order_id = $rq['order_id'];
+        $status = ($rq['status'] != '')? $rq['status'] : '5';
+        $arr_trackings = $this->arr_trackings;
+        $url_download = '/'.$status.(($order_id != null)? '/'.$order_id : '');
+        $lists = $this->filterViewTracking($status, $order_id);
+        return view('/admin/tracking')
+            ->with(compact('lists', 'data', 'arr_trackings', 'status', 'order_id', 'url_download'));
+    }
+
+    public function getFileTrackingNow($status, $order_id)
+    {
+        $lists = $this->filterViewTracking($status, $order_id);
+        if (sizeof($lists['data']) > 0)
+        {
+            $data = array();
+            foreach ($lists['data'] as $key => $item)
+            {
+                $data[] = [
+                    'order_id' => $item['number'],
+                    'tracking_number' => $item['tracking_number'],
+                    'shipping_method' => $item['shipping_method'],
+                    'tracking_status' => $this->getTrackingStatusText($item['tracking_status'])
+                ];
+            }
+            $time = date("Ymd_Hms");
+            $name_file = 'tracking_'.$status.'_'.$time;
+
+            $make_excel = createFileExcel($name_file, $data, public_path(env('DIR_TMP')), $name_file);
+            if ($make_excel)
+            {
+                $path = public_path(env('DIR_TMP')).$name_file.'.csv';
+                return response()->download($path);
+            } else {
+                $alert = 'error';
+                $message = 'Xảy ra lỗi không thể tạo file để tải. Mời bạn tải lại trang và thử lại.';
+                return redirect('tracking')->with($alert, $message);
+            }
+        } else {
+            $alert = 'error';
+            $message = 'Không thể tải file vì không tồn tại trạng thái tracking này. Mời bạn kiểm tra lại.';
+            return redirect('tracking')->with($alert, $message);
+        }
+    }
+
+    private static function getTrackingStatusText($status)
+    {
+        $title = '';
+        switch ($status) {
+            case env('TRACK_NEW'):
+                $title = 'NEW';
+                break;
+            case env('TRACK_NOTFOUND'):
+                $title = 'NOT FOUND';
+                break;
+            case env('TRACK_INTRANSIT'):
+                $title = 'IN TRANSIT';
+                break;
+            case env('TRACK_PICKUP'):
+                $title = 'PICK UP';
+                break;
+            case env('TRACK_UNDELIVERED'):
+                $title = 'UNDELIVERED';
+                break;
+            case env('TRACK_DELIVERED'):
+                $title = 'DELIVERED';
+                break;
+            case env('TRACK_ALERT'):
+                $title = 'ALERT';
+                break;
+            case env('TRACK_EXPIRED'):
+                $title = 'EXPIRED';
+                break;
+            default:
+                $title = '';
+                break;
+        }
+        return ucwords($title);
+    }
+
+    private static function filterViewTracking($status, $order_id)
+    {
+        $lists = array();
+        $paginate = 100;
+        $url = '&order_id='.$order_id.'&status='.$status;
+        if ($order_id != '')
+        {
+            $lists = \DB::table('woo_orders as wod')
+                ->leftJoin('trackings as t', 't.order_id', '=', 'wod.number')
+                ->select(
+                    'wod.number', 'wod.created_at', 'wod.updated_at', 'wod.status',
+                    't.id as tracking_id','t.tracking_number', 't.status as tracking_status', 't.time_upload',
+                    't.shipping_method'
+                )
+                ->where('wod.number','LIKE','%'.$order_id.'%')
+                ->paginate($paginate)->toArray();
+            $lists = json_decode(json_encode($lists, true), true);
+        } else {
+            if ($status == '1' || $status == '5')
+            {
+                if ($status == '1')
+                {
+                    $lists = \DB::table('woo_orders as wod')
+                        ->select('wod.number', 'wod.created_at', 'wod.updated_at', 'wod.status')
+                        ->whereBetween('wod.status', [env('STATUS_WORKING_MOVE'), env('STATUS_WORKING_MOVE')])
+                        ->orderBy('wod.number','ASC')
+                        ->paginate($paginate)->toArray();
+                    $where_status = [ env('TRACK_NEW'), env('TRACK_NOTFOUND')];
+                    $trackings = \DB::table('trackings as t')
+                        ->select(
+                            't.id as tracking_id','t.tracking_number', 't.status as tracking_status', 't.time_upload',
+                            't.shipping_method', 't.order_id'
+                        )
+                        ->whereIn('t.status', $where_status)
+                        ->get()->toArray();
+                    $lists = json_decode(json_encode($lists, true), true);
+                    if (sizeof($trackings) > 0)
+                    {
+                        $lst_tracks = array();
+                        foreach ($trackings as $item)
+                        {
+                            $lst_tracks[$item->order_id] = json_decode(json_encode($item, true), true);
+                        }
+                        if (sizeof($lists) > 0)
+                        {
+                            foreach ($lists['data'] as $key => $order)
+                            {
+                                if(array_key_exists($order['number'], $lst_tracks))
+                                {
+                                    $more = $lst_tracks[$order['number']];
+                                } else {
+                                    $more = [
+                                        'tracking_number' => '',
+                                        'tracking_status' => '',
+                                        'time_upload' => '',
+                                        'shipping_method' => ''
+                                    ];
+                                }
+                                $lists['data'][$key] = array_merge($order, $more);
+                            }
+                        }
+                    } else {
+                        if (sizeof($lists) > 0)
+                        {
+                            foreach ($lists['data'] as $key => $order)
+                            {
+                                $more = [
+                                    'tracking_number' => '',
+                                    'tracking_status' => '',
+                                    'time_upload' => '',
+                                    'shipping_method' => ''
+                                ];
+                                $lists['data'][$key] = array_merge($order, $more);
+                            }
+                        }
+                    }
+                } else {
+                    $lists = \DB::table('woo_orders as wod')
+                        ->leftJoin('trackings as t', 't.order_id', '=', 'wod.number')
+                        ->select(
+                            'wod.number', 'wod.created_at', 'wod.updated_at', 'wod.status',
+                            't.id as tracking_id','t.tracking_number', 't.status as tracking_status', 't.time_upload',
+                            't.shipping_method'
+                        )
+                        ->orderBy('wod.number','ASC')
+                        ->paginate($paginate)->toArray();
+                    $lists = json_decode(json_encode($lists, true), true);
+                }
+            } else if($status == '2' || $status == '3') {
+                if ($status == '2')
+                {
+                    $where_status = [
+                        env('TRACK_INTRANSIT'),
+                        env('TRACK_PICKUP'),
+                        env('TRACK_UNDELIVERED'),
+                        env('TRACK_ALERT'),
+                        env('TRACK_EXPIRED')
+                    ];
+                } else {
+                    $where_status = [ env('TRACK_DELIVERED')];
+                }
+                $lists = \DB::table('woo_orders as wod')
+                    ->leftJoin('trackings as t', 't.order_id', '=', 'wod.number')
+                    ->select(
+                        'wod.number', 'wod.created_at', 'wod.updated_at', 'wod.status',
+                        't.id as tracking_id','t.tracking_number', 't.status as tracking_status', 't.time_upload',
+                        't.shipping_method'
+                    )
+                    ->whereIn('t.status',$where_status)
+                    ->orderBy('wod.number','ASC')
+                    ->paginate($paginate)->toArray();
+                $lists = json_decode(json_encode($lists, true), true);
+            } else {
+                $lists = array();
+            }
+        }
+        if (sizeof($lists) > 0)
+        {
+            $lists['param_url'] = $url;
+        }
+        return $lists;
     }
 
     public function getFileTracking()
@@ -410,10 +625,12 @@ class Tracking extends Model
             $url = env('TRACK_URL') . rtrim($str_url, ',');
             logfile_system($url);
             //Gui request den API App
-            $client = new \GuzzleHttp\Client(); //GuzzleHttp\Clientsssss
-            $response = $client->request('GET', $url);
-//            var_dump($response->getContent());
-            $json_data = json_decode($response->getBody(), true);
+////            $client = new \GuzzleHttp\Client(); //GuzzleHttp\Clientsssss
+////            $response = $client->request('GET', $url);
+//////            var_dump($response->getContent());
+//            $json_data = json_decode($response->getBody(), true);
+            $data = file_get_contents($url);
+            $json_data = json_decode($data, true);
             if (sizeof($json_data) > 0)
             {
                 foreach ($json_data as $info_track) {
