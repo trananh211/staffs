@@ -59,7 +59,7 @@ class Tracking extends Model
 
     public function getFileTrackingNow($status, $order_id)
     {
-        $lists = $this->filterViewTracking($status, $order_id);
+        $lists = $this->filterViewTracking($status, $order_id, 1000);
         if (sizeof($lists['data']) > 0)
         {
             $data = array();
@@ -127,10 +127,10 @@ class Tracking extends Model
         return ucwords($title);
     }
 
-    private static function filterViewTracking($status, $order_id)
+    private static function filterViewTracking($status, $order_id, $paginate = null)
     {
+        $paginate = ($paginate != null)? $paginate : 100;
         $lists = array();
-        $paginate = 100;
         $url = '&order_id='.$order_id.'&status='.$status;
         if ($order_id != '')
         {
