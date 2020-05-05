@@ -1671,10 +1671,6 @@ class GoogleController extends Controller
         if (!File::exists($dir_fulfill)) {
             File::makeDirectory($dir_fulfill, $mode = 0777, true, true);
         }
-        $working_file_error = array();
-        $woo_order_error = array();
-        $data_file_fulfill = array();
-        $woo_order_update = array();
         // re download
         $file_fulfill_download_success = array();
         $file_fulfill_download_error = array();
@@ -1747,9 +1743,9 @@ class GoogleController extends Controller
             }
 
             //nếu tải về thành công hết
-            if (sizeof($file_fulfill_download_success) > 0)
+            if (sizeof($file_fulfill_download_error) > 0)
             {
-                \DB::table('file_fulfills')->whereIn('id',$file_fulfill_download_success)->update([
+                \DB::table('file_fulfills')->whereIn('id',$file_fulfill_download_error)->update([
                     'status' => 0,
                     'download' => env('STATUS_WORKING_ERROR')
                 ]);
