@@ -1638,6 +1638,121 @@ class GoogleController extends Controller
         return $return;
     }
 
+    public function reDownloadFileFulfill()
+    {
+        $return = false;
+        logfile_system('--- Re Download file fulfill về local');
+        $file_fulfills = \DB::table('file_fulfills as ff')
+            ->leftjoin('working_files as wf', 'ff.working_file_id', '=', 'wf.id')
+            ->select(
+                'ff.id as file_fulfill_id', 'ff.order_number as number',
+                'wf.id as working_file_id','wf.name', 'wf.path', 'wf.base_name', 'wf.base_path', 'wf.base_dirname'
+            )
+            ->where('wf.is_mockup',0)
+            ->where('ff.download',1)
+            ->get()->toArray();
+        if( sizeof($file_fulfills) > 0)
+        {
+            $result = $this->actionDownloadFileFulfill($file_fulfills);
+        } else {
+            $return = true;
+            logfile_system('--- Đã hết file để tải lại về local cho fulfill. Chuyển sang việc tiếp theo');
+        }
+        return $return;
+    }
+
+    private function actionDownloadFileFulfill($file_fufills)
+    {
+        logfile_system('--- Bắt đầu tải '.sizeof($file_fufills).' file về local để fulfill');
+        $dt_insert_file_fulfill = array();
+        $name_dirfulfill = 'file_fulfill';
+        $dir_fulfill = public_path($name_dirfulfill);
+        // tạo thư mục fulfill
+        if (!File::exists($dir_fulfill)) {
+            File::makeDirectory($dir_fulfill, $mode = 0777, true, true);
+        }
+        // re download
+        $file_fulfill_download_success = array();
+        $file_fulfill_download_error = array();
+        foreach ($file_fufills as $file)
+        {
+            $extension = pathinfo($file->name)['extension'];
+            $new_name = $file->number.'_'.$file->working_file_id.'.'.$extension;
+            $destinationPath = $dir_fulfill.'/'.$file->number.'/'.$new_name;
+            $name_destinationPath = $name_dirfulfill.'/'.$file->number.'/'.$new_name;
+            if(\File::exists(public_path($name_destinationPath)))
+            {
+                $file_fulfill_download_success[] = $file->file_fulfill_id;
+                logfile_system('--- Đã tồn tại file '.basename($name_destinationPath).' trên local. Bỏ qua');
+            } else {
+                logfile_system('--- Đang tải file: '.$new_name.' về local');
+                // nếu chưa up lên google driver
+                if ($file->base_name == '')
+                {
+                    $path = public_path($file->path.$file->name);
+                    if(\File::exists($path))
+                    {
+                        logfile_system('--- Tồn tại file : '.$file->name.' trên local');
+                        if (!\File::exists(dirname($destinationPath))) {
+                            \File::makeDirectory(dirname($destinationPath), $mode = 0777, true, true);
+                        }
+                        $result = \File::copy($path,$destinationPath);
+                        if ($result)
+                        {
+                            $file_fulfill_download_success[] = $file->file_fulfill_id;
+                            logfile_system('--- Copy thành công '.$new_name.' về local.');
+                        } else {
+                            $file_fulfill_download_error[] = $file->file_fulfill_id;
+                            logfile_system('--- Không thể copy job '.$new_name.' về local. Thử lại lần sau');
+                        }
+                    } else {
+                        logfile_system('--- Không tồn tại file : '.$file->name.' trên local');
+                        $file_fulfill_download_error[] = $file->file_fulfill_id;
+                    }
+                } else { // nếu đã up lên google driver rồi
+//                    $check_exist_before = checkFileExistByBaseName($file->name, $file->base_dirname);
+                    $check_exist_before = true;
+                    if ($check_exist_before) {
+                        if (!\File::exists(dirname($destinationPath))) {
+                            \File::makeDirectory(dirname($destinationPath), $mode = 0777, true, true);
+                        }
+                        try {
+                            $rawData = \Storage::cloud()->get($file->base_path);
+                            $result = \Storage::disk('public_local')->put($name_destinationPath, $rawData);
+                        } catch (\Exception $e) {
+                            $result = false;
+                        }
+                        if ($result)
+                        {
+                            $file_fulfill_download_success[] = $file->file_fulfill_id;
+                            logfile_system('--- Tải thành công '.$new_name.' về local.');
+                        } else {
+                            $file_fulfill_download_error[] = $file->file_fulfill_id;
+                            logfile_system('--- Không thể tải job '.$new_name.' về local. Thử lại lần sau');
+                        }
+                    }
+                }
+            }
+            //nếu tải về thành công hết
+            if (sizeof($file_fulfill_download_success) > 0)
+            {
+                \DB::table('file_fulfills')->whereIn('id',$file_fulfill_download_success)->update([
+                    'status' => 0,
+                    'download' => 0
+                ]);
+            }
+
+            //nếu tải về thành công hết
+            if (sizeof($file_fulfill_download_error) > 0)
+            {
+                \DB::table('file_fulfills')->whereIn('id',$file_fulfill_download_error)->update([
+                    'status' => 0,
+                    'download' => env('STATUS_WORKING_ERROR')
+                ]);
+            }
+        }
+    }
+
     public function getFileFulfill()
     {
         $return = false;
@@ -1707,9 +1822,9 @@ class GoogleController extends Controller
                                 'updated_at' => date("Y-m-d H:i:s")
                             ];
                             $woo_order_update[] = $file->id;
-                            logfile_system('--- Tải thành công '.$new_name.' về local.');
+                            logfile_system('--- Copy thành công '.$new_name.' về local.');
                         } else {
-                            logfile_system('--- Không thể tải job '.$new_name.' về local. Thử lại lần sau');
+                            logfile_system('--- Không thể copy job '.$new_name.' về local. Thử lại lần sau');
                         }
                     } else {
                         logfile_system('--- Không tồn tại file : '.$file->name.' trên local');
