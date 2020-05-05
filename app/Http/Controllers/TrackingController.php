@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Tracking;
+use App\Paypal;
 
 class TrackingController extends Controller
 {
@@ -66,5 +67,12 @@ class TrackingController extends Controller
     {
         $track = new Tracking();
         return $track->editTrackingNumber($request);
+    }
+
+    // lấy thông tin cần up lên paypal
+    public function getInfoTrackingUpPaypal()
+    {
+        $paypal = new Paypal();
+        return $paypal->getInfoTrackingUpPaypal();
     }
 }

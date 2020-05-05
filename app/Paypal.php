@@ -70,8 +70,8 @@ class Paypal extends Model
     {
         $json = array();
         $ch = curl_init();
-
-        curl_setopt($ch, CURLOPT_URL, "https://api.sandbox.paypal.com/v1/oauth2/token");
+        $url = $this->url;
+        curl_setopt($ch, CURLOPT_URL, $url."v1/oauth2/token");
         curl_setopt($ch, CURLOPT_HEADER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_POST, true);
@@ -300,6 +300,42 @@ class Paypal extends Model
         } else {
             echo "Đã hết order có thể cập nhật paypal id <br>";
         }
+    }
+
+    public function getInfoTrackingUpPaypal()
+    {
+        echo "<pre>";
+        $lst_status = [
+            env('TRACK_INTRANSIT'),
+            env('TRACK_PICKUP'),
+            env('TRACK_DELIVERED')
+        ];
+        $return = false;
+        $lists = \DB::table('trackings as t')
+            ->leftjoin('woo_orders', 't.order_id', '=', 'woo_orders.number')
+            ->leftjoin('paypals', 'woo_orders.paypal_id', '=', 'paypals.id')
+            ->select(
+                't.id as tracking_id', 't.tracking_number', 't.order_id', 't.status', 't.shipping_method',
+                'woo_orders.transaction_id',
+                'paypals.id as paypal_id', 'paypals.email as paypal_email', 'paypals.client_id', 'paypals.client_secret'
+            )
+            ->where('woo_orders.paypal_id', '!=', 0)
+            ->whereIn('t.status',$lst_status)
+            ->where('t.payment_up_tracking',0)
+            ->limit(5)
+            ->get()->toArray();
+        if (sizeof($lists) > 0)
+        {
+            $paypal = array();
+            foreach($lists as $list)
+            {
+
+            }
+        } else {
+            logfile_system('-- Đã hết tracking để up lên paypal. Chuyển sang công việc khác.');
+            $return = true;
+        }
+        return $return;
     }
 
     public function test()
