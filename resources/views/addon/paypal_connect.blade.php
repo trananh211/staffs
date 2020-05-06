@@ -3,6 +3,9 @@
     <div class="row">
         <div class="col s12">
             <div class="page-title">Add Tracking To Paypal</div>
+            <div class="right">
+                <a href="{{ url('carrier-select') }}">Select Carriers</a>
+            </div>
         </div>
         <div class="col s12">
             <div class="card">

@@ -40,7 +40,16 @@ class ScrapePaypalCarriers extends Command
      */
     public function handle()
     {
-        logfile('---------------------- [PAYPAL CARRIER] ------------------------');
+        $check = $this->scanCarrier17Track();
+        if ($check)
+        {
+            $this->scanCarrier();
+        }
+    }
+
+    private function scanCarrier()
+    {
+        logfile_system('---------------------- [PAYPAL CARRIER] ------------------------');
         $url = env('PAYPAL_CARRIER');
         $client = new \Goutte\Client();
         $response = $client->request('GET', env('PAYPAL_CARRIER'));
@@ -69,17 +78,56 @@ class ScrapePaypalCarriers extends Command
                         'created_at' => date("Y-m-d H:i:s"),
                         'updated_at' => date("Y-m-d H:i:s")
                     ];
-                    logfile('-- Phát hiện ra carriers mới: ' . $carrie_name . ' : ' . $carrie_value . ' : ' . $carrie_country_code);
+                    logfile_system('-- Phát hiện ra carriers mới: ' . $carrie_name . ' : ' . $carrie_value . ' : ' . $carrie_country_code);
                 }
             });
             if (sizeof($data) > 0) {
                 $result = \DB::table('paypal_carriers')->insert($data);
-                logfile('-- [Paypal] [Scan Carries] Success. Quét được ' . sizeof($data) . ' carriers mới ở Paypal');
+                logfile_system('-- [Paypal] [Scan Carries] Success. Quét được ' . sizeof($data) . ' carriers mới ở Paypal');
             } else {
-                logfile('-- [Paypal] [Scan Carries] Không tìm được carriers nào mới từ Paypal');
+                logfile_system('-- [Paypal] [Scan Carries] Không tìm được carriers nào mới từ Paypal');
             }
         } else {
-            logfile('-- [Paypal] [Scan Carries] Error. Xảy ra lỗi không thể quét được.');
+            logfile_system('-- [Paypal] [Scan Carries] Error. Xảy ra lỗi không thể quét được.');
         }
+    }
+
+    private function scanCarrier17Track()
+    {
+        $return = false;
+        $track_carriers = \DB::table('17track_carriers')->pluck('name')->toArray();
+        $tmp = \DB::table('trackings')->select('shipping_method')->distinct()->get()->toArray();
+        if (sizeof($tmp) > 0)
+        {
+            $insert_carriers = array();
+            foreach ($tmp as $item)
+            {
+                if ($item->shipping_method != '' && !in_array($item->shipping_method, $track_carriers))
+                {
+                    $insert_carriers[] = [
+                        'name' => $item->shipping_method,
+                        'created_at' => date("Y-m-d H:i:s"),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ];
+                }
+            }
+            if(sizeof($insert_carriers) > 0)
+            {
+                $result = \DB::table('17track_carriers')->insert($insert_carriers);
+                if ($result)
+                {
+                    logfile_system('-- Thêm mới '.sizeof($insert_carriers).' carriers từ 17 track thành công');
+                } else {
+                    logfile_system('-- [Error] Thêm mới '.sizeof($insert_carriers).' carriers từ 17 track thất bại');
+                }
+            } else {
+                logfile_system('-- Đã hết Carriers mới từ 17 track. Chuyển sang quét carrires từ paypal');
+                $return = true;
+            }
+        } else {
+            logfile_system('-- Không tồn tại Carrires nào từ 17 track. Chuyển sang quét carriers từ paypal');
+            $return = true;
+        }
+        return $return;
     }
 }

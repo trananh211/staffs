@@ -105,4 +105,19 @@ class PaypalController extends Controller
         $paypal = new Paypal();
         return $paypal->updatePaypalId();
     }
+
+    public function edit17TrackCarrier(Request $request)
+    {
+        $paypal = new Paypal();
+        return $paypal->edit17TrackCarrier($request);
+    }
+
+    public function carrierSelect()
+    {
+        $data = array();
+        $carriers = \DB::table('17track_carriers')->select('id','name','paypal_carrier_id')->get()->toArray();
+        $paypal_carriers = \DB::table('paypal_carriers')->orderBy('name','asc')->pluck('name','id')->toArray();
+        return view('/addon/paypal_carriers', compact('data', 'carriers', 'paypal_carriers'));
+    }
+
 }
