@@ -43,7 +43,11 @@ class ScrapePaypalCarriers extends Command
         $check = $this->scanCarrier17Track();
         if ($check)
         {
-            $this->scanCarrier();
+            $check1 = $this->updateTrackingNotChooseCarrier();
+            if ($check1)
+            {
+                $this->scanCarrier();
+            }
         }
     }
 
@@ -127,6 +131,51 @@ class ScrapePaypalCarriers extends Command
         } else {
             logfile_system('-- Không tồn tại Carrires nào từ 17 track. Chuyển sang quét carriers từ paypal');
             $return = true;
+        }
+        return $return;
+    }
+
+    private function updateTrackingNotChooseCarrier()
+    {
+        $return = false;
+        $lists = \DB::table('trackings')
+            ->leftjoin('17track_carriers as t17', 't17.name', '=', 'trackings.shipping_method')
+            ->select('trackings.id as tracking_id','trackings.shipping_method','t17.paypal_carrier_id')
+            ->where('payment_status',env('PAYPAL_CARRIER_NOT_CHOOSE'))
+            ->get()->toArray();
+        if (sizeof($lists) > 0)
+        {
+            $update_trackings = array();
+            $tracking_not_choose = array();
+            foreach ($lists as $item)
+            {
+                if($item->paypal_carrier_id != 0)
+                {
+                    $update_trackings[] = $item->tracking_id;
+                } else {
+                    $tracking_not_choose[$item->shipping_method] = $item->shipping_method;
+                }
+            }
+            if (sizeof($update_trackings) > 0) {
+                $result = \DB::table('trackings')->whereIn('id',$update_trackings)->update([
+                    'payment_status' => env('PAYPAL_STATUS_NEW'),
+                    'payment_up_tracking' => 0,
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+                if ($result)
+                {
+                    logfile_system('-- Cập nhật thành công các nhà cung cấp chưa chọn vào danh sách mới');
+                } else {
+                    logfile_system('-- Cập nhật thất bại các nhà cung cấp chưa chọn vào danh sách mới');
+                }
+            }
+            if (sizeof($tracking_not_choose) > 0)
+            {
+                logfile_system('-- Tồn tại '.sizeof($tracking_not_choose).' carrier chưa chọn nhà cung cấp là : '.implode(',', $tracking_not_choose));
+            }
+        } else {
+            $return = true;
+            logfile_system('-- Đã cập nhật đủ tracking chưa chọn nhà cung cấp lên paypal.');
         }
         return $return;
     }
