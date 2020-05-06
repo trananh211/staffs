@@ -20,7 +20,7 @@ class NewFileFulfills extends Migration
             $table->integer('working_file_id');
             $table->text('path');
             $table->text('web_path');
-            $table->integer('status')->default(0);
+            $table->integer('status')->default(0); // 0: vừa download về local - 1: add tracking thành công chờ xóa - 2: xóa thành công - 10: xóa lỗi
             $table->timestamps();
         });
     }

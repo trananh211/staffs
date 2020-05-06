@@ -569,7 +569,7 @@ class Tracking extends Model
             $file_fulfills = \DB::table('file_fulfills as fff')
                 ->join('trackings', 'fff.order_number', '=', 'trackings.order_id')
                 ->select('fff.id', 'fff.order_number', 'fff.path')
-                ->where('fff.status', 0)
+                ->where('fff.status', 1)
                 ->where('trackings.status', '>=', env('TRACK_INTRANSIT'))
                 ->limit(35)
                 ->get()->toArray();
