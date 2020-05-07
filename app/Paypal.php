@@ -11,8 +11,8 @@ class Paypal extends Model
     public $timestamps = true;
     protected $table = 'paypals';
 
-//    private $url = 'https://api.paypal.com/';
-    private $url = 'https://api.sandbox.paypal.com/';
+    private $url = 'https://api.paypal.com/';
+//    private $url = 'https://api.sandbox.paypal.com/';
 
     public function create($request)
     {
