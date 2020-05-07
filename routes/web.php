@@ -99,6 +99,8 @@ Route::middleware('auth')->group(function () {
     /** Paypal */
     Route::get('paypal-connect','PaypalController@index');
     Route::post('paypal-create','PaypalController@create');
+    Route::get('carrier-select','PaypalController@carrierSelect');
+    Route::post('edit-17track-carrier','PaypalController@edit17TrackCarrier');
 
     //woo products create automatic
     Route::get('woo-create-template','WooController@viewCreateTemplate');

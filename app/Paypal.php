@@ -11,8 +11,8 @@ class Paypal extends Model
     public $timestamps = true;
     protected $table = 'paypals';
 
-    private $url = 'https://api.paypal.com/';
-//    private $url = 'https://api.sandbox.paypal.com/';
+//    private $url = 'https://api.paypal.com/';
+    private $url = 'https://api.sandbox.paypal.com/';
 
     public function create($request)
     {
@@ -66,12 +66,42 @@ class Paypal extends Model
         return redirect('paypal-connect')->with($status, $message);
     }
 
+    public function edit17TrackCarrier($request)
+    {
+        \DB::beginTransaction();
+        try {
+            $rq = $request->all();
+            $track_carrier_id = $rq['id'];
+            $track_carrier_name = $rq['name'];
+            $paypal_carrier_id = $rq['paypal_carrier_id'];
+            $result = \DB::table('17track_carriers')->where('id', $track_carrier_id)->update([
+                'paypal_carrier_id' => $paypal_carrier_id,
+                'updated_at' => date("Y-m-d H:i:s")
+            ]);
+            if ($result)
+            {
+                $status = 'success';
+                $message = 'Cập nhật paypal carrier cho nhà cung cấp : '.$track_carrier_name.' thành công';
+            } else {
+                $status = 'error';
+                $message = 'Cập nhật paypal carrier cho nhà cung cấp : '.$track_carrier_name.' thất bại';
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            $status = 'error';
+            $message = 'Xảy ra lỗi. Hãy thử lại.';
+            logfile($message . ' - ' . $e->getMessage());
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+        }
+        return redirect('carrier-select')->with($status, $message);
+    }
+
     public function connect($clientId, $secret)
     {
         $json = array();
         $ch = curl_init();
-
-        curl_setopt($ch, CURLOPT_URL, "https://api.sandbox.paypal.com/v1/oauth2/token");
+        $url = $this->url;
+        curl_setopt($ch, CURLOPT_URL, $url."v1/oauth2/token");
         curl_setopt($ch, CURLOPT_HEADER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_POST, true);
@@ -300,6 +330,125 @@ class Paypal extends Model
         } else {
             echo "Đã hết order có thể cập nhật paypal id <br>";
         }
+    }
+
+    public function getInfoTrackingUpPaypal()
+    {
+        $lst_status = [
+            env('TRACK_INTRANSIT'),
+            env('TRACK_PICKUP'),
+            env('TRACK_DELIVERED')
+        ];
+        $return = false;
+        // lấy danh sách tracking mới cần up lên paypal
+        $lists = \DB::table('trackings as t')
+            ->leftjoin('woo_orders', 't.order_id', '=', 'woo_orders.number')
+            ->leftjoin('paypals', 'woo_orders.paypal_id', '=', 'paypals.id')
+            ->select(
+                't.id as tracking_id', 't.tracking_number', 't.order_id', 't.status', 't.shipping_method',
+                'woo_orders.transaction_id',
+                'paypals.id as paypal_id', 'paypals.email as paypal_email', 'paypals.client_id', 'paypals.client_secret'
+            )
+            ->where('woo_orders.paypal_id', '!=', 0)
+            ->whereIn('t.status',$lst_status)
+            ->where('t.payment_up_tracking',0)
+            ->limit(env('PAYPAL_LIMIT_UP_TRACKING'))
+            ->get()->toArray();
+        if (sizeof($lists) > 0)
+        {
+            // lấy toàn bộ danh sách đã thay đổi tên carrier name trước khi up tracking
+            $track_17_carriers = \DB::table('17track_carriers as 17t')
+                ->leftjoin('paypal_carriers', '17t.paypal_carrier_id', '=', 'paypal_carriers.id')
+                ->select(
+                    '17t.name as track_name',
+                    'paypal_carriers.enumerated_value')
+                ->get()->toArray();
+            $carriers = array();
+            if (sizeof($track_17_carriers) > 0)
+            {
+                foreach ($track_17_carriers as $item)
+                {
+                    $carriers[$item->track_name] = $item->enumerated_value;
+                }
+                $paypal = array();
+                $paypal_carrier_not_choose = array();
+                foreach($lists as $list)
+                {
+                    if (array_key_exists($list->shipping_method, $carriers))
+                    {
+                        $paypal[$list->paypal_id]['info'] = [
+                            'paypal_email' => $list->paypal_email,
+                            'client_id' => $list->client_id,
+                            'client_secret' => $list->client_secret
+                        ];
+                        $paypal[$list->paypal_id]['data']['trackers'][] = [
+                            'transaction_id' => $list->transaction_id,
+                            'tracking_number' => $list->tracking_number,
+                            'status' => 'SHIPPED',
+                            "carrier" => $carriers[$list->shipping_method]
+                        ];
+                        $paypal[$list->paypal_id]['list_tracking_id'][] = $list->tracking_id;
+                    } else {
+                        $paypal_carrier_not_choose[] = $list->tracking_id;
+                    }
+                }
+
+                // nếu tồn tại tracking chưa chọn nhà cung cấp
+                if (sizeof($paypal_carrier_not_choose) > 0)
+                {
+                    \DB::table('trackings')->whereIn('id',$paypal_carrier_not_choose)->update([
+                        'payment_status' => env('PAYPAL_CARRIER_NOT_CHOOSE'),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ]);
+                }
+
+                if (sizeof($paypal) > 0)
+                {
+                    foreach($paypal as $paypal_id => $item)
+                    {
+                        $json = false;
+                        try {
+                            $client_id = $item['info']['client_id'];
+                            $client_secret = $item['info']['client_secret'];
+                            //Connect toi paypal
+                            $json_data = $this->connect($client_id, $client_secret);
+                            $access_token = $json_data->access_token;
+                            $data = $item['data'];
+                            $new_data = json_encode($data);
+                            logfile_system('--- Đang cập nhật tracking number của '.sizeof($data['trackers']).' transection');
+                            $json = $this->addTracking($new_data, $access_token);
+                        } catch (\Exception $e) {
+                            logfile_system('--- [Error] Không kết nối được với paypal API với lỗi: '.$e->getMessage());
+                        }
+                        if ($json) {
+                            logfile_system('--- Cập nhật tracking number lên paypal thành công.');
+                            \DB::table('trackings')->whereIn('id', $item['list_tracking_id'])->update([
+                                'payment_status' => env('PAYPAL_STATUS_SUCCESS'),
+                                'payment_up_tracking' => 1,
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ]);
+                        } else {
+                            logfile_system('--- Cập nhật tracking number thất bại');
+                            \DB::table('trackings')->whereIn('id', $item['list_tracking_id'])->update([
+                                'payment_status' => env('PAYPAL_CARRIER_ERROR'),
+                                'payment_up_tracking' => 1,
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ]);
+                        }
+                    }
+                } else {
+                    $return = true;
+                    logfile_system('-- Chưa kết nối tới paypal hoặc chưa tồn tại order mua qua paypal');
+                }
+            } else {
+                $return = true;
+                logfile_system('-- Chưa chọn nhà cung cấp Carriers. Bạn cần chọn nhà cung cấp trước.');
+            }
+        } else {
+            logfile_system('-- Đã hết tracking để up lên paypal. Chuyển sang công việc khác.');
+            $return = true;
+        }
+        return $return;
     }
 
     public function test()
