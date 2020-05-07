@@ -350,8 +350,8 @@ class Paypal extends Model
                 'paypals.id as paypal_id', 'paypals.email as paypal_email', 'paypals.client_id', 'paypals.client_secret'
             )
             ->where('woo_orders.paypal_id', '!=', 0)
+            ->where('t.payment_up_tracking',env('PAYPAL_STATUS_NEW'))
             ->whereIn('t.status',$lst_status)
-            ->where('t.payment_up_tracking',0)
             ->limit(env('PAYPAL_LIMIT_UP_TRACKING'))
             ->get()->toArray();
         if (sizeof($lists) > 0)
