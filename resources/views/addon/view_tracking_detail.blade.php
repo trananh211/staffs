@@ -64,6 +64,14 @@
                                                     </div>
                                                 </div>
                                                 <div class="row">
+                                                    <div class="input-field col s12">
+                                                        <textarea id="textarea1" name="note" class="materialize-textarea" length="520">
+                                                            {{ ($list->note != '')? html_entity_decode($list->note) : '' }}
+                                                        </textarea>
+                                                        <label for="textarea1" class="">Ghi chú - <small>Đơn hàng này đang ở trạng thái như thế nào ...</small></label>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
                                                     <div class="col s12">
                                                         <button type="submit"
                                                                 class="right waves-effect waves-light btn blue">
