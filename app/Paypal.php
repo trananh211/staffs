@@ -424,14 +424,14 @@ class Paypal extends Model
                             logfile_system('--- Cập nhật tracking number lên paypal thành công.');
                             \DB::table('trackings')->whereIn('id', $item['list_tracking_id'])->update([
                                 'payment_status' => env('PAYPAL_STATUS_SUCCESS'),
-                                'payment_up_tracking' => 1,
+                                'payment_up_tracking' => 2,
                                 'updated_at' => date("Y-m-d H:i:s")
                             ]);
                         } else {
                             logfile_system('--- Cập nhật tracking number thất bại');
                             \DB::table('trackings')->whereIn('id', $item['list_tracking_id'])->update([
                                 'payment_status' => env('PAYPAL_CARRIER_ERROR'),
-                                'payment_up_tracking' => 1,
+                                'payment_up_tracking' => 2,
                                 'updated_at' => date("Y-m-d H:i:s")
                             ]);
                         }
