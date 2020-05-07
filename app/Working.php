@@ -3896,7 +3896,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             ->leftjoin('trackings as t','woo_orders.number', '=', 't.order_id')
             ->select(
                 't.id as tracking_id','woo_orders.number as order_id', 't.tracking_number', 't.status',
-                't.shipping_method', 't.time_upload'
+                't.shipping_method', 't.time_upload', 't.note'
             )
             ->where('excel_fulfill_id', $excel_fulfill_id)
             ->orderBy('woo_orders.id')

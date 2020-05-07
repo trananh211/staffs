@@ -139,7 +139,7 @@ class Tracking extends Model
                 ->select(
                     'wod.number', 'wod.created_at', 'wod.updated_at', 'wod.status',
                     't.id as tracking_id','t.tracking_number', 't.status as tracking_status', 't.time_upload',
-                    't.shipping_method'
+                    't.shipping_method', 't.note'
                 )
                 ->where('wod.number','LIKE','%'.$order_id.'%')
                 ->paginate($paginate)->toArray();
@@ -165,7 +165,7 @@ class Tracking extends Model
                         $trackings = \DB::table('trackings as t')
                             ->select(
                                 't.id as tracking_id','t.tracking_number', 't.status as tracking_status', 't.time_upload',
-                                't.shipping_method', 't.order_id'
+                                't.shipping_method', 't.order_id', 't.note'
                             )
                             ->whereIn('t.order_id', $list_orders)
                             ->get()->toArray();
@@ -226,7 +226,7 @@ class Tracking extends Model
                         ->select(
                             'wod.number', 'wod.created_at', 'wod.updated_at', 'wod.status',
                             't.id as tracking_id','t.tracking_number', 't.status as tracking_status', 't.time_upload',
-                            't.shipping_method'
+                            't.shipping_method', 't.note'
                         )
                         ->orderBy('wod.number','ASC')
                         ->paginate($paginate)->toArray();
@@ -250,7 +250,7 @@ class Tracking extends Model
                     ->select(
                         'wod.number', 'wod.created_at', 'wod.updated_at', 'wod.status',
                         't.id as tracking_id','t.tracking_number', 't.status as tracking_status', 't.time_upload',
-                        't.shipping_method'
+                        't.shipping_method', 't.note'
                     )
                     ->whereIn('t.status',$where_status)
                     ->orderBy('wod.number','ASC')
@@ -926,6 +926,7 @@ class Tracking extends Model
             $tracking_id = $rq['tracking_id'];
             $tracking_number = $rq['tracking_number'];
             $shipping_method = $rq['shipping_method'];
+            $note = $rq['note'];
             if ($tracking_number == '')
             {
                 $message = 'Tracking Number không được rỗng.';
@@ -936,6 +937,7 @@ class Tracking extends Model
                 $result = \DB::table('trackings')->where('id', $tracking_id)->update([
                     'tracking_number' => $tracking_number,
                     'shipping_method' => $shipping_method,
+                    'note' => trim(htmlentities($note)),
                     'time_upload' => date("Y-m-d H:i:s"),
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
