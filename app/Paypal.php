@@ -11,8 +11,8 @@ class Paypal extends Model
     public $timestamps = true;
     protected $table = 'paypals';
 
-//    private $url = 'https://api.paypal.com/';
-    private $url = 'https://api.sandbox.paypal.com/';
+    private $url = 'https://api.paypal.com/';
+//    private $url = 'https://api.sandbox.paypal.com/';
 
     public function create($request)
     {
@@ -350,8 +350,8 @@ class Paypal extends Model
                 'paypals.id as paypal_id', 'paypals.email as paypal_email', 'paypals.client_id', 'paypals.client_secret'
             )
             ->where('woo_orders.paypal_id', '!=', 0)
+            ->where('t.payment_up_tracking',env('PAYPAL_STATUS_NEW'))
             ->whereIn('t.status',$lst_status)
-            ->where('t.payment_up_tracking',0)
             ->limit(env('PAYPAL_LIMIT_UP_TRACKING'))
             ->get()->toArray();
         if (sizeof($lists) > 0)
@@ -424,14 +424,14 @@ class Paypal extends Model
                             logfile_system('--- Cập nhật tracking number lên paypal thành công.');
                             \DB::table('trackings')->whereIn('id', $item['list_tracking_id'])->update([
                                 'payment_status' => env('PAYPAL_STATUS_SUCCESS'),
-                                'payment_up_tracking' => 1,
+                                'payment_up_tracking' => 2,
                                 'updated_at' => date("Y-m-d H:i:s")
                             ]);
                         } else {
                             logfile_system('--- Cập nhật tracking number thất bại');
                             \DB::table('trackings')->whereIn('id', $item['list_tracking_id'])->update([
                                 'payment_status' => env('PAYPAL_CARRIER_ERROR'),
-                                'payment_up_tracking' => 1,
+                                'payment_up_tracking' => 2,
                                 'updated_at' => date("Y-m-d H:i:s")
                             ]);
                         }

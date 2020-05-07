@@ -68,6 +68,7 @@
                             <th class="center">Time Up Tracking</th>
                             <th class="center">Tracking</th>
                             <th class="center">Carrier</th>
+                            <th class="center">Note</th>
                             <th class="center">Action</th>
                         </tr>
                         </thead>
@@ -79,6 +80,7 @@
                             <th class="center">Time Up Tracking</th>
                             <th class="center">Tracking</th>
                             <th class="center">Carrier</th>
+                            <th class="center">Note</th>
                             <th class="center">Action</th>
                         </tr>
                         </tfoot>
@@ -100,7 +102,58 @@
                                     </td>
                                     <td class="center">{{ $list['shipping_method'] }}</td>
                                     <td class="center">
-                                        Edit | Delete
+                                        @if(isset($list['tracking_id']) && $list['tracking_id'] != '' && $list['note'] != '')
+                                            <a class="tooltipped" data-position="top" data-delay="50" data-tooltip="{{ html_entity_decode($list['note']) }}">Ghi chú: ...</a>
+                                        @endif
+                                    </td>
+                                    <td class="center">
+                                        @if(isset($list['tracking_id']) && $list['tracking_id'] != '')
+                                            <!-- Modal Trigger -->
+                                            <a class="waves-effect waves-light btn blue modal-trigger" href="#modal{{ $list['tracking_id'] }}">Edit</a>
+
+                                            <!-- Modal Structure -->
+                                                <div id="modal{{ $list['tracking_id'] }}" class="modal">
+                                                    <div class="page-title">Đang thay đổi thông tin order: {{ $list['number'] }}</div>
+                                                    <div class="modal-content">
+                                                        <form class="col s12" action="{{url('edit-tracking-number')}}" method="post">
+                                                            {{ csrf_field() }}
+                                                            <div class="row hidden">
+                                                                <div class="input-field col s12">
+                                                                    <input class="validate" name="tracking_id" value="{{ $list['tracking_id'] }}" required>
+                                                                </div>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="input-field col s6">
+                                                                    <input placeholder="LZ009298136CN" name="tracking_number" type="text"
+                                                                           value="{{ ($list['tracking_number'] != '')? $list['tracking_number'] : '' }}" class="validate" required>
+                                                                    <label for="first_name">Tracking Number</label>
+                                                                </div>
+                                                                <div class="input-field col s6">
+                                                                    <input placeholder="DHL eCommerces, DHL, USPS" name="shipping_method" type="text"
+                                                                           value="{{ ($list['shipping_method'] != '')? $list['shipping_method'] : '' }}" class="validate" required>
+                                                                    <label for="first_name">Shipping Method</label>
+                                                                </div>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="input-field col s12">
+                                                                    <textarea id="textarea1" name="note" class="materialize-textarea" length="520">
+                                                                        {{ ($list['note'] != '')? html_entity_decode($list['note']) : '' }}
+                                                                    </textarea>
+                                                                    <label for="textarea1" class="">Ghi chú - <small>Đơn hàng này đang ở trạng thái như thế nào ...</small></label>
+                                                                </div>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col s12">
+                                                                    <button type="submit"
+                                                                            class="right waves-effect waves-light btn blue">
+                                                                        Cập nhật
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
