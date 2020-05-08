@@ -149,8 +149,11 @@ class Tracking extends Model
             {
                 if ($status == '1')
                 {
+                    $list_trackings_available = \DB::table('trackings')
+                        ->where('status','>',env('TRACK_NOTFOUND'))->pluck('order_id')->toArray();
                     $lists = \DB::table('woo_orders as wod')
                         ->select('wod.number', 'wod.created_at', 'wod.updated_at', 'wod.status')
+                        ->whereNotIn('number', $list_trackings_available)
                         ->whereBetween('wod.status', [env('STATUS_WORKING_MOVE'), env('STATUS_WORKING_MOVE')])
                         ->orderBy('wod.number','ASC')
                         ->paginate($paginate)->toArray();
