@@ -159,7 +159,7 @@ class ScrapePaypalCarriers extends Command
             if (sizeof($update_trackings) > 0) {
                 $result = \DB::table('trackings')->whereIn('id',$update_trackings)->update([
                     'payment_status' => env('PAYPAL_STATUS_NEW'),
-                    'payment_up_tracking' => 1,
+                    'payment_up_tracking' => 1, // paypal update new status
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
                 if ($result)
