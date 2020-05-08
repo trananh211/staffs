@@ -337,7 +337,10 @@ class Paypal extends Model
         $lst_status = [
             env('TRACK_INTRANSIT'),
             env('TRACK_PICKUP'),
-            env('TRACK_DELIVERED')
+            env('TRACK_DELIVERED'),
+            env('TRACK_ALERT'),
+            env('TRACK_UNDELIVERED')
+
         ];
         $return = false;
         // lấy danh sách tracking mới cần up lên paypal
