@@ -337,7 +337,10 @@ class Paypal extends Model
         $lst_status = [
             env('TRACK_INTRANSIT'),
             env('TRACK_PICKUP'),
-            env('TRACK_DELIVERED')
+            env('TRACK_DELIVERED'),
+            env('TRACK_ALERT'),
+            env('TRACK_UNDELIVERED')
+
         ];
         $return = false;
         // lấy danh sách tracking mới cần up lên paypal
@@ -413,6 +416,7 @@ class Paypal extends Model
                 {
                     $paypal_success = array();
                     $paypal_error = array();
+                    $paypal_refunded = array();
                     foreach($paypal as $paypal_id => $item)
                     {
                         $json = false;
@@ -431,11 +435,17 @@ class Paypal extends Model
                             logfile_system('--- [Error] Không kết nối được với paypal API với lỗi: '.$e->getMessage());
                         }
                         if ($json) {
+                            // print_r($json);
                             // neu paypal trả về trạng thái thành công
                             if(isset($json->tracker_identifiers)){
-                                foreach($json->tracker_identifiers as $result_paypal)
+                                if (sizeof($json->tracker_identifiers) > 0)
                                 {
-                                    $paypal_success[] = $result_paypal->tracking_number;
+                                    foreach($json->tracker_identifiers as $result_paypal)
+                                    {
+                                        $paypal_success[] = $result_paypal->tracking_number;
+                                    }
+                                } else {
+                                    $paypal_refunded = array_merge($paypal_refunded, $item['list_tracking_id']);
                                 }
                             }
 
@@ -444,12 +454,9 @@ class Paypal extends Model
                             {
                                 foreach ($json->errors as $type)
                                 {
-                                    foreach ($type as $case)
+                                    foreach ($type->details as $result_paypal)
                                     {
-                                        foreach($case->details as $result_paypal)
-                                        {
-                                            $paypal_error[] = $result_paypal->value; // transaction id
-                                        }
+                                        $paypal_error[] = $result_paypal->value; // transaction id
                                     }
                                 }
                             }
@@ -483,6 +490,17 @@ class Paypal extends Model
                                 'updated_at' => date("Y-m-d H:i:s")
                             ]);
                         }
+                    }
+
+                    if (sizeof($paypal_refunded) > 0)
+                    {
+                        logfile_system('--- Có '.sizeof($paypal_refunded). ' đã bị refunded');
+                        \DB::table('trackings')->whereIn('id', $paypal_refunded)->update([
+                            'payment_status' => env('PAYPAL_CARRIER_ERROR'),
+                            'payment_up_tracking' => 2,
+                            'note' => 'refunded',
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ]);
                     }
                 } else {
                     $return = true;
