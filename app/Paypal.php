@@ -419,12 +419,13 @@ class Paypal extends Model
                         try {
                             $client_id = $item['info']['client_id'];
                             $client_secret = $item['info']['client_secret'];
+                            $paypal_email = $item['info']['paypal_email'];
                             //Connect toi paypal
                             $json_data = $this->connect($client_id, $client_secret);
                             $access_token = $json_data->access_token;
                             $data = $item['data'];
                             $new_data = json_encode($data);
-                            logfile_system('--- Đang cập nhật tracking number của '.sizeof($data['trackers']).' transection');
+                            logfile_system('--- Đang cập nhật tracking number của '.sizeof($data['trackers']).' transection : '.$paypal_email);
                             $json = $this->addTracking($new_data, $access_token);
                         } catch (\Exception $e) {
                             logfile_system('--- [Error] Không kết nối được với paypal API với lỗi: '.$e->getMessage());
