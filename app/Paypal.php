@@ -366,6 +366,7 @@ class Paypal extends Model
             $carriers = array();
             if (sizeof($track_17_carriers) > 0)
             {
+                $duplicate = array();
                 foreach ($track_17_carriers as $item)
                 {
                     $carriers[$item->track_name] = $item->enumerated_value;
@@ -374,6 +375,12 @@ class Paypal extends Model
                 $paypal_carrier_not_choose = array();
                 foreach($lists as $list)
                 {
+                    if (in_array($list->transaction_id, $duplicate))
+                    {
+                        continue;
+                    } else {
+                        $duplicate[] = $list->transaction_id;
+                    }
                     if (array_key_exists($list->shipping_method, $carriers))
                     {
                         $paypal[$list->paypal_id]['info'] = [
@@ -404,6 +411,8 @@ class Paypal extends Model
 
                 if (sizeof($paypal) > 0)
                 {
+                    $paypal_success = array();
+                    $paypal_error = array();
                     foreach($paypal as $paypal_id => $item)
                     {
                         $json = false;
@@ -421,17 +430,55 @@ class Paypal extends Model
                             logfile_system('--- [Error] Không kết nối được với paypal API với lỗi: '.$e->getMessage());
                         }
                         if ($json) {
-                            logfile_system('--- Cập nhật tracking number lên paypal thành công.');
-                            \DB::table('trackings')->whereIn('id', $item['list_tracking_id'])->update([
-                                'payment_status' => env('PAYPAL_STATUS_SUCCESS'),
-                                'payment_up_tracking' => 2,
-                                'updated_at' => date("Y-m-d H:i:s")
-                            ]);
+                            // neu paypal trả về trạng thái thành công
+                            if(isset($json->tracker_identifiers)){
+                                foreach($json->tracker_identifiers as $result_paypal)
+                                {
+                                    $paypal_success[] = $result_paypal->tracking_number;
+                                }
+                            }
+
+                            // nếu có lỗi trả về từ paypal
+                            if(sizeof($json->errors) > 0)
+                            {
+                                foreach ($json->errors as $type)
+                                {
+                                    foreach ($type as $case)
+                                    {
+                                        foreach($case->details as $result_paypal)
+                                        {
+                                            $paypal_error[] = $result_paypal->value; // transaction id
+                                        }
+                                    }
+                                }
+                            }
                         } else {
                             logfile_system('--- Cập nhật tracking number thất bại');
                             \DB::table('trackings')->whereIn('id', $item['list_tracking_id'])->update([
                                 'payment_status' => env('PAYPAL_CARRIER_ERROR'),
                                 'payment_up_tracking' => 2,
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ]);
+                        }
+                    }
+                    if (sizeof($paypal_success) > 0)
+                    {
+                        logfile_system('--- Cập nhật '.sizeof($paypal_success).' tracking number lên paypal thành công.');
+                        \DB::table('trackings')->whereIn('tracking_number', $paypal_success)->update([
+                            'payment_status' => env('PAYPAL_STATUS_SUCCESS'),
+                            'payment_up_tracking' => 2, // Paypal success status
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ]);
+                    }
+                    if (sizeof($paypal_error) > 0)
+                    {
+                        logfile_system('--- Cập nhật '.sizeof($paypal_error).' tracking number thất bại');
+                        $list_orders = \DB::table('woo_orders')->whereIn('transaction_id',$paypal_error)->pluck('number')->toArray();
+                        if (sizeof($list_orders) > 0)
+                        {
+                            \DB::table('trackings')->whereIn('order_id', $list_orders)->update([
+                                'payment_status' => env('PAYPAL_CARRIER_ERROR'),
+                                'payment_up_tracking' => 3, // paypal error status
                                 'updated_at' => date("Y-m-d H:i:s")
                             ]);
                         }
