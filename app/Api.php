@@ -1525,8 +1525,8 @@ class Api extends Model
             $data_update_feed = array();
             $lst_scrap_id = array();
             $data_update_scrap = array();
-            print_r($check_data);
-            die();
+            $feed_id_error = array();
+            $scrap_id_error = array();
             // ket noi toi store woo de kiem tra thong tin san pham
             foreach ($check_data as $store_id => $v) {
                 $woo_info = $v['woo'];
@@ -1595,12 +1595,12 @@ class Api extends Model
                             }
                         }
                     } else {
-
+                        $feed_id_error[] = $feed['id'];
+                        $scrap_id_error[] = $feed['scrap_product_id'];
                     }
 
                 }
             }
-
             if (sizeof($lst_feed_id) > 0) {
                 \DB::table('feed_products')->whereIn('id', $lst_feed_id)->update([
                     'status' => 1,
@@ -1618,6 +1618,16 @@ class Api extends Model
                 foreach ($data_update_scrap as $scrap_id => $data) {
                     \DB::table('scrap_products')->where('id', $scrap_id)->update($data);
                 }
+            }
+
+            if (sizeof($feed_id_error) > 0)
+            {
+                \DB::table('feed_products')->whereIn('id',$feed_id_error)->delete();
+            }
+
+            if (sizeof($scrap_id_error) > 0)
+            {
+                \DB::table('scrap_products')->whereIn('id',$scrap_id_error)->delete();
             }
             $re = false;
         } else {
