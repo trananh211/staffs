@@ -1499,6 +1499,8 @@ class Api extends Model
             ->where('check', 0)->limit($limit)->get()->toArray();
         $stores = \DB::table('woo_infos')->select('id', 'url', 'consumer_key', 'consumer_secret')->get()->toArray();
         $categories = \DB::table('woo_categories')->select('id', 'woo_category_id', 'name', 'store_id')->get()->toArray();
+        print_r($products);
+        die();
         if (sizeof($products) > 0) {
             // lấy toàn bộ danh sách category để phân loại store sau đó so sánh categories
             $ar_categories = array();
