@@ -147,6 +147,7 @@ class Tracking extends Model
         } else {
             if ($status == '1' || $status == '5')
             {
+                $order_status = order_status();
                 if ($status == '1')
                 {
                     $list_trackings_available = \DB::table('trackings')
@@ -155,6 +156,7 @@ class Tracking extends Model
                         ->select('wod.number', 'wod.created_at', 'wod.updated_at', 'wod.status')
                         ->whereNotIn('number', $list_trackings_available)
                         ->whereBetween('wod.status', [env('STATUS_WORKING_DONE'), env('STATUS_WORKING_MOVE')])
+                        ->whereIn('order_status', $order_status)
                         ->orderBy('wod.number','ASC')
                         ->paginate($paginate)->toArray();
                     $lists = json_decode(json_encode($lists, true), true);
@@ -231,6 +233,7 @@ class Tracking extends Model
                             't.id as tracking_id','t.tracking_number', 't.status as tracking_status', 't.time_upload',
                             't.shipping_method', 't.note'
                         )
+                        ->whereIn('order_status', $order_status)
                         ->orderBy('wod.number','ASC')
                         ->paginate($paginate)->toArray();
                     $lists = json_decode(json_encode($lists, true), true);

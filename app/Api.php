@@ -1525,6 +1525,8 @@ class Api extends Model
             $data_update_feed = array();
             $lst_scrap_id = array();
             $data_update_scrap = array();
+            $feed_id_error = array();
+            $scrap_id_error = array();
             // ket noi toi store woo de kiem tra thong tin san pham
             foreach ($check_data as $store_id => $v) {
                 $woo_info = $v['woo'];
@@ -1540,54 +1542,66 @@ class Api extends Model
                         'category_name' => trim($feed['category_name'])
                     ];
 //                print_r($array_old);
-                    $result = ($woocommerce->get('products/' . $feed['woo_product_id']));
-                    // tạo ra array của info sản phẩm cần so sánh
-                    $array_new = [
-                        'woo_product_name' => trim($result->name),
-                        'woo_slug' => trim($result->permalink),
-                        'woo_image' => trim($result->images[0]->src),
-                        'woo_product_id' => trim($result->id),
-                        'category_name' => trim($result->categories[0]->name)
-                    ];
+                    try {
+                        $result = ($woocommerce->get('products/' . $feed['woo_product_id']));
+                    } catch (\Exception $e)
+                    {
+                        $result = false;
+                    }
+                    if ($result)
+                    {
+                        // tạo ra array của info sản phẩm cần so sánh
+                        $array_new = [
+                            'woo_product_name' => trim($result->name),
+                            'woo_slug' => trim($result->permalink),
+                            'woo_image' => trim($result->images[0]->src),
+                            'woo_product_id' => trim($result->id),
+                            'category_name' => trim($result->categories[0]->name)
+                        ];
 //                print_r($result);
-                    $result_diff = array_diff($array_new, $array_old);
-                    // neu 2 array khac nhau
-                    if (sizeof($result_diff) > 0) {
-                        $data_update_feed[$feed['id']] = [
-                            'woo_product_name' => $result->name,
-                            'woo_slug' => $result->permalink,
-                            'description' => strip_tags($result->description),
-                            'woo_image' => $result->images[0]->src,
-                            'woo_product_id' => $result->id,
-                            'category_name' => $result->categories[0]->name,
-                            'status' => 1,
-                            'check' => 1,
-                            'updated_at' => date("Y-m-d H:i:s")
-                        ];
-                        $data_update_scrap[$feed['scrap_product_id']] = [
-                            'woo_product_name' => $result->name,
-                            'woo_slug' => $result->permalink,
-                            'woo_product_id' => $result->id,
-                            'category_name' => $result->categories[0]->name,
-                            'updated_at' => date("Y-m-d H:i:s")
-                        ];
-                        logfile_system(' --- Đang check feed id: ' . $feed['id'] . ' : Thong tin khac nhau');
-                    } else {
-                        logfile_system(' --- Đang check feed id: ' . $feed['id'] . ' : Thong tin giong nhau');
-                        // kiểm tra xem nếu description rỗng thì thêm mới
-                        if ($feed['description'] == '')
-                        {
+                        $result_diff = array_diff($array_new, $array_old);
+                        // neu 2 array khac nhau
+                        if (sizeof($result_diff) > 0) {
                             $data_update_feed[$feed['id']] = [
+                                'woo_product_name' => $result->name,
+                                'woo_slug' => $result->permalink,
                                 'description' => strip_tags($result->description),
+                                'woo_image' => $result->images[0]->src,
+                                'woo_product_id' => $result->id,
+                                'category_name' => $result->categories[0]->name,
+                                'status' => 1,
+                                'check' => 1,
                                 'updated_at' => date("Y-m-d H:i:s")
                             ];
+                            $data_update_scrap[$feed['scrap_product_id']] = [
+                                'woo_product_name' => $result->name,
+                                'woo_slug' => $result->permalink,
+                                'woo_product_id' => $result->id,
+                                'category_name' => $result->categories[0]->name,
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                            logfile_system(' --- Đang check feed id: ' . $feed['id'] . ' : Thong tin khac nhau');
                         } else {
-                            $lst_feed_id[] = $feed['id'];
+                            logfile_system(' --- Đang check feed id: ' . $feed['id'] . ' : Thong tin giong nhau');
+                            // kiểm tra xem nếu description rỗng thì thêm mới
+                            if ($feed['description'] == '')
+                            {
+                                $data_update_feed[$feed['id']] = [
+                                    'description' => strip_tags($result->description),
+                                    'updated_at' => date("Y-m-d H:i:s")
+                                ];
+                            } else {
+                                $lst_feed_id[] = $feed['id'];
+                            }
                         }
+                    } else {
+                        logfile_system(' --- Đang check feed id: ' . $feed['id'] . ' : Khong ton tai san pham nay');
+                        $feed_id_error[] = $feed['id'];
+                        $scrap_id_error[] = $feed['scrap_product_id'];
                     }
+
                 }
             }
-
             if (sizeof($lst_feed_id) > 0) {
                 \DB::table('feed_products')->whereIn('id', $lst_feed_id)->update([
                     'status' => 1,
@@ -1605,6 +1619,16 @@ class Api extends Model
                 foreach ($data_update_scrap as $scrap_id => $data) {
                     \DB::table('scrap_products')->where('id', $scrap_id)->update($data);
                 }
+            }
+
+            if (sizeof($feed_id_error) > 0)
+            {
+                \DB::table('feed_products')->whereIn('id',$feed_id_error)->delete();
+            }
+
+            if (sizeof($scrap_id_error) > 0)
+            {
+                \DB::table('scrap_products')->whereIn('id',$scrap_id_error)->delete();
             }
             $re = false;
         } else {
