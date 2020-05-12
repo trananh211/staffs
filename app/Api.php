@@ -1499,8 +1499,6 @@ class Api extends Model
             ->where('check', 0)->limit($limit)->get()->toArray();
         $stores = \DB::table('woo_infos')->select('id', 'url', 'consumer_key', 'consumer_secret')->get()->toArray();
         $categories = \DB::table('woo_categories')->select('id', 'woo_category_id', 'name', 'store_id')->get()->toArray();
-        print_r($products);
-        die();
         if (sizeof($products) > 0) {
             // lấy toàn bộ danh sách category để phân loại store sau đó so sánh categories
             $ar_categories = array();
@@ -1527,6 +1525,8 @@ class Api extends Model
             $data_update_feed = array();
             $lst_scrap_id = array();
             $data_update_scrap = array();
+            print_r($check_data);
+            die();
             // ket noi toi store woo de kiem tra thong tin san pham
             foreach ($check_data as $store_id => $v) {
                 $woo_info = $v['woo'];
@@ -1542,51 +1542,62 @@ class Api extends Model
                         'category_name' => trim($feed['category_name'])
                     ];
 //                print_r($array_old);
-                    $result = ($woocommerce->get('products/' . $feed['woo_product_id']));
-                    // tạo ra array của info sản phẩm cần so sánh
-                    $array_new = [
-                        'woo_product_name' => trim($result->name),
-                        'woo_slug' => trim($result->permalink),
-                        'woo_image' => trim($result->images[0]->src),
-                        'woo_product_id' => trim($result->id),
-                        'category_name' => trim($result->categories[0]->name)
-                    ];
+                    try {
+                        $result = ($woocommerce->get('products/' . $feed['woo_product_id']));
+                    } catch (\Exception $e)
+                    {
+                        $result = false;
+                    }
+                    if ($result)
+                    {
+                        // tạo ra array của info sản phẩm cần so sánh
+                        $array_new = [
+                            'woo_product_name' => trim($result->name),
+                            'woo_slug' => trim($result->permalink),
+                            'woo_image' => trim($result->images[0]->src),
+                            'woo_product_id' => trim($result->id),
+                            'category_name' => trim($result->categories[0]->name)
+                        ];
 //                print_r($result);
-                    $result_diff = array_diff($array_new, $array_old);
-                    // neu 2 array khac nhau
-                    if (sizeof($result_diff) > 0) {
-                        $data_update_feed[$feed['id']] = [
-                            'woo_product_name' => $result->name,
-                            'woo_slug' => $result->permalink,
-                            'description' => strip_tags($result->description),
-                            'woo_image' => $result->images[0]->src,
-                            'woo_product_id' => $result->id,
-                            'category_name' => $result->categories[0]->name,
-                            'status' => 1,
-                            'check' => 1,
-                            'updated_at' => date("Y-m-d H:i:s")
-                        ];
-                        $data_update_scrap[$feed['scrap_product_id']] = [
-                            'woo_product_name' => $result->name,
-                            'woo_slug' => $result->permalink,
-                            'woo_product_id' => $result->id,
-                            'category_name' => $result->categories[0]->name,
-                            'updated_at' => date("Y-m-d H:i:s")
-                        ];
-                        logfile_system(' --- Đang check feed id: ' . $feed['id'] . ' : Thong tin khac nhau');
-                    } else {
-                        logfile_system(' --- Đang check feed id: ' . $feed['id'] . ' : Thong tin giong nhau');
-                        // kiểm tra xem nếu description rỗng thì thêm mới
-                        if ($feed['description'] == '')
-                        {
+                        $result_diff = array_diff($array_new, $array_old);
+                        // neu 2 array khac nhau
+                        if (sizeof($result_diff) > 0) {
                             $data_update_feed[$feed['id']] = [
+                                'woo_product_name' => $result->name,
+                                'woo_slug' => $result->permalink,
                                 'description' => strip_tags($result->description),
+                                'woo_image' => $result->images[0]->src,
+                                'woo_product_id' => $result->id,
+                                'category_name' => $result->categories[0]->name,
+                                'status' => 1,
+                                'check' => 1,
                                 'updated_at' => date("Y-m-d H:i:s")
                             ];
+                            $data_update_scrap[$feed['scrap_product_id']] = [
+                                'woo_product_name' => $result->name,
+                                'woo_slug' => $result->permalink,
+                                'woo_product_id' => $result->id,
+                                'category_name' => $result->categories[0]->name,
+                                'updated_at' => date("Y-m-d H:i:s")
+                            ];
+                            logfile_system(' --- Đang check feed id: ' . $feed['id'] . ' : Thong tin khac nhau');
                         } else {
-                            $lst_feed_id[] = $feed['id'];
+                            logfile_system(' --- Đang check feed id: ' . $feed['id'] . ' : Thong tin giong nhau');
+                            // kiểm tra xem nếu description rỗng thì thêm mới
+                            if ($feed['description'] == '')
+                            {
+                                $data_update_feed[$feed['id']] = [
+                                    'description' => strip_tags($result->description),
+                                    'updated_at' => date("Y-m-d H:i:s")
+                                ];
+                            } else {
+                                $lst_feed_id[] = $feed['id'];
+                            }
                         }
+                    } else {
+
                     }
+
                 }
             }
 
