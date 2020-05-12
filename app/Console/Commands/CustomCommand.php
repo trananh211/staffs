@@ -97,8 +97,7 @@ class CustomCommand extends Command
                 $check2 = $api_controller->autoUploadImage();
                 if ($check2) {
                     // tạo feed check feed đầu tiên
-//                    $check3 = $api_controller->reCheckProductInfo();
-                    $check3 = true;
+                    $check3 = $api_controller->reCheckProductInfo();
                     if ($check3)
                     {
                         //Cào sản phẩm
