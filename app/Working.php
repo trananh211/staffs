@@ -3202,10 +3202,12 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     $title = ucwords($categories[$feed->category_id][$i]);
                     $i++;
                 }
+                $tmp = explode(" ",trim($feed->woo_product_name));
+                $custom_lable_2 = $tmp[sizeof($tmp) - 1];
                 $lst_feeds[$feed->id] = [
                     'id' => $feed->woo_product_id,
                     'title' => trim($title).' '.trim($feed->woo_product_name),
-                    'description' => trim($feed->description),
+                    'description' => trim($title).' '.trim($feed->description),
                     'link' => $feed->woo_slug,
                     'image_link' => $feed->woo_image,
                     'availability' => 'in stock',
@@ -3223,7 +3225,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     'gender' => 'Unisex',
                     'product_type' => $feed->category_name,
                     'custom_label_0' => $feed->category_name,
-                    'custom_label_1' => '',
+                    'custom_label_1' => $custom_lable_2,
                     'custom_label_2' => '',
                     'custom_label_3' => '',
                     'custom_label_4' => ''
