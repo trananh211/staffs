@@ -1595,6 +1595,7 @@ class Api extends Model
                             }
                         }
                     } else {
+                        logfile_system(' --- Đang check feed id: ' . $feed['id'] . ' : Khong ton tai san pham nay');
                         $feed_id_error[] = $feed['id'];
                         $scrap_id_error[] = $feed['scrap_product_id'];
                     }
