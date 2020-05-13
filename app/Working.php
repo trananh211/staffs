@@ -3392,7 +3392,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     ->leftjoin('file_fulfills as ff','woo_orders.id','=', 'ff.woo_order_id')
                     ->select(
                         'woo_orders.id as woo_order_id','woo_orders.number', 'woo_orders.transaction_id',
-                        'woo_orders.fullname', 'woo_orders.email',
+                        'woo_orders.fullname', 'woo_orders.email', 'woo_orders.first_name', 'woo_orders.last_name',
                         'woo_orders.address', 'woo_orders.city', 'woo_orders.state', 'woo_orders.country',
                         'woo_orders.postcode', 'woo_orders.phone', 'woo_orders.customer_note',
                         'woo_orders.product_name', 'woo_orders.design_id', 'woo_orders.variation_detail',
@@ -3440,7 +3440,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     ->leftjoin('file_fulfills as ff','woo_orders.id','=', 'ff.woo_order_id')
                     ->select(
                         'woo_orders.id as woo_order_id','woo_orders.number', 'woo_orders.transaction_id',
-                        'woo_orders.fullname', 'woo_orders.email',
+                        'woo_orders.fullname', 'woo_orders.email', 'woo_orders.first_name', 'woo_orders.last_name',
                         'woo_orders.address', 'woo_orders.city', 'woo_orders.state', 'woo_orders.country',
                         'woo_orders.postcode', 'woo_orders.phone', 'woo_orders.customer_note',
                         'woo_orders.product_name', 'woo_orders.design_id', 'woo_orders.variation_detail',
@@ -3544,8 +3544,8 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     'currency' => '$',
                     'full_name' => $order->fullname,
                     'email' => $order->email,
-                    'first_name' => '',
-                    'last_name' => '',
+                    'first_name' => $order->first_name,
+                    'last_name' => $order->last_name,
                     'address' => $order->address,
                     'city' => $order->city,
                     'state' => $order->state,
