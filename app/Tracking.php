@@ -59,7 +59,7 @@ class Tracking extends Model
 
     public function getFileTrackingNow($status, $order_id)
     {
-        $lists = $this->filterViewTracking($status, $order_id, 1000);
+        $lists = $this->filterViewTracking($status, $order_id, 10000);
         if (sizeof($lists['data']) > 0)
         {
             $data = array();
