@@ -250,8 +250,11 @@ class Paypal extends Model
             env('TRACK_DELIVERED'),
             env('TRACK_ALERT'),
             env('TRACK_UNDELIVERED')
-
         ];
+        $lst_payment_up_tracking = [
+            0, env('PAYPAL_STATUS_NEW')
+        ];
+
         $return = false;
         // lấy danh sách tracking mới cần up lên paypal
         $lists = \DB::table('trackings as t')
@@ -263,7 +266,7 @@ class Paypal extends Model
                 'paypals.id as paypal_id', 'paypals.email as paypal_email', 'paypals.client_id', 'paypals.client_secret'
             )
             ->where('woo_orders.paypal_id', '!=', 0)
-            ->where('t.payment_up_tracking',env('PAYPAL_STATUS_NEW'))
+            ->whereIn('t.payment_up_tracking',$lst_payment_up_tracking)
             ->whereIn('t.status',$lst_status)
             ->limit(env('PAYPAL_LIMIT_UP_TRACKING'))
             ->get()->toArray();
