@@ -119,96 +119,6 @@ class Paypal extends Model
         return $json;
     }
 
-    public function getNewTracking($lists, $database)
-    {
-        \DB::beginTransaction();
-        try {
-            foreach ($lists as $paypal) {
-                $client_id = $paypal['client_id'];
-                $client_secret = $paypal['client_secret'];
-                $json_data = $this->connect($client_id, $client_secret);
-                $access_token = $json_data->access_token;
-                $data['trackers'] = $paypal['trackers'];
-                $new_data = json_encode($data);
-                $result = $this->addTracking($new_data, $access_token);
-            }
-            if ($result) {
-                if (sizeof($database['new_shipped']) > 0) {
-                    \DB::table('trackings')->whereIn('id', $database['new_shipped'])
-                        ->update([
-                            'payment_status' => env('TRACK_INTRANSIT')
-                        ]);
-                }
-                if (sizeof($database['new_pickup']) > 0) {
-                    \DB::table('trackings')->whereIn('id', $database['new_pickup'])
-                        ->update([
-                            'payment_status' => env('TRACK_PICKUP')
-                        ]);
-                }
-                if (sizeof($database['new_delivered']) > 0) {
-                    \DB::table('trackings')->whereIn('id', $database['new_delivered'])
-                        ->update([
-                            'payment_status' => env('TRACK_DELIVERED')
-                        ]);
-                }
-            }
-            \DB::commit(); // if there was no errors, your query will be executed
-        } catch (\Exception $e) {
-            $status = 'error';
-            $message = 'Xảy ra lỗi. Hãy thử lại.';
-            logfile($message . ' - ' . $e->getMessage());
-            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
-        }
-    }
-
-    public function getUpdateTracking($lists)
-    {
-        \DB::beginTransaction();
-        try {
-            $update_pickup = $update_delivered = array();
-            foreach ($lists as $paypal) {
-                $client_id = $paypal['client_id'];
-                $client_secret = $paypal['client_secret'];
-                $json_data = $this->connect($client_id, $client_secret);
-                $access_token = $json_data->access_token;
-                foreach ($paypal['data'] as $dt) {
-                    $update_data = $dt;
-                    $tracking_id = $dt['tracking_id'];
-                    unset($update_data['tracking_id']);
-                    $update_data = json_encode($update_data);
-                    $path = $dt['transaction_id'] . '-' . $dt['tracking_number'];
-                    $json = $this->updateTracking($path, $update_data, $access_token);
-                    if ($json) {
-                        if ($dt['status'] == 'LOCAL_PICKUP') {
-                            $update_pickup[] = $tracking_id;
-                        }
-                        if ($dt['status'] == 'DELIVERED') {
-                            $update_delivered[] = $tracking_id;
-                        }
-                    }
-                }
-            }
-            if (sizeof($update_pickup) > 0) {
-                \DB::table('trackings')->whereIn('id', $update_pickup)
-                    ->update([
-                        'payment_status' => env('TRACK_PICKUP')
-                    ]);
-            }
-            if (sizeof($update_delivered) > 0) {
-                \DB::table('trackings')->whereIn('id', $update_delivered)
-                    ->update([
-                        'payment_status' => env('TRACK_DELIVERED')
-                    ]);
-            }
-            \DB::commit(); // if there was no errors, your query will be executed
-        } catch (\Exception $e) {
-            $status = 'error';
-            $message = 'Xảy ra lỗi. Hãy thử lại.';
-            logfile($message . ' - ' . $e->getMessage());
-            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
-        }
-    }
-
     private function addTracking($data, $token)
     {
         $url = $this->url . "v1/shipping/trackers-batch";
@@ -340,8 +250,11 @@ class Paypal extends Model
             env('TRACK_DELIVERED'),
             env('TRACK_ALERT'),
             env('TRACK_UNDELIVERED')
-
         ];
+        $lst_payment_up_tracking = [
+            0, env('PAYPAL_STATUS_NEW')
+        ];
+
         $return = false;
         // lấy danh sách tracking mới cần up lên paypal
         $lists = \DB::table('trackings as t')
@@ -353,7 +266,7 @@ class Paypal extends Model
                 'paypals.id as paypal_id', 'paypals.email as paypal_email', 'paypals.client_id', 'paypals.client_secret'
             )
             ->where('woo_orders.paypal_id', '!=', 0)
-            ->where('t.payment_up_tracking',env('PAYPAL_STATUS_NEW'))
+            ->whereIn('t.payment_up_tracking',$lst_payment_up_tracking)
             ->whereIn('t.status',$lst_status)
             ->limit(env('PAYPAL_LIMIT_UP_TRACKING'))
             ->get()->toArray();
