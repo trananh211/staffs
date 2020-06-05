@@ -16,6 +16,7 @@ class NewWebsites extends Migration
         Schema::create('websites', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->integer('store_id')->nullable(false);
+            $table->integer('woo_category_id')->nullable(true);
             $table->integer('platform_id')->default(0);
             $table->text('exclude_text')->nullable(true);
             $table->text('url')->nullable(false);

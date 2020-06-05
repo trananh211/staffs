@@ -14,7 +14,7 @@ function logfile_system($str)
 {
     $datetime = Carbon::now('Asia/Ho_Chi_Minh');
     $log_str = $datetime . '==> ' . $str;
-    \Log::channel('hasu')->info($log_str);
+//    \Log::channel('hasu')->info($log_str);
     echo $log_str."\n";
 }
 
@@ -56,7 +56,6 @@ function website_auto()
     $website = [
         '1' => 'Not Flatform',
         '2' => 'Merchking',
-        '3' => 'Esty'
     ];
     return $website;
 }

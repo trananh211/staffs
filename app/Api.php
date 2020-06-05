@@ -749,6 +749,7 @@ class Api extends Model
                         'created_at' => date("Y-m-d H:i:s"),
                         'updated_at' => date("Y-m-d H:i:s")
                     ]);
+                    $new_website_id = $website_id;
                     if (!$website_id) {
                         $return = true;
                         $alert = 'error';
@@ -796,8 +797,13 @@ class Api extends Model
                     $results = false;
                 }
                 if (!$results) {
+                    // xóa website id vừa tạo
+                    if (isset($new_website_id))
+                    {
+                        \DB::table('websites')->where('id',$new_website_id)->delete();
+                    }
                     $alert = 'error';
-                    $message = 'Không tìm thấy product Id này ở store : ' . $rq['url'];
+                    $message = 'Không tìm thấy product Id '.$rq['id_product'].' ở store : ' . $rq['url'];
                     return back()->with($alert, $message);
                 } else {
                     $r = $this->makeFileTemplate($i, $id_store, $template_id);
@@ -867,17 +873,18 @@ class Api extends Model
                     $data = ['slug' => $category_name];
                     // kết nối tới woocommerce store để lấy thông tin
                     $result = $woocommerce->get('products/categories', $data);
-                    $category_id = $result[0]->id;
+                    $woo_category_id = $result[0]->id;
                     $data = [
-                        'woo_category_id' => $category_id,
+                        'woo_category_id' => $woo_category_id,
                         'name' => $category_name,
                         'slug' => $result[0]->slug,
                         'store_id' => $id_store,
                         'created_at' => date("Y-m-d H:i:s"),
                         'updated_at' => date("Y-m-d H:i:s")
                     ];
-                    \DB::table('woo_categories')->insert($data);
+                    $category_id = \DB::table('woo_categories')->insertGetId($data);
                 }
+                \DB::table('websites')->where('id',$website_id)->update(['woo_category_id' => $category_id]);
                 $category_data = [
                     'category_id' => $category_id,
                     'category_name' => $category_name,
@@ -894,128 +901,6 @@ class Api extends Model
                 $message = 'Template không tìm thấy category. Kiểm tra lại template của website: ' . $rq['url'] . ' với product id: ' . $rq['id_product'];
                 return back()->with($alert, $message);
             }
-        }
-    }
-
-    public function checkTemplate2($request, $scrap = null)
-    {
-        try {
-            $rq = $request->all();
-            $template_id = $rq['id_product'];
-            if ($scrap == 1) {
-                $website_id = $rq['website_id'];
-            } else {
-                $website_id = null;
-            }
-            $id_store = $rq['id_store'];
-            $check_exist = \DB::table('woo_templates')
-                ->where('template_id', $template_id)
-                ->where('store_id', $id_store)
-                ->select('template_path')
-                ->first();
-            // neu khong ton tai template id trong he thong.
-            if (!is_null($check_exist)) {
-                $template_path = $check_exist->template_path;
-                $template_data = readFileJson($template_path);
-            } else {
-                $woocommerce = $this->getConnectStore($rq['url'], $rq['consumer_key'], $rq['consumer_secret']);
-                $i = $woocommerce->get('products/' . $rq['id_product']);
-                $r = $this->makeFileTemplate($i, $id_store, $template_id);
-                $result = $r['result'];
-                $template_path = $r['template_path'];
-                $template_name = $r['template_name'];
-                $variation_list = $r['variation_list'];
-                $path = $r['path'];
-                // Nếu tạo file json thành công. Luu thông tin template vao database
-                if ($result) {
-//                    logfile('-- Tạo json file template thành công. chuyển sang tạo variantions file json');
-                    $woo_template_id = \DB::table('woo_templates')->insertGetId([
-                        'product_name' => $template_name,
-                        'template_id' => $template_id,
-                        'store_id' => $id_store,
-                        'website_id' => $website_id,
-                        'template_path' => $template_path,
-                        'created_at' => date("Y-m-d H:i:s"),
-                        'updated_at' => date("Y-m-d H:i:s")
-                    ]);
-                    // Quét thông tin variations gửi vào database
-                    $insert_variation = array();
-                    for ($i = 0; $i < sizeof($variation_list); $i++) {
-                        $varid = $variation_list[$i];
-                        $variation_path = $path . 'variation_' . $varid . '.json';
-                        $variation_data = $woocommerce->get('products/' . $template_id . '/variations/' . $varid);
-                        $result = writeFileJson($variation_path, $variation_data);
-                        if ($result) {
-//                            logfile('-- Tạo json file variations thành công. ' . $variation_path);
-                        }
-                        chmod($variation_path, 0777);
-                        $insert_variation[] = [
-                            'variation_id' => $varid,
-                            'woo_template_id' => $woo_template_id,
-                            'template_id' => $template_id,
-                            'store_id' => $id_store,
-                            'variation_path' => $variation_path,
-                            'created_at' => date("Y-m-d H:i:s"),
-                            'updated_at' => date("Y-m-d H:i:s")
-                        ];
-                    }
-                    if (sizeof($insert_variation) > 0) {
-                        \DB::table('woo_variations')->insert($insert_variation);
-                    }
-                }
-            }
-
-            // lấy tên và id của category
-            if (isset($template_data['categories'][0]))
-            {
-                $tem_category = $template_data['categories'][0];
-                $category_name = $tem_category['name'];
-                $woo_category_id = $tem_category['id'];
-            } else {
-                $category_name = null;
-                $woo_category_id = null;
-            }
-
-            // kiểm tra với woo_categories có sẵn tại tool xem tồn tại chưa.
-            $check_category = \DB::table('woo_categories')->select('id')
-                ->where([
-                    ['name', '=', $category_name],
-                    ['store_id', '=', $id_store]
-                ])->first();
-            if ($check_category != NULL)
-            {
-                $category_id = $check_category->id;
-            } else {
-                $woocommerce = $this->getConnectStore($rq['url'], $rq['consumer_key'], $rq['consumer_secret']);
-                $data = [
-                    'slug' => $category_name,
-                ];
-                // kết nối tới woocommerce store để lấy thông tin
-                $result = ($woocommerce->get('products/categories', $data));
-                $category_id = $result[0]->id;
-                $data = [
-                    'woo_category_id' => $woo_category_id,
-                    'name' => $category_name,
-                    'slug' => $result[0]->slug,
-                    'store_id' => $id_store,
-                    'created_at' => date("Y-m-d H:i:s"),
-                    'updated_at' => date("Y-m-d H:i:s")
-                ];
-                \DB::table('woo_categories')->insert($data);
-            }
-            $category_data = [
-                'category_id' => $category_id,
-                'category_name' => $category_name,
-                'woo_category_id' => $woo_category_id
-            ];
-            $data = array();
-            if ($scrap != null) {
-                return redirect('scrap-create-template')->with('success', 'Connect với template thành công');
-            } else {
-                return view("/admin/woo/save_path_template", compact('data', "template_data", 'rq', 'category_data'));
-            }
-        } catch (\Exception $e) {
-            return $e->getMessage();
         }
     }
 
