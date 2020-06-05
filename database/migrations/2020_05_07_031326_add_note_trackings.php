@@ -26,7 +26,7 @@ class AddNoteTrackings extends Migration
     public function down()
     {
         Schema::table('trackings', function (Blueprint $table) {
-            $table->dropColumn('woo_order_id');
+            $table->dropColumn('note');
         });
     }
 }

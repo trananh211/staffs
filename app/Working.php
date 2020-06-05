@@ -2102,11 +2102,12 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     {
         $data = infoShop();
         $lst_web = website();
+        $lst_auto_webs = website_auto();
         $stores = \DB::table('woo_infos')
             ->select('id', 'name', 'url', 'consumer_key', 'consumer_secret')
             ->get()->toArray();
         return view('/admin/scrap/view_create_template')
-            ->with(compact('data', 'stores', 'lst_web', '$lists_template'));
+            ->with(compact('data', 'stores', 'lst_web', 'lst_auto_webs'));
     }
     /*End Scrap web*/
 
