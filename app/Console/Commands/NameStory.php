@@ -764,7 +764,7 @@ class NameStory extends Command
         $domain_origin = explode('/search', $domain)[0];
         $link = $domain.'&page=';
         echo $link."\n";
-        $page = 86;
+        $page = 1;
         $data = array();
         $text_exclude = ucwords($text_exclude);
         $links = array();
