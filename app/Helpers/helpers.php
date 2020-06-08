@@ -51,6 +51,15 @@ function website()
     return $website;
 }
 
+function website_auto()
+{
+    $website = [
+        '1' => 'Not Flatform',
+        '2' => 'Merchking',
+    ];
+    return $website;
+}
+
 function getListTitle()
 {
     $common = [

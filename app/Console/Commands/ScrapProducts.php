@@ -83,7 +83,7 @@ class ScrapProducts extends Command
             $data = array();
             // gộp các website_id vào chung 1 mảng
             foreach ($products as $value) {
-                $data[$value['website_id']][] = $value;
+                $data[$value['website_id']][$value['platform_id']][] = $value;
             }
             // gửi mảng data sang bộ phận chuẩn bị dữ liệu
             if (sizeof($data) > 0) {
@@ -95,7 +95,7 @@ class ScrapProducts extends Command
         logfile_system('========================= [ Kết thúc scrap products ] =========================');
     }
 
-    private function preProduct($data)
+    private function preProduct($datas)
     {
         $check = $this->checkCategory();
         $check_tag = false;
@@ -105,55 +105,78 @@ class ScrapProducts extends Command
         if ($check_tag) {
             $str = '-- Đã cập nhật xong categories và tags vào toàn bộ product. Chuyển sang tạo mới sản phẩm.';
             logfile_system($str);
-            foreach ($data as $website_id => $dt) {
-                switch ($website_id) {
-                    case 1:
-                        $this->getProductNamestories($dt);
-                        break;
-                    case 2:
-                    case 3:
-                        $this->getProductEsty($dt);
-                        break;
-                    case 4:
-                    case 5:
-                        $this->getProductPercre($dt);
-                        break;
-                    case 6:
-                    case 8:
-                        $this->getProductMerchKing($dt, array(1, 2, 4, 6));
-                        break;
-                    case 7:
-                        $this->getProductMerchKing($dt, array(1));
-                        break;
-                    case 9:
-                    case 17:
-                        $this->getProductMerchKing($dt, array(2,3,4,7));
-                        break;
-                    case 10:
-                        $this->getProductEsty_LinkName($dt);
-                        break;
-                    case 11:
-                    case 12:
-                    case 13:
-                    case 14:
-                        $this->getProductEsty_LinkName($dt,true);
-                        break;
-                    case 15:
-                    case 16:
-                        $this->getProductCreationsLaunch_LinkName($dt,array(0,1,2,3) ,true);
-                        break;
-                    case 18:
-                        $text_exclude = 'B6L2AF01';
-                        $this->getProductMerchKing_excludeText($dt, array(1,2,3,4,7), $text_exclude);
-                    case 19:
-                        $text_exclude = ' - PREMIUM - BLANKET - B450';
-                        $this->getProductMerchKing_excludeText($dt, array(1,2,3,4,7), $text_exclude);
-                    case 20:
-                        $text_exclude = 'PREMIUM BLANKET - B750';
-                        $this->getProductMerchKing_excludeText($dt, array(1,2,3,4,7), $text_exclude);
-                    default:
-                        $str = "-- Không có website nào cần được up sản phẩm.";
-                        logfile_system($str);
+            foreach ($datas as $website_id => $data) {
+                if ($website_id > 1000)
+                {
+                    foreach ($data as $platform_id => $dt)
+                    {
+                        switch ($platform_id) {
+                            case 2:
+                                $this->getProductAutoMerchKing($dt, array(1,2,3,4,7));
+                                break;
+                            default:
+                                $str = "-- Đã hết website scrap auto platform cần được up sản phẩm.";
+                                logfile_system($str);
+                                break;
+                        }
+                    }
+                } else {
+                    foreach ($data as $platform_id => $dt)
+                    {
+                        switch ($website_id) {
+                            case 1:
+                                $this->getProductNamestories($dt);
+                                break;
+                            case 2:
+                            case 3:
+                                $this->getProductEsty($dt);
+                                break;
+                            case 4:
+                            case 5:
+                                $this->getProductPercre($dt);
+                                break;
+                            case 6:
+                            case 8:
+                                $this->getProductMerchKing($dt, array(1, 2, 4, 6));
+                                break;
+                            case 7:
+                                $this->getProductMerchKing($dt, array(1));
+                                break;
+                            case 9:
+                            case 17:
+                                $this->getProductMerchKing($dt, array(2,3,4,7));
+                                break;
+                            case 10:
+                                $this->getProductEsty_LinkName($dt);
+                                break;
+                            case 11:
+                            case 12:
+                            case 13:
+                            case 14:
+                                $this->getProductEsty_LinkName($dt,true);
+                                break;
+                            case 15:
+                            case 16:
+                                $this->getProductCreationsLaunch_LinkName($dt,array(0,1,2,3) ,true);
+                                break;
+                            case 18:
+                                $text_exclude = 'B6L2AF01';
+                                $this->getProductMerchKing_excludeText($dt, array(1,2,3,4,7), $text_exclude);
+                                break;
+                            case 19:
+                                $text_exclude = ' - PREMIUM - BLANKET - B450';
+                                $this->getProductMerchKing_excludeText($dt, array(1,2,3,4,7), $text_exclude);
+                                break;
+                            case 20:
+                                $text_exclude = 'PREMIUM BLANKET - B750';
+                                $this->getProductMerchKing_excludeText($dt, array(1,2,3,4,7), $text_exclude);
+                                break;
+                            default:
+                                $str = "-- Không có website nào cần được up sản phẩm.";
+                                logfile_system($str);
+                                break;
+                        }
+                    }
                 }
                 break;
             }
@@ -176,12 +199,14 @@ class ScrapProducts extends Command
                 $join->on('spd.template_id', '=', 'woo_temp.template_id');
                 $join->on('spd.store_id', '=', 'woo_temp.store_id');
             })
+            ->leftjoin('websites as ws','spd.website_id', '=', 'ws.id')
             ->select(
                 'spd.id', 'spd.website_id', 'spd.store_id', 'spd.website', 'spd.link', 'spd.category_name', 'spd.tag_name',
                 'woo_cat.woo_category_id',
                 'woo_tag.woo_tag_id',
                 'woo_temp.template_path', 'woo_temp.template_id',
-                'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret'
+                'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret',
+                'ws.platform_id', 'ws.exclude_text'
             )
             ->where('spd.status', 0)
             ->orderByRaw('spd.website_id ASC', 'spd.store_id ASC')
@@ -1183,6 +1208,93 @@ class ScrapProducts extends Command
                                 }
                                 $data[$key]['images'][$i]['src'] = $image;
                                 $data[$key]['images'][$i]['name'] = $product_name . "_" . basename($image);
+                            }
+                            $i++;
+                        });
+                }
+                $variation_id[$dt['template_id']] = $dt['template_id'];
+            } else {
+                unset($data[$key]);
+                $delete_scrap_id[] = $dt['id'];
+                logfile_system('-- Xóa link : '.$dt['link']);
+            }
+        }
+        if (sizeof($delete_scrap_id) > 0)
+        {
+            $result_delete = \DB::table('scrap_products')->whereIn('id',$delete_scrap_id)->delete();
+            if ($result_delete)
+            {
+                logfile_system('-- Xóa thành công '.sizeof($delete_scrap_id).' scrap id');
+            } else {
+                logfile_system('-- Không thể xóa scrap id: '.implode(",",$delete_scrap_id));
+            }
+        }
+        if (sizeof($data) > 0) {
+            try {
+                $this->createProduct($data, $variation_id);
+            } catch (\Exception $e) {
+                logfile_system($e->getMessage());
+            }
+        }
+    }
+
+    private function getProductAutoMerchKing($data, $array_image)
+    {
+        $client = new \Goutte\Client();
+        $db = array();
+        $variation_id = array();
+        $delete_scrap_id = array();
+        foreach ($data as $key => $dt) {
+            $text_exclude = ucwords($dt['exclude_text']);
+            $link = $dt['link'];
+            $tmp_http = parse_url($link);
+            $http = $tmp_http['scheme'];
+            $response = $client->request('GET', $link);
+            $crawler = $response;
+            try {
+                $try = false;
+                $cancel = $crawler->filter('pre')->text();
+                if (strpos(strtolower($cancel), 'cannot get') !== false) {
+                    $try = false;
+                }
+            } catch (\Exception $exception) {
+                $try = true;
+            }
+            if ($try)
+            {
+                //kiem tra xem co anh hay khong
+                if ($crawler->filter('h3.selected-campaign-mockup-title')->count() > 0) {
+                    //get name
+                    $name = $crawler->filter('h3.selected-campaign-mockup-title')->text();
+                    $name = str_replace(strtolower($text_exclude),'', strtolower($name));
+                    $product_name = ucwords(strtolower(trim($name)));
+                    $data[$key]['product_name'] = trim(preg_replace('/[^a-z\d ]/i', '', $product_name));
+                    // get description
+                    $description = $crawler->filter('div.campaign-description .sizing-specs-desk')->text();
+                    $description = trim(str_replace('Sizing Specs', '', $description));
+                    $description = trim(str_replace('Size Chart', '', $description));
+                    $data[$key]['description'] = htmlentities($description);
+                    $i = 0;
+                    //get image to variation color
+                    $crawler->filter('div.thumb-outter .thumb-box')
+                        ->each(function ($node) use (&$data, &$key, &$i, &$product_name, &$array_image, &$http) {
+                            if (!in_array($i, $array_image)) {
+                                $tmp_img = $node->filter('img.shoe-preview')->attr('src');
+                                $tmp = explode('&width=',$tmp_img);
+                                if (sizeof($tmp) > 1)
+                                {
+                                    $size_img = explode('&height=',$tmp[1]);
+                                    $width = ((int) $size_img[0])*7;
+                                    $height = ((int) $size_img[1])*7;
+//                                $image = $http.':' . explode('&width=', $tmp_img)[0] . '&width='.$width.'&height='.$height;
+                                    $image = $http.':' . explode('&width=', $tmp_img)[0] . '&width=600&height=600';
+//                                $image = 'http:' . explode('&width=', $tmp_img)[0];
+                                } else {
+                                    $image = $tmp_img;
+                                }
+                                $data[$key]['images'][$i]['src'] = $image;
+                                $data[$key]['images'][$i]['name'] = $product_name . "_" . basename($image);
+                                $data[$key]['images'][$i]['alt'] = $product_name . "_" . basename($image);
                             }
                             $i++;
                         });
