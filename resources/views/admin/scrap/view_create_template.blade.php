@@ -59,13 +59,36 @@
                                                required>
                                         <label class="active">Id Product Template</label>
                                     </div>
-                                    <div class="input-field col s4">
+                                </div>
+                                <div class="row">
+                                    <div class="input-field col s5">
                                         <input name="text_exclude" type="text" class="validate"
                                                placeholder="H8L1AF01 hoặc BL750">
                                         <label class="active">
-                                            Exclude Text
+                                            Exclude Text<br>
                                             <small class="blue-text text-darken-1">Nếu tiêu đề sản phẩm có chứa ký tự số bắt buộc phải chọn trường này</small>
                                         </label>
+                                    </div>
+                                    <div class="input-field col s5">
+                                        <input name="image_choose" type="text" class="validate" placeholder="1,2,3,4,5">
+                                        <label class="active">
+                                            Image Choose<br>
+                                            <small class="blue-text text-darken-1">Chọn số thứ tự ảnh muốn thêm vào store. Phân cách bởi dấu , </small>
+                                        </label>
+                                    </div>
+                                    <div class="input-field col s2">
+                                        <label class="active">
+                                            Từ khóa thêm tự động<span class="red-text text-darken-1">(*)</span><br>
+                                            <small class="blue-text text-darken-1">Thêm từ khóa vào tiêu đề sản phẩm</small>
+                                        </label>
+                                        <div class="switch m-b-md">
+                                            <label>
+                                                Off
+                                                <input type="checkbox" name="keyword_import">
+                                                <span class="lever"></span>
+                                                On
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="row">
