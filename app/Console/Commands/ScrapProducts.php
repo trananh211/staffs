@@ -190,7 +190,7 @@ class ScrapProducts extends Command
     private function checkProductNew()
     {
         $result = false;
-        $limit = 1;
+        $limit = 5;
         $products = \DB::table('scrap_products as spd')
             ->leftjoin('woo_categories as woo_cat', 'spd.woo_category_id', '=', 'woo_cat.id')
             ->leftjoin('woo_tags as woo_tag', 'spd.woo_tag_id', '=', 'woo_tag.id')
@@ -202,11 +202,11 @@ class ScrapProducts extends Command
             ->leftjoin('websites as ws','spd.website_id', '=', 'ws.id')
             ->select(
                 'spd.id', 'spd.website_id', 'spd.store_id', 'spd.website', 'spd.link', 'spd.category_name', 'spd.tag_name',
-                'woo_cat.woo_category_id',
+                'woo_cat.woo_category_id', 'woo_cat.id as category_id',
                 'woo_tag.woo_tag_id',
                 'woo_temp.template_path', 'woo_temp.template_id',
                 'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret',
-                'ws.platform_id', 'ws.exclude_text'
+                'ws.platform_id', 'ws.exclude_text','ws.image_array', 'ws.keyword_import'
             )
             ->where('spd.status', 0)
             ->orderByRaw('spd.website_id ASC', 'spd.store_id ASC')
@@ -944,7 +944,7 @@ class ScrapProducts extends Command
 
     private function createProduct($data, $list_variation_id)
     {
-        try {
+//        try {
             $variations = \DB::table('woo_variations')
                 ->select('store_id', 'variation_path', 'template_id')
                 ->whereIn('template_id', $list_variation_id)
@@ -988,6 +988,8 @@ class ScrapProducts extends Command
 //            $prod_data['description'] = html_entity_decode($val['description']);
 //            unset($prod_data['variations']);
 //            unset($prod_data['images']);
+                $prod_data['images'] = [];
+                $prod_data['date_created'] = date("Y-m-d H:i:s", strtotime(" -1 days"));
                 // End tìm template
 
                 //Kết nối với woocommerce
@@ -1013,35 +1015,35 @@ class ScrapProducts extends Command
                         $re = $woocommerce->post('products/' . $woo_product_id . '/variations', $variation_data);
                     }
                 }
-                $update_img = $images;
-                $tmp = array(
-                    'id' => $woo_product_id,
-                    'status' => 'publish',
-                    'images' => $update_img,
-                    'date_created' => date("Y-m-d H:i:s", strtotime(" -3 days"))
-                );
-                $result = $woocommerce->put('products/' . $woo_product_id, $tmp);
-                if ($result) {
-                    $link_product = $result->permalink;
-                    logfile_system('-- Đã tạo thành công sản phẩm ' . $woo_product_name);
-                } else {
-                    logfile_system('-- Thất bại. Không tạo được sản phẩm ' . $woo_product_name);
-                }
+//                $update_img = $images;
+//                $tmp = array(
+//                    'id' => $woo_product_id,
+//                    'status' => 'publish',
+//                    'images' => $update_img,
+//                    'date_created' => date("Y-m-d H:i:s", strtotime(" -3 days"))
+//                );
+//                $result = $woocommerce->put('products/' . $woo_product_id, $tmp);
+//                if ($result) {
+////                    $link_product = $result->permalink;
+//                    logfile_system('-- Đã chuẩn bị thành công data của sản phẩm ' . $woo_product_name);
+//                } else {
+//                    logfile_system('-- Thất bại. Không chuẩn bị được data của sản phẩm ' . $woo_product_name);
+//                }
                 // Cap nhat product id vao woo_product_driver
                 \DB::table('scrap_products')->where('id', $val['id'])
                     ->update([
                         'woo_product_id' => $woo_product_id,
                         'woo_product_name' => $woo_product_name,
-                        'woo_slug' => $link_product,
+//                        'woo_slug' => $link_product,
                         'status' => 1,
                         'updated_at' => date("Y-m-d H:i:s")
                     ]);
             }
-            /*// gui image luu vao database
-            $this->saveImagePath($db_image);*/
-        } catch (\Exception $e) {
-            logfile_system('--- Xảy ra lỗi ngoài ý muốn. ' . $e->getMessage());
-        }
+            // gui image luu vao database
+            $this->saveImagePath($db_image);
+//        } catch (\Exception $e) {
+//            logfile_system('--- Xảy ra lỗi ngoài ý muốn. ' . $e->getMessage());
+//        }
     }
 
     /*End percre*/
@@ -1060,6 +1062,7 @@ class ScrapProducts extends Command
             'reviews_allowed' => $json['reviews_allowed'],
             'tags' => $json['tags'],
             'attributes' => $json['attributes'],
+            'date_created' => date("Y-m-d H:i:s", strtotime(" -3 days"))
         ];
         return $data;
     }
@@ -1079,6 +1082,7 @@ class ScrapProducts extends Command
                     $db[] = [
                         'path' => '',
                         'url' => $img['src'],
+                        'image_name' => $img['name'],
                         'woo_product_driver_id' => 0,
                         'woo_scrap_product_id' => $scrap_product_id,
                         'store_id' => $store_id,
@@ -1274,11 +1278,17 @@ class ScrapProducts extends Command
                     $description = trim(str_replace('Sizing Specs', '', $description));
                     $description = trim(str_replace('Size Chart', '', $description));
                     $data[$key]['description'] = htmlentities($description);
-                    $i = 0;
+                    $i = 1;
+                    if ($dt['image_array'] != '')
+                    {
+                        $array_image = explode(',', $dt['image_array']);
+                    } else {
+                        $array_image = [1,2,3,4];
+                    }
                     //get image to variation color
                     $crawler->filter('div.thumb-outter .thumb-box')
                         ->each(function ($node) use (&$data, &$key, &$i, &$product_name, &$array_image, &$http) {
-                            if (!in_array($i, $array_image)) {
+                            if (in_array($i, $array_image)) {
                                 $tmp_img = $node->filter('img.shoe-preview')->attr('src');
                                 $tmp = explode('&width=',$tmp_img);
                                 if (sizeof($tmp) > 1)
@@ -1292,9 +1302,13 @@ class ScrapProducts extends Command
                                 } else {
                                     $image = $tmp_img;
                                 }
+                                /*Không tạo image cùng lúc tạo sản phẩm*/
                                 $data[$key]['images'][$i]['src'] = $image;
                                 $data[$key]['images'][$i]['name'] = $product_name . "_" . basename($image);
                                 $data[$key]['images'][$i]['alt'] = $product_name . "_" . basename($image);
+
+                                $data[$key]['img'][$i]['url'] = $image;
+                                $data[$key]['img'][$i]['name'] = $product_name;
                             }
                             $i++;
                         });

@@ -27,6 +27,7 @@ class Api extends Model
             [
                 'wp_api' => true,
                 'version' => 'wc/v3',
+                'timeout' => 400,
                 'query_string_auth' => true,
                 'verify_ssl' => false
             ]
@@ -746,6 +747,8 @@ class Api extends Model
                         'platform_id' => $platform_id,
                         'exclude_text' => $rq['text_exclude'],
                         'url' => $rq['web_link'],
+                        'image_array' => trim($rq['image_choose']),
+                        'keyword_import' => (isset($rq['keyword_import']) && $rq['keyword_import'] == 'on')? 1 : 0,
                         'created_at' => date("Y-m-d H:i:s"),
                         'updated_at' => date("Y-m-d H:i:s")
                     ]);
@@ -1158,6 +1161,139 @@ class Api extends Model
             return $e->getMessage();
         }
         return $return;
+    }
+
+    public function uploadImageScrap()
+    {
+        logfile_system('== Đang up ảnh scrap product lên store');
+        $return = false;
+        $limit = 2;
+        $list_scrap_id = \DB::table('scrap_products')
+            ->select('id')
+            ->where('status',1)
+            ->whereNull('woo_slug')
+            ->limit($limit)
+            ->get()->toArray();
+        if (sizeof($list_scrap_id) > 0)
+        {
+            $list_id = array();
+            foreach ($list_scrap_id as $scrap_id)
+            {
+                $list_id[] = $scrap_id->id;
+            }
+            // lấy danh sách của ảnh cần được upload
+            $lists = \DB::table('woo_image_uploads as wup')
+                ->leftjoin('woo_infos', 'wup.store_id', '=', 'woo_infos.id')
+                ->leftjoin('scrap_products as scp', 'wup.woo_scrap_product_id', '=', 'scp.id')
+                ->select(
+                    'wup.id', 'wup.url as image_url', 'wup.woo_scrap_product_id', 'wup.image_name', 'wup.store_id',
+                    'scp.id as scrap_product_id', 'scp.woo_product_id', 'scp.woo_slug',
+                    'woo_infos.url', 'woo_infos.consumer_key', 'woo_infos.consumer_secret'
+                )
+                ->whereIn('wup.woo_scrap_product_id',$list_id)
+                ->get()->toArray();
+            if (sizeof($lists) > 0)
+            {
+                $stores = array();
+                $woo_product_id_empty = array();
+                // gộp vào chung 1 store để gọi API.
+                foreach ($lists as $item)
+                {
+                    if ($item->woo_product_id != '')
+                    {
+                        $stores[$item->store_id]['info'] = [
+                            'url' => $item->url,
+                            'consumer_key' => $item->consumer_key,
+                            'consumer_secret' => $item->consumer_secret
+                        ];
+                        // gộp ảnh vào cùng 1 sản phẩm để upload cùng 1 lúc
+                        $stores[$item->store_id]['data'][$item->woo_product_id.'_'.$item->scrap_product_id]['images'][] = [
+                            'src' => $item->image_url,
+                            'name' => $item->image_name,
+                            'alt' => $item->image_name,
+                        ];
+                        // gộp woo slug
+                        $stores[$item->store_id]['data'][$item->woo_product_id.'_'.$item->scrap_product_id]['woo_slug'] = $item->woo_slug;
+                        // gộp toàn bộ id của woo upload image vào 1 mảng để batch update
+                        $stores[$item->store_id]['data'][$item->woo_product_id.'_'.$item->scrap_product_id]['id'][] = $item->id;
+                    } else {
+                        $woo_product_id_empty[] = $item->id;
+                    }
+                }
+                // nếu không tồn tại sản phẩm cần được upload. Bỏ qua
+                if (sizeof($woo_product_id_empty) > 0)
+                {
+                    \DB::table('woo_upload_images')->whereIn('id', $woo_product_id_empty)->update([
+                        'status' => env('STATUS_SKIP')
+                    ]);
+                }
+
+                if (sizeof($stores) > 0)
+                {
+                    $woo_image_upload_success = array();
+                    $woo_image_upload_error = array();
+                    foreach ($stores as $store_id => $item)
+                    {
+                        $store = $item['info'];
+                        //Kết nối với woocommerce
+                        $woocommerce = $this->getConnectStore($store['url'], $store['consumer_key'], $store['consumer_secret']);
+                        foreach ($item['data'] as $key => $value)
+                        {
+                            $tmp = explode('_',$key);
+                            $woo_product_id = $tmp[0];
+                            $scrap_product_id = $tmp[1];
+                            $images = $value['images'];
+                            if ($value['woo_slug'] == '')
+                            {
+                                $data = array(
+                                    'id' => $woo_product_id,
+                                    'status' => 'publish',
+                                    'images' => $images
+//                                    'date_created' => date("Y-m-d H:i:s", strtotime(" -1 days"))
+                                );
+                            } else {
+                                $data = array(
+                                    'id' => $woo_product_id,
+                                    'images' => $images
+                                );
+                            }
+                            $result = $woocommerce->put('products/' . $woo_product_id, $data);
+                            try {
+                                $try = true;
+                                $result = $woocommerce->put('products/' . $woo_product_id, $data);
+                            } catch (\Exception $e) {
+                                $try = false;
+                            }
+                            if ($try)
+                            {
+                                $woo_slug = $result->permalink;
+                                \DB::table('scrap_products')->where('id',$scrap_product_id)->update(['woo_slug' => $woo_slug]);
+                                $woo_image_upload_success = array_merge($woo_image_upload_success, $value['id']);
+                                logfile_system('-- Đã chuẩn bị thành công data của sản phẩm ' . $woo_product_id);
+                            } else {
+                                $woo_image_upload_error = array_merge($woo_image_upload_error, $value['id']);
+                                logfile_system('-- Thất bại. Không chuẩn bị được data của sản phẩm ' . $woo_product_id);
+                            }
+                        }
+                    }
+
+                    if (sizeof($woo_image_upload_error) > 0)
+                    {
+                        \DB::table('woo_image_uploads')->whereIn('id',$woo_image_upload_error)->update(['status' => env('STATUS_WORKING_ERROR')]);
+                    }
+
+                    if (sizeof($woo_image_upload_success) > 0)
+                    {
+                        \DB::table('woo_image_uploads')->whereIn('id',$woo_image_upload_success)->update(['status' => 1]);
+                    }
+                }
+            }
+        } else {
+            logfile_system('-- Đã hết ảnh để up lên store. Chuyển sang công việc khác.');
+            $return = true;
+        }
+        return $return;
+
     }
 
     /*Xóa categories*/

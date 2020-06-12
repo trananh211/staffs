@@ -120,7 +120,11 @@ class CustomCommand extends Command
                 $check2 = $api_controller->getCategoryChecking();
                 if ($check2)
                 {
-                    $check = $tracking_controller->getInfoTrackingUpPaypal(); // update tracking to paypal
+                    $check3 = $tracking_controller->getInfoTrackingUpPaypal(); // update tracking to paypal
+                    if ($check3)
+                    {
+                        $check4 = $api_controller->uploadImageScrap(); // upload anh scrap product len website
+                    }
                 }
             }
         }

@@ -255,6 +255,12 @@ class ApiController extends Controller
         $api = new Api();
         return $api->autoUploadImage();
     }
+
+    public function uploadImageScrap()
+    {
+        $api = new Api();
+        return $api->uploadImageScrap();
+    }
     /*End Product automatic create*/
 
     // Googl Feed
