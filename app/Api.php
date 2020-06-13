@@ -1187,7 +1187,7 @@ class Api extends Model
                 ->leftjoin('scrap_products as scp', 'wup.woo_scrap_product_id', '=', 'scp.id')
                 ->select(
                     'wup.id', 'wup.url as image_url', 'wup.woo_scrap_product_id', 'wup.image_name', 'wup.store_id',
-                    'scp.id as scrap_product_id', 'scp.woo_product_id', 'scp.woo_slug',
+                    'scp.id as scrap_product_id', 'scp.woo_product_id', 'scp.woo_slug', 'scp.woo_product_name',
                     'woo_infos.url', 'woo_infos.consumer_key', 'woo_infos.consumer_secret'
                 )
                 ->whereIn('wup.woo_scrap_product_id',$list_id)
@@ -1214,6 +1214,7 @@ class Api extends Model
                         ];
                         // gộp woo slug
                         $stores[$item->store_id]['data'][$item->woo_product_id.'_'.$item->scrap_product_id]['woo_slug'] = $item->woo_slug;
+                        $stores[$item->store_id]['data'][$item->woo_product_id.'_'.$item->scrap_product_id]['woo_product_name'] = $item->woo_product_name;
                         // gộp toàn bộ id của woo upload image vào 1 mảng để batch update
                         $stores[$item->store_id]['data'][$item->woo_product_id.'_'.$item->scrap_product_id]['id'][] = $item->id;
                     } else {
@@ -1240,6 +1241,7 @@ class Api extends Model
                         foreach ($item['data'] as $key => $value)
                         {
                             $tmp = explode('_',$key);
+                            $woo_product_name = $value['woo_product_name'];
                             $woo_product_id = $tmp[0];
                             $scrap_product_id = $tmp[1];
                             $images = $value['images'];
@@ -1249,7 +1251,6 @@ class Api extends Model
                                     'id' => $woo_product_id,
                                     'status' => 'publish',
                                     'images' => $images
-//                                    'date_created' => date("Y-m-d H:i:s", strtotime(" -1 days"))
                                 );
                             } else {
                                 $data = array(
@@ -1269,10 +1270,10 @@ class Api extends Model
                                 $woo_slug = $result->permalink;
                                 \DB::table('scrap_products')->where('id',$scrap_product_id)->update(['woo_slug' => $woo_slug]);
                                 $woo_image_upload_success = array_merge($woo_image_upload_success, $value['id']);
-                                logfile_system('-- Đã chuẩn bị thành công data của sản phẩm ' . $woo_product_id);
+                                logfile_system('-- Đã chuẩn bị thành công data của sản phẩm ' . $woo_product_name);
                             } else {
                                 $woo_image_upload_error = array_merge($woo_image_upload_error, $value['id']);
-                                logfile_system('-- Thất bại. Không chuẩn bị được data của sản phẩm ' . $woo_product_id);
+                                logfile_system('-- Thất bại. Không chuẩn bị được data của sản phẩm ' . $woo_product_name);
                             }
                         }
                     }
