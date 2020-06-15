@@ -14,7 +14,7 @@ function logfile_system($str)
 {
     $datetime = Carbon::now('Asia/Ho_Chi_Minh');
     $log_str = $datetime . '==> ' . $str;
-    \Log::channel('hasu')->info($log_str);
+//    \Log::channel('hasu')->info($log_str);
     echo $log_str."\n";
 }
 
@@ -28,19 +28,12 @@ function website()
 {
     $website = [
         '1' => 'https://namestories.com',
-        '2' => 'https://www.etsy.com/shop/GiftedTurtlesUK?ref=l2-shop-info-avatar&listing_id=562544499&section_id=23904787&page',
-        '3' => 'https://www.etsy.com/shop/Printsinspired',
         '4' => 'https://percre.com/?s=low+top&post_type=product',
         '5' => 'https://percre.com/?s=high+top&post_type=product',
         '6' => 'https://shoesnp.com/search?q=season%20boots',
         '7' => 'https://zolagifts.com/',
         '8' => 'https://zolagifts.com/',
         '9' => 'http://icefrogshoe.com/search?q=blanket',
-        '10' => 'https://www.etsy.com/shop/threaddomain?section_id=25643664',
-        '11' => 'https://www.etsy.com/shop/threaddomain?section_id=27228701',
-        '12' => 'https://www.etsy.com/shop/threaddomain?section_id=27212662',
-        '13' => 'https://www.etsy.com/shop/threaddomain?section_id=25308779',
-        '14' => 'https://www.etsy.com/shop/MyDivaBabyAU?section_id=24442401',
         '15' => 'https://creationslaunch.com/search?q=high+top&type=product',
         '16' => 'https://creationslaunch.com/search?q=low+top&type=product',
         '17' => 'https://anzgiftshop.com/search?q=blanket',
@@ -56,6 +49,7 @@ function website_auto()
     $website = [
         '1' => 'Not Flatform',
         '2' => 'Merchking',
+        '3' => 'Esty'
     ];
     return $website;
 }

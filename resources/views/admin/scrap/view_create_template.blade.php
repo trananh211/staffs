@@ -61,7 +61,7 @@
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="input-field col s5">
+                                    <div class="input-field col s4">
                                         <input name="text_exclude" type="text" class="validate"
                                                placeholder="H8L1AF01 hoặc BL750">
                                         <label class="active">
@@ -69,11 +69,18 @@
                                             <small class="blue-text text-darken-1">Nếu tiêu đề sản phẩm có chứa ký tự số bắt buộc phải chọn trường này</small>
                                         </label>
                                     </div>
-                                    <div class="input-field col s5">
+                                    <div class="input-field col s4">
                                         <input name="image_choose" type="text" class="validate" placeholder="1,2,3,4,5">
                                         <label class="active">
                                             Image Choose<br>
                                             <small class="blue-text text-darken-1">Chọn số thứ tự ảnh muốn thêm vào store. Phân cách bởi dấu , </small>
+                                        </label>
+                                    </div>
+                                    <div class="input-field col s2">
+                                        <input name="first_title" type="text" class="validate" placeholder="CanvasABC">
+                                        <label class="active">
+                                            Fixed ký tự đầu<br>
+                                            <small class="blue-text text-darken-1">Chọn khi không phải name, age</small>
                                         </label>
                                     </div>
                                     <div class="input-field col s2">
@@ -89,6 +96,15 @@
                                                 On
                                             </label>
                                         </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="input-field col s12">
+                                        <input name="exclude_image" type="text" class="validate" placeholder="Thêm link image exclude">
+                                        <label class="active">
+                                            Điền link ảnh không muốn thêm vào website. Esty dùng thuộc tính : data-src-zoom-image <br>
+                                            <small class="blue-text text-darken-1">Dán link ảnh phân cách với nhau bằng dấu ,</small>
+                                        </label>
                                     </div>
                                 </div>
                                 <div class="row">
