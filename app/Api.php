@@ -749,6 +749,8 @@ class Api extends Model
                         'url' => $rq['web_link'],
                         'image_array' => trim($rq['image_choose']),
                         'keyword_import' => (isset($rq['keyword_import']) && $rq['keyword_import'] == 'on')? 1 : 0,
+                        'first_title' => ($rq['first_title'] != '')? trim($rq['first_title']) : NULL,
+                        'exclude_image' => ($rq['exclude_image'] != '')? trim($rq['exclude_image']) : NULL,
                         'created_at' => date("Y-m-d H:i:s"),
                         'updated_at' => date("Y-m-d H:i:s")
                     ]);

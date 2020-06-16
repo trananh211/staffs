@@ -66,6 +66,9 @@ class NameStory extends Command
                             case 2:
                                 $this->autoScanMerchKing($website_id, $template_id, $store_id, $woo_template_id, $category_name ,$exclude_text, $domain);
                                 break;
+                            case 3:
+                                $this->autoScanEsty($website_id, $template_id, $store_id, $woo_template_id, $category_name ,$exclude_text, $domain);
+                                break;
                             default:
                                 $str = "-- Không tồn tại platform nào cần được cào.";
                                 logfile_system($str);
@@ -73,19 +76,10 @@ class NameStory extends Command
                     } else {
                         logfile_system('-- Không tồn tại thông tin của website id: '.$website_id);
                     }
-                    die();
                 } else {
                     switch ($website_id) {
                         case 1:
                             $this->scanNamestories($website_id, $template_id, $store_id, $woo_template_id);
-                            break;
-                        case 2:
-                        case 3:
-                            $this->scanEsty($website_id, $template_id, $store_id, $woo_template_id);
-                            break;
-                        case 4:
-                        case 5:
-                            $this->scanPercre($website_id, $template_id, $store_id, $woo_template_id);
                             break;
                         case 6:
                             $this->scanMerchKing($website_id, $template_id, $store_id, $woo_template_id);
@@ -99,17 +93,6 @@ class NameStory extends Command
                         case 9:
                         case 17:
                             $this->scanMerchKing_getTag($website_id, $template_id, $store_id, $woo_template_id);
-                            break;
-                        case 10:
-                            $this->scanEsty_collection($website_id, $template_id, $store_id, $woo_template_id,'Personalized');
-                            break;
-                        case 11:
-                        case 12:
-                            $this->scanEsty_collection($website_id, $template_id, $store_id, $woo_template_id,'Boots');
-                            break;
-                        case 13:
-                        case 14:
-                            $this->scanEsty_collection($website_id, $template_id, $store_id, $woo_template_id,'Hooded Blankets');
                             break;
                         case 15:
                             $this->scanCreationsLaunch_getTag($website_id, $template_id, $store_id, $woo_template_id,'High Top');
@@ -239,239 +222,6 @@ class NameStory extends Command
         }
     }
     /* End website namestories.com */
-
-    /*website percre*/
-    private function scanPercre($website_id, $template_id, $store_id, $woo_template_id)
-    {
-        $website = website();
-        $domain = $website[$website_id];
-        $tmp_link = explode('https://percre.com/',$domain);
-        $link = 'https://percre.com/page/';
-        $page = 1;
-        $data = array();
-        do {
-            echo $page . '-page' . "\n";
-            $url = $link . $page .'/'.$tmp_link[1];
-            $curent_page = $page;
-            $client = new \Goutte\Client();
-            $response = $client->request('GET', $url);
-            $crawler = $response;
-
-            // kiem tra xem co ton tai product nao ở page hiện tại hay không
-            $products = ($crawler->filter('ul.products li.wvs-pro-product')->count() > 0) ?
-                $crawler->filter('ul.products li.wvs-pro-product')->count() : 0;
-            if ($products > 0) {
-                $crawler->filter('ul.products li.wvs-pro-product')
-                    ->each(function ($node) use (&$data, &$website_id, &$template_id, &$store_id, &$url) {
-                        $link = trim($node->filter('a')->attr('href'));
-                        $name = trim($node->filter('h2.woocommerce-loop-product__title')->text());
-                        //nếu tồn tại chữ shoes trong title thì mới cào. không thì bỏ qua
-                        if (strpos(strtolower($name),'shoes') !== false)
-                        {
-                            $category_name = 'Shoes';
-                            $data[] = [
-                                'category_name' => $category_name,
-                                'link' => $link,
-                                'website_id' => $website_id,
-                                'website' => $url,
-                                'template_id' => $template_id,
-                                'store_id' => $store_id,
-                                'status' => 0,
-                                'created_at' => date("Y-m-d H:i:s"),
-                                'updated_at' => date("Y-m-d H:i:s")
-                            ];
-                        }
-                    });
-            }
-
-            //Phần cuối cùng. Không được chèn thêm ở đây nữa
-            // kiểm tra xem đây có phải là trang cuối cùng hay không
-            $check = $crawler->filter('ul.page-numbers li:nth-last-child(1) a')->count();
-            if ($check != 0)
-            {
-                $next_page_link = $crawler->filter('ul.page-numbers li:nth-last-child(1) a')->attr('href');
-                $next_page = preg_replace("/[^0-9]/", '', $next_page_link);
-                $page = $next_page;
-            } else {
-                $next_page = 0;
-            }
-        } while ($next_page > $curent_page);
-        // Lưu dữ liệu vào database
-        $this->saveTemplate($data, $woo_template_id, $domain);
-    }
-    /*End website percre*/
-
-    /*website esty store*/
-    private function scanEsty($website_id, $template_id, $store_id, $woo_template_id)
-    {
-        //Get categories from esty
-        $website = website();
-        $link = $website[$website_id];
-        $data = array();
-        $client = new \Goutte\Client();
-        $response = $client->request('GET', $link);
-        $crawler = $response;
-
-        // kiem tra xem co ton tai category nao ở shop hay không
-        $categories = ($crawler->filter('div.shop-home-wider-sections ul.list-nav > li')->count() > 0) ?
-            $crawler->filter('div.shop-home-wider-sections ul.list-nav > li')->count() : 0;
-        $ar_category = array();
-        if ($categories > 0) {
-            $crawler->filter('div.shop-home-wider-sections ul.list-nav > li')
-                ->each(function ($node) use (&$ar_category) {
-                    $link = trim($node->filter('a')->attr('href'));
-                    $name = trim($node->filter('a')->text());
-                    $name = preg_replace("/&#?[a-z0-9]+;/i", "", $name);
-                    $count = trim($node->filter('a span.badge')->text());
-                    $name = trim(rtrim(strip_tags($name), $count));
-                    $ar_category[$name] = $link;
-                });
-            if (sizeof($ar_category) > 0) {
-                logfile_system('-- Phát hiện ' . (sizeof($ar_category) - 1) . ' categories cần được cào.');
-                $i = 1;
-                foreach ($ar_category as $category_name => $link) {
-                    if (strtolower($category_name) === 'all') {
-                        continue;
-                    }
-                    logfile_system('--- ' . $i . " Category: " . $category_name);
-                    $dt = array();
-                    $url = 'https://www.etsy.com' . $link;
-                    $dt = $this->scanCollectionEsty($client, $url, $category_name, $website_id, $template_id, $store_id, $woo_template_id);
-                    $data = array_merge($data, $dt);
-                    $i++;
-                }
-            }
-        } else {
-            logfile_system('-- Không tồn tại categories nào ở shop ' . $link);
-        }
-
-        if (sizeof($data) > 0) {
-            $insert = \DB::table('scrap_products')->insert($data);
-            if ($insert) {
-                \DB::table('woo_templates')->where('id', $woo_template_id)->update([
-                    'status' => 1,
-                    'updated_at' => date("Y-m-d H:i:s")
-                ]);
-                logfile_system('-- Insert thành công dữ liệu ' . sizeof($data) . ' link sản phẩm website '.$link);
-            }
-        }
-    }
-
-    private function scanCollectionEsty($client, $url, $category_name, $website_id, $template_id, $store_id, $woo_template_id)
-    {
-        $page = 1;
-        $data = [];
-        do {
-            $str = '';
-            $str .= '---- Page- ' . $page;
-            $curent_page = $page;
-            $link_collection = $url . "&page=" . $curent_page;
-            $response = $client->request('GET', $link_collection);
-            $str .= $link_collection . " - ";
-            $crawler = $response;
-
-            // kiem tra xem co ton tai product nao ở page hiện tại hay không
-            $products = ($crawler->filter('ul.listing-cards li.v2-listing-card')->count() > 0) ?
-                $crawler->filter('ul.listing-cards li.v2-listing-card')->count() : 0;
-            if ($products > 0) {
-                $crawler->filter('ul.listing-cards li.block-grid-item')
-//                $crawler->filter('ul.listing-cards li.v2-listing-card')
-                    ->each(function ($node) use (&$data, &$category_name, &$website_id, &$template_id, &$store_id, &$url) {
-                        $link = trim($node->filter('a.listing-link')->attr('href'));
-//                        $name = trim($node->filter('div.v2-listing-card__info h2.text-body')->text());
-//                        $key = intval(preg_replace('/[^0-9.]/','',$link));
-                        preg_match_all('!\d+!', $link, $ar_number);
-                        $key = implode($ar_number[0]);
-                        $data[] = [
-                            'category_name' => preg_replace('/[^a-z\d]/i', '-', sanitizer($category_name)),
-                            'link' => $link,
-                            'website_id' => $website_id,
-                            'website' => $url,
-                            'template_id' => $template_id,
-                            'store_id' => $store_id,
-                            'status' => 0,
-                            'created_at' => date("Y-m-d H:i:s"),
-                            'updated_at' => date("Y-m-d H:i:s")
-                        ];
-                    });
-                $str .= ' - Product ' . sizeof($data);
-                logfile_system($str);
-            } else {
-                logfile_system('---- Không có product nào ở trang này. Bỏ qua');
-            }
-            //Phần cuối cùng. Không được chèn thêm ở đây nữa
-            // kiểm tra xem đây có phải là 1 page hay không
-            $one_page = $crawler->filter('ul.wt-action-group')->count();
-            if ($one_page > 0) {
-                // kiểm tra xem đây có phải là trang cuối cùng hay không
-                $check = $crawler->filter('.wt-action-group__item-container:nth-last-child(1) > a.wt-is-disabled')->count();
-                if ($check == 0) {
-                    $next_page = $crawler->filter('.wt-action-group__item-container:nth-last-child(1) > a')->attr('data-page');
-                    $page = $next_page;
-                }
-            } else {
-                $next_page = 0;
-            }
-        } while ($next_page > $curent_page);
-        return $data;
-    }
-
-    private function scanEsty_collection($website_id, $template_id, $store_id, $woo_template_id ,$category_name)
-    {
-        //Get categories from esty
-        $website = website();
-        $link = $website[$website_id];
-        $domain = $link;
-        $data = array();
-        $client = new \Goutte\Client();
-        $page = 1;
-        do {
-            $str = '';
-            $str .= '---- Page- ' . $page;
-            echo $str;
-            $curent_page = $page;
-            $url = $link . "&page=" . $curent_page;
-            $response = $client->request('GET', $url);
-            $crawler = $response;
-
-            // kiem tra xem co ton tai product nao ở page hiện tại hay không
-            $products = ($crawler->filter('ul.listing-cards li.v2-listing-card')->count() > 0) ?
-                $crawler->filter('ul.listing-cards li.v2-listing-card')->count() : 0;
-            if ($products > 0) {
-                $crawler->filter('ul.listing-cards li.block-grid-item')
-                    ->each(function ($node) use (&$data, &$website_id, &$template_id, &$store_id, &$url, &$category_name) {
-                        $link = trim($node->filter('a.listing-link')->attr('href'));
-                        $data[] = [
-                            'category_name' => preg_replace('/[^a-z\d]/i', ' ', sanitizer($category_name)),
-                            'link' => $link,
-                            'website_id' => $website_id,
-                            'website' => $url,
-                            'template_id' => $template_id,
-                            'store_id' => $store_id,
-                            'status' => 0,
-                            'created_at' => date("Y-m-d H:i:s"),
-                            'updated_at' => date("Y-m-d H:i:s")
-                        ];
-                    });
-            }
-            //Phần cuối cùng. Không được chèn thêm ở đây nữa
-            // kiểm tra xem đây có phải là 1 page hay không
-            $one_page = $crawler->filter('ul.wt-action-group')->count();
-            if ($one_page > 0) {
-                // kiểm tra xem đây có phải là trang cuối cùng hay không
-                $check = $crawler->filter('.wt-action-group__item-container:nth-last-child(1) > a.wt-is-disabled')->count();
-                if ($check == 0) {
-                    $next_page = $crawler->filter('.wt-action-group__item-container:nth-last-child(1) > a')->attr('data-page');
-                    $page = $next_page;
-                }
-            } else {
-                $next_page = 0;
-            }
-        } while ($next_page > $curent_page);
-        // Lưu dữ liệu vào database
-        $this->saveTemplate($data, $woo_template_id, $domain);
-    }
-    /*End website esty store*/
 
     /*website merch king*/
     private function scanMerchKing($website_id, $template_id, $store_id, $woo_template_id)
@@ -828,6 +578,76 @@ class NameStory extends Command
                 if (strpos($next_page_link, $text_split) !== false) {
                     $tmp_page = explode($text_split, $next_page_link)[1];
                     $next_page = preg_replace("/[^0-9]/", '', $tmp_page);
+                    $page = $next_page;
+                }
+            } else {
+                $next_page = 0;
+            }
+        } while ($next_page > $curent_page);
+        // Lưu dữ liệu vào database
+        $this->saveTemplate($data, $woo_template_id, $domain);
+    }
+
+    private function autoScanEsty($website_id, $template_id, $store_id, $woo_template_id, $category_name, $text_exclude, $domain)
+    {
+        echo "<pre>";
+        // so sanh product cu. trung thi se k lay nua
+        $products_old = $this->checkProductExist($template_id, $store_id);
+        $link = $domain.'&page=';
+        echo $link."\n";
+        $page = 1;
+        $data = array();
+        $text_exclude = ucwords($text_exclude);
+        $links = array();
+        do {
+            echo $page . '-page' . "\n";
+            $url = $link . $page;
+            $curent_page = $page;
+            $client = new \Goutte\Client();
+            $response = $client->request('GET', $url);
+            $crawler = $response;
+
+            // kiem tra xem co ton tai product nao ở page hiện tại hay không
+            $products = ($crawler->filter('ul.listing-cards li.v2-listing-card')->count() > 0) ?
+                $crawler->filter('ul.listing-cards li.v2-listing-card')->count() : 0;
+            if ($products > 0) {
+                $crawler->filter('ul.listing-cards li.block-grid-item')
+                    ->each(function ($node) use (&$data, &$website_id, &$template_id, &$store_id, &$url,
+                        &$products_old, &$links, &$category_name ,&$text_exclude) {
+                        $link = trim($node->filter('a.listing-link')->attr('href'));
+                        if (!in_array($link, $products_old))
+                        {
+                            if (!in_array($link, $links))
+                            {
+                                $links[] = $link;
+                                $name = ucwords(trim($node->filter('a')->text()));
+                                $name = str_replace($text_exclude, '', $name);
+                                $tag_name = null;
+                                $data[] = [
+                                    'category_name' => $category_name,
+                                    'tag_name' => $tag_name,
+                                    'link' => $link,
+                                    'website_id' => $website_id,
+                                    'website' => $url,
+                                    'template_id' => $template_id,
+                                    'store_id' => $store_id,
+                                    'status' => 0,
+                                    'created_at' => date("Y-m-d H:i:s"),
+                                    'updated_at' => date("Y-m-d H:i:s")
+                                ];
+                            }
+                        }
+                    });
+            }
+
+            //Phần cuối cùng. Không được chèn thêm ở đây nữa
+            // kiểm tra xem đây có phải là 1 page hay không
+            $one_page = $crawler->filter('ul.wt-action-group')->count();
+            if ($one_page > 0) {
+                // kiểm tra xem đây có phải là trang cuối cùng hay không
+                $check = $crawler->filter('.wt-action-group__item-container:nth-last-child(1) > a.wt-is-disabled')->count();
+                if ($check == 0) {
+                    $next_page = $crawler->filter('.wt-action-group__item-container:nth-last-child(1) > a')->attr('data-page');
                     $page = $next_page;
                 }
             } else {

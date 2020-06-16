@@ -112,7 +112,10 @@ class ScrapProducts extends Command
                     {
                         switch ($platform_id) {
                             case 2:
-                                $this->getProductAutoMerchKing($dt, array(1,2,3,4,7));
+                                $this->getProductAutoMerchKing($dt);
+                                break;
+                            case 3:
+                                $this->getProductAutoEsty($dt);
                                 break;
                             default:
                                 $str = "-- Đã hết website scrap auto platform cần được up sản phẩm.";
@@ -127,14 +130,6 @@ class ScrapProducts extends Command
                             case 1:
                                 $this->getProductNamestories($dt);
                                 break;
-                            case 2:
-                            case 3:
-                                $this->getProductEsty($dt);
-                                break;
-                            case 4:
-                            case 5:
-                                $this->getProductPercre($dt);
-                                break;
                             case 6:
                             case 8:
                                 $this->getProductMerchKing($dt, array(1, 2, 4, 6));
@@ -145,15 +140,6 @@ class ScrapProducts extends Command
                             case 9:
                             case 17:
                                 $this->getProductMerchKing($dt, array(2,3,4,7));
-                                break;
-                            case 10:
-                                $this->getProductEsty_LinkName($dt);
-                                break;
-                            case 11:
-                            case 12:
-                            case 13:
-                            case 14:
-                                $this->getProductEsty_LinkName($dt,true);
                                 break;
                             case 15:
                             case 16:
@@ -206,7 +192,7 @@ class ScrapProducts extends Command
                 'woo_tag.woo_tag_id',
                 'woo_temp.template_path', 'woo_temp.template_id',
                 'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret',
-                'ws.platform_id', 'ws.exclude_text','ws.image_array', 'ws.keyword_import'
+                'ws.platform_id', 'ws.exclude_text','ws.image_array', 'ws.keyword_import', 'ws.first_title', 'ws.exclude_image'
             )
             ->where('spd.status', 0)
             ->orderByRaw('spd.website_id ASC', 'spd.store_id ASC')
@@ -600,103 +586,6 @@ class ScrapProducts extends Command
         }
     }
 
-    /*Begin website esty*/
-    private function getProductEsty($data)
-    {
-        $client = new \Goutte\Client();
-        $db = array();
-        $variation_id = array();
-        foreach ($data as $key => $dt) {
-            $link = $dt['link'];
-            $response = $client->request('GET', $link);
-            $crawler = $response;
-            if ($crawler->filter('ul.list-unstyled')->count() > 0) {
-                //get name
-                $product_name = trim($crawler->filter('div.listing-page-title-component h1')->text());
-                $data[$key]['product_name'] = trim(preg_replace('/[^a-z\d ]/i', '', $product_name));
-                // get description
-                $description = $crawler->filter('div.listing-page-overview-component')->text();
-                $data[$key]['description'] = htmlentities($description);
-                $i = 0;
-                //get image to variation color
-                $crawler->filter('ul.carousel-pane-list li.carousel-pane')
-                    ->each(function ($node) use (&$data, &$key, &$i, &$product_name) {
-                        $image = trim($node->filter('img')->attr('data-src-zoom-image'));
-                        $data[$key]['images'][$i]['src'] = $image;
-                        $data[$key]['images'][$i]['name'] = $product_name . "_" . basename($image);
-                        $i++;
-                    });
-            }
-            $variation_id[$dt['template_id']] = $dt['template_id'];
-        }
-        if (sizeof($data) > 0) {
-            try {
-                $this->createProductEsty($data, $variation_id);
-            } catch (\Exception $e) {
-                logfile_system($e->getMessage());
-            }
-        }
-    }
-
-    /*fixed : true : cố định giá và description theo template*/
-    private function getProductEsty_LinkName($data, $fixed = false)
-    {
-        $client = new \Goutte\Client();
-        $db = array();
-        $variation_id = array();
-        foreach ($data as $key => $dt) {
-            $link = $dt['link'];
-            $response = $client->request('GET', $link);
-            $crawler = $response;
-            if ($crawler->filter('ul.list-unstyled')->count() > 0) {
-                //get name
-                $product_name_1 = trim($crawler->filter('div.listing-page-title-component h1')->text());
-                $data[$key]['des_more'] = $product_name_1;
-                $tmp = (explode("/",$link));
-                $tmp_name = explode("?",$tmp[sizeof($tmp) - 1]);
-                $product_name = ucwords(str_replace("-"," ",$tmp_name[0]));
-                $data[$key]['product_name'] = trim(preg_replace('/[^a-z\d ]/i', '', $product_name));
-                // get description
-//                $description = $crawler->filter('div.listing-page-overview-component')->html();
-                $description = $crawler->filter('div#description-text-content-toggle')->html();
-                $breaks = array("<br />","<br>","<br/>");
-                $description = str_ireplace($breaks, "\r\n", $description);
-                $exclude_des = explode('-----',$description);
-                if (sizeof($exclude_des) > 1)
-                {
-                    $description = $exclude_des[1];
-                }
-                $description = trim($description);
-                $data[$key]['description'] = $product_name_1."\n\n".($description);
-
-                $price = trim($crawler->filter('span.override-listing-price')->text());
-                $price = preg_replace("/[^0-9.,]/", '', $price);
-                $sale_price = round($price*70/100, 2);
-                $sale_unit = 30;
-                $regular_price = round($sale_price/(1 - $sale_unit/100), 2);
-                $data[$key]['sale_price'] = $sale_price;
-                $data[$key]['regular_price'] = $regular_price;
-                $i = 0;
-                //get image to variation color
-                $crawler->filter('ul.carousel-pane-list li.carousel-pane')
-                    ->each(function ($node) use (&$data, &$key, &$i, &$product_name) {
-                        $image = trim($node->filter('img')->attr('data-src-zoom-image'));
-                        $data[$key]['images'][$i]['src'] = $image;
-                        $data[$key]['images'][$i]['name'] = $product_name . "_" . basename($image);
-                        $i++;
-                    });
-            }
-            $variation_id[$dt['template_id']] = $dt['template_id'];
-        }
-        if (sizeof($data) > 0) {
-            try {
-                $this->createProductEsty_LinkName($data, $variation_id, $fixed);
-            } catch (\Exception $e) {
-                logfile_system($e->getMessage());
-            }
-        }
-    }
-
     /*fixed : true : cố định giá và description theo template*/
     private function getProductCreationsLaunch_LinkName($data, $array_image, $fixed = false)
     {
@@ -725,209 +614,6 @@ class ScrapProducts extends Command
                             $data[$key]['images'][$i]['src'] = $image;
                             $data[$key]['images'][$i]['name'] = $product_name . "_" . basename($image);
                         }
-                        $i++;
-                    });
-            }
-            $variation_id[$dt['template_id']] = $dt['template_id'];
-        }
-        if (sizeof($data) > 0) {
-            try {
-                $this->createProduct($data, $variation_id);
-            } catch (\Exception $e) {
-                logfile_system($e->getMessage());
-            }
-        }
-    }
-
-    private function createProductEsty_LinkName($data, $list_variation_id, $fixed)
-    {
-        $variations = \DB::table('woo_variations')
-            ->select('store_id', 'variation_path', 'template_id')
-            ->whereIn('template_id', $list_variation_id)
-            ->get()->toArray();
-        $variation_store = array();
-        foreach ($variations as $value) {
-            $variation_store[$value->template_id . '_' . $value->store_id][] = $value->variation_path;
-        }
-        foreach ($data as $key => $val) {
-            $prod_data = array();
-            // Tìm template
-            $template_json = readFileJson($val['template_path']);
-            // Chọn name
-            $woo_product_name = ucwords(trim($val['product_name'] . ' ' . $template_json['name']));
-            // Kết thúc chọn name
-            logfile_system("-- Đang tạo sản phẩm mới : " . $woo_product_name);
-            $prod_data = $this->preProductData($template_json);
-            $prod_data['name'] = $woo_product_name;
-            $prod_data['status'] = 'draft';
-            $prod_data['categories'] = [
-                ['id' => $val['woo_category_id']]
-            ];
-            if (!$fixed)
-            {
-                $prod_data['price'] = (string) $val['sale_price'];
-                $prod_data['regular_price'] = (string) $val['regular_price'];
-                $prod_data['sale_price'] = (string) $val['sale_price'];
-                $prod_data['description'] = $val['description'];
-            } else {
-                if (array_key_exists('des_more',$val)){
-                    $str_more = "<span class='des_more'>".$val['des_more']."</span>";
-                    $prod_data['description'] = ($str_more."\n".$prod_data['description']);
-                }
-            }
-            // End tìm template
-            //Kết nối với woocommerce
-            $woocommerce = $this->getConnectStore($val['url'], $val['consumer_key'], $val['consumer_secret']);
-            $save_product = ($woocommerce->post('products', $prod_data));
-
-            $woo_product_id = $save_product->id;
-            // Cap nhat product id vao woo_product_driver
-            \DB::table('scrap_products')->where('id', $val['id'])
-                ->update([
-                    'woo_product_id' => $woo_product_id,
-                    'woo_product_name' => $woo_product_name,
-                    'woo_slug' => $save_product->permalink,
-                    'status' => 1,
-                    'updated_at' => date("Y-m-d H:i:s")
-                ]);
-            // tìm image và gán vào
-            $key_variation = $val['template_id'] . '_' . $val['store_id'];
-            if (sizeof($variation_store) > 0 && array_key_exists($key_variation, $variation_store))
-            {
-                foreach ($variation_store[$key_variation] as $variation_path) {
-                    //đọc file json cua variation con
-                    $variation_json = readFileJson($variation_path);
-                    //lấy ra permalink có chứa slug color để so sánh
-                    $variation_permalink = $variation_json['permalink'];
-
-                    $variation_data = array(
-                        'price' => $variation_json['price'],
-                        'regular_price' => $variation_json['regular_price'],
-                        'sale_price' => $variation_json['sale_price'],
-                        'status' => $variation_json['status'],
-                        'attributes' => $variation_json['attributes'],
-                        'menu_order' => $variation_json['menu_order'],
-                        'meta_data' => $variation_json['meta_data'],
-                    );
-                    $re = $woocommerce->post('products/' . $woo_product_id . '/variations', $variation_data);
-                    $str = ('-- Đang cập nhật variation của ' . $woo_product_id);
-                }
-            }
-            $tmp = array(
-                'id' => $woo_product_id,
-                'status' => 'publish',
-                'images' => $val['images'],
-                'date_created' => date("Y-m-d H:i:s", strtotime(" -1 days"))
-            );
-            $result = $woocommerce->put('products/' . $woo_product_id, $tmp);
-            if ($result)
-            {
-                logfile_system('--- Tạo thành công sản phẩm '.$woo_product_name);
-            } else {
-                logfile_system('--- Tạo thất bại sản phẩm '.$woo_product_name);
-            }
-        }
-    }
-
-    private function createProductEsty($data, $list_variation_id)
-    {
-        $variations = \DB::table('woo_variations')
-            ->select('store_id', 'variation_path', 'template_id')
-            ->whereIn('template_id', $list_variation_id)
-            ->get()->toArray();
-        $variation_store = array();
-        foreach ($variations as $value) {
-            $variation_store[$value->template_id . '_' . $value->store_id][] = $value->variation_path;
-        }
-        foreach ($data as $key => $val) {
-            $prod_data = array();
-            // Tìm template
-            $template_json = readFileJson($val['template_path']);
-            // Chọn name
-            $woo_product_name = ucwords(trim($val['product_name'] . ' ' . $template_json['name']));
-            // Kết thúc chọn name
-            logfile_system("-- Đang tạo sản phẩm mới : " . $woo_product_name);
-            $prod_data = $template_json;
-            $prod_data['name'] = $woo_product_name;
-            $prod_data['status'] = 'draft';
-            $prod_data['categories'] = [
-                ['id' => $val['woo_category_id']]
-            ];
-            $prod_data['description'] = html_entity_decode($val['description']);
-            $prod_data['images'] = $val['images'];
-            unset($prod_data['variations']);
-            // End tìm template
-
-            //Kết nối với woocommerce
-            $woocommerce = $this->getConnectStore($val['url'], $val['consumer_key'], $val['consumer_secret']);
-            $save_product = ($woocommerce->post('products', $prod_data));
-
-            $woo_product_id = $save_product->id;
-            // Cap nhat product id vao woo_product_driver
-            \DB::table('scrap_products')->where('id', $val['id'])
-                ->update([
-                    'woo_product_id' => $woo_product_id,
-                    'woo_product_name' => $woo_product_name,
-                    'woo_slug' => $save_product->permalink,
-                    'status' => 1,
-                    'updated_at' => date("Y-m-d H:i:s")
-                ]);
-            // tìm image và gán vào
-            $key_variation = $val['template_id'] . '_' . $val['store_id'];
-            foreach ($variation_store[$key_variation] as $variation_path) {
-                //đọc file json cua variation con
-                $variation_json = readFileJson($variation_path);
-                //lấy ra permalink có chứa slug color để so sánh
-                $variation_permalink = $variation_json['permalink'];
-
-                $variation_data = array(
-                    'price' => $variation_json['price'],
-                    'regular_price' => $variation_json['regular_price'],
-                    'sale_price' => $variation_json['sale_price'],
-                    'status' => $variation_json['status'],
-                    'attributes' => $variation_json['attributes'],
-                    'menu_order' => $variation_json['menu_order'],
-                    'meta_data' => $variation_json['meta_data'],
-                );
-                $re = $woocommerce->post('products/' . $woo_product_id . '/variations', $variation_data);
-                $str = ('-- Đang cập nhật variation của ' . $woo_product_id);
-            }
-            $tmp = array(
-                'id' => $woo_product_id,
-                'status' => 'publish',
-                'date_created' => date("Y-m-d H:i:s", strtotime(" -1 days"))
-            );
-            $result = $woocommerce->put('products/' . $woo_product_id, $tmp);
-        }
-    }
-    /*End website esty*/
-
-    /*Begin percre*/
-    private function getProductPercre($data)
-    {
-        $client = new \Goutte\Client();
-        $db = array();
-        $variation_id = array();
-        foreach ($data as $key => $dt) {
-            $link = $dt['link'];
-            $response = $client->request('GET', $link);
-            $crawler = $response;
-            //kiem tra xem co anh hay khong
-            if ($crawler->filter('h1.product_title')->count() > 0) {
-                //get name
-                $product_name = trim($crawler->filter('h1.product_title')->text());
-                $data[$key]['product_name'] = trim(preg_replace('/[^a-z\d ]/i', '', $product_name));
-                // get description
-                $description = $crawler->filter('div#tab-description')->text();
-                $description = trim(str_replace('Description', '', $description));
-                $data[$key]['description'] = htmlentities($description);
-                $i = 0;
-                //get image to variation color
-                $crawler->filter('div.woocommerce-product-gallery .woocommerce-product-gallery__image')
-                    ->each(function ($node) use (&$data, &$key, &$i, &$product_name) {
-                        $image = $node->filter('a')->attr('href');
-                        $data[$key]['images'][$i]['src'] = $image;
-                        $data[$key]['images'][$i]['name'] = $product_name . "_" . basename($image);
                         $i++;
                     });
             }
@@ -1045,8 +731,6 @@ class ScrapProducts extends Command
 //            logfile_system('--- Xảy ra lỗi ngoài ý muốn. ' . $e->getMessage());
 //        }
     }
-
-    /*End percre*/
 
     private function preProductData($json)
     {
@@ -1242,7 +926,7 @@ class ScrapProducts extends Command
         }
     }
 
-    private function getProductAutoMerchKing($data, $array_image)
+    private function getProductAutoMerchKing($data)
     {
         $client = new \Goutte\Client();
         $db = array();
@@ -1272,12 +956,14 @@ class ScrapProducts extends Command
                     $name = $crawler->filter('h3.selected-campaign-mockup-title')->text();
                     $name = str_replace(strtolower($text_exclude),'', strtolower($name));
                     $product_name = ucwords(strtolower(trim($name)));
-                    $data[$key]['product_name'] = trim(preg_replace('/[^a-z\d ]/i', '', $product_name));
+                    $data[$key]['product_name'] = $dt['first_title'].' '.trim(preg_replace('/[^a-z\d ]/i', '', $product_name));
                     // get description
                     $description = $crawler->filter('div.campaign-description .sizing-specs-desk')->text();
                     $description = trim(str_replace('Sizing Specs', '', $description));
                     $description = trim(str_replace('Size Chart', '', $description));
                     $data[$key]['description'] = htmlentities($description);
+
+                    //get image to variation color
                     $i = 1;
                     if ($dt['image_array'] != '')
                     {
@@ -1285,9 +971,15 @@ class ScrapProducts extends Command
                     } else {
                         $array_image = [1,2,3,4];
                     }
-                    //get image to variation color
+                    $exclude_image = array();
+                    if ($dt['exclude_image'] != '')
+                    {
+                        $tmp = str_replace(" ","",$dt['exclude_image']);
+                        $exclude_image = explode(',',$tmp);
+                    }
                     $crawler->filter('div.thumb-outter .thumb-box')
-                        ->each(function ($node) use (&$data, &$key, &$i, &$product_name, &$array_image, &$http) {
+                        ->each(function ($node) use (&$data, &$key, &$i, &$product_name, &$array_image, &$http,
+                            &$exclude_image ) {
                             if (in_array($i, $array_image)) {
                                 $tmp_img = $node->filter('img.shoe-preview')->attr('src');
                                 $tmp = explode('&width=',$tmp_img);
@@ -1302,13 +994,109 @@ class ScrapProducts extends Command
                                 } else {
                                     $image = $tmp_img;
                                 }
-                                /*Không tạo image cùng lúc tạo sản phẩm*/
-                                $data[$key]['images'][$i]['src'] = $image;
-                                $data[$key]['images'][$i]['name'] = $product_name . "_" . basename($image);
-                                $data[$key]['images'][$i]['alt'] = $product_name . "_" . basename($image);
+                                if (!in_array($image, $exclude_image)){
+                                    /*Không tạo image cùng lúc tạo sản phẩm*/
+                                    $data[$key]['images'][$i]['src'] = $image;
+                                    $data[$key]['images'][$i]['name'] = $product_name . "_" . basename($image);
+                                    $data[$key]['images'][$i]['alt'] = $product_name . "_" . basename($image);
 
-                                $data[$key]['img'][$i]['url'] = $image;
-                                $data[$key]['img'][$i]['name'] = $product_name;
+                                    $data[$key]['img'][$i]['url'] = $image;
+                                    $data[$key]['img'][$i]['name'] = $product_name;
+                                }
+                            }
+                            $i++;
+                        });
+                }
+                $variation_id[$dt['template_id']] = $dt['template_id'];
+            } else {
+                unset($data[$key]);
+                $delete_scrap_id[] = $dt['id'];
+                logfile_system('-- Xóa link : '.$dt['link']);
+            }
+        }
+        if (sizeof($delete_scrap_id) > 0)
+        {
+            $result_delete = \DB::table('scrap_products')->whereIn('id',$delete_scrap_id)->delete();
+            if ($result_delete)
+            {
+                logfile_system('-- Xóa thành công '.sizeof($delete_scrap_id).' scrap id');
+            } else {
+                logfile_system('-- Không thể xóa scrap id: '.implode(",",$delete_scrap_id));
+            }
+        }
+        if (sizeof($data) > 0) {
+            try {
+                $this->createProduct($data, $variation_id);
+            } catch (\Exception $e) {
+                logfile_system($e->getMessage());
+            }
+        }
+    }
+
+    private function getProductAutoEsty($data)
+    {
+        $client = new \Goutte\Client();
+        $db = array();
+        $variation_id = array();
+        $delete_scrap_id = array();
+        foreach ($data as $key => $dt) {
+            $text_exclude = ucwords($dt['exclude_text']);
+            $link = $dt['link'];
+            $tmp_http = parse_url($link);
+            $http = $tmp_http['scheme'];
+            $response = $client->request('GET', $link);
+            $crawler = $response;
+            $try = true;
+            if ($try)
+            {
+                //kiem tra xem co anh hay khong
+                if ($crawler->filter('ul.list-unstyled')->count() > 0) {
+                    //get name
+                    $product_name_1 = trim($crawler->filterXPath('//div[contains(@data-component, "listing-page-title-component")]')->text());
+                    $data[$key]['des_more'] = $product_name_1;
+                    $tmp = (explode("/",$link));
+                    $tmp_name = explode("?",$tmp[sizeof($tmp) - 1]);
+                    $product_name = ucwords(str_replace("-"," ",$tmp_name[0]));
+//                    $data[$key]['product_name'] = $dt['first_title'].' '.trim(preg_replace('/[^a-z\d ]/i', '', $product_name));
+                    $data[$key]['product_name'] = $dt['first_title'].' '.ucwords($product_name_1);
+                    $short_description = '';
+                    //get personalization-instructions
+                    if ($crawler->filter('#personalization-instructions')->count() > 0)
+                    {
+                        $short_description = trim($crawler->filter('#personalization-instructions')->text());
+                    }
+                    $data[$key]['short_description'] = $short_description;
+                    // get description
+                    $data[$key]['description'] = '';
+                    //get image to variation color
+                    $i = 1;
+                    if ($dt['image_array'] != '')
+                    {
+                        $array_image = explode(',', $dt['image_array']);
+                    } else {
+                        $array_image = [1,2,3,4];
+                    }
+                    $exclude_image = array();
+                    if ($dt['exclude_image'] != '')
+                    {
+                        $tmp = str_replace(" ","",$dt['exclude_image']);
+                        $exclude_image = explode(',',$tmp);
+                    }
+                    $crawler->filter('ul.carousel-pane-list li.carousel-pane')
+                        ->each(function ($node) use (&$data, &$key, &$i, &$product_name, &$array_image, &$http,
+                            &$exclude_image) {
+                            if (in_array($i, $array_image)) {
+                                $image = trim($node->filter('img')->attr('data-src-zoom-image'));
+                                if (!in_array($image, $exclude_image))
+                                {
+                                    /*Không tạo image cùng lúc tạo sản phẩm*/
+                                    $data[$key]['images'][$i]['src'] = $image;
+                                    $data[$key]['images'][$i]['name'] = $product_name . "_" . basename($image);
+                                    $data[$key]['images'][$i]['alt'] = $product_name . "_" . basename($image);
+
+                                    $data[$key]['img'][$i]['url'] = $image;
+                                    $data[$key]['img'][$i]['name'] = $product_name;
+                                }
                             }
                             $i++;
                         });
