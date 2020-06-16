@@ -677,7 +677,7 @@ class ScrapProducts extends Command
                 $prod_data['images'] = [];
                 $prod_data['date_created'] = date("Y-m-d H:i:s", strtotime(" -1 days"));
                 // End tìm template
-                
+
                 //Kết nối với woocommerce
                 $woocommerce = $this->getConnectStore($val['url'], $val['consumer_key'], $val['consumer_secret']);
                 $save_product = ($woocommerce->post('products', $prod_data));
