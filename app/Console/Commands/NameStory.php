@@ -52,7 +52,7 @@ class NameStory extends Command
                         ->leftjoin('woo_templates as wtp','ws.id', '=', 'wtp.website_id')
                         ->leftjoin('woo_categories as wc','ws.woo_category_id', '=', 'wc.id')
                         ->select(
-                            'ws.id as website_id', 'ws.platform_id','ws.url', 'ws.exclude_text',
+                            'ws.id as website_id', 'ws.platform_id','ws.url', 'ws.exclude_text', 'ws.first_title',
                             'wc.woo_category_id', 'wc.name as category_name', 'wc.slug as category_slug',
                             'wtp.id as woo_template_id', 'wtp.product_name', 'wtp.template_id', 'wtp.template_path'
                         )
@@ -62,12 +62,13 @@ class NameStory extends Command
                         $exclude_text = $info->exclude_text;
                         $category_name = ucwords($info->category_name);
                         $domain = $info->url;
+                        $first_title = $info->first_title;
                         switch ($info->platform_id) {
                             case 2:
                                 $this->autoScanMerchKing($website_id, $template_id, $store_id, $woo_template_id, $category_name ,$exclude_text, $domain);
                                 break;
                             case 3:
-                                $this->autoScanEsty($website_id, $template_id, $store_id, $woo_template_id, $category_name ,$exclude_text, $domain);
+                                $this->autoScanEsty($website_id, $template_id, $store_id, $woo_template_id, $category_name ,$exclude_text, $domain, $first_title);
                                 break;
                             default:
                                 $str = "-- Không tồn tại platform nào cần được cào.";
@@ -588,7 +589,7 @@ class NameStory extends Command
         $this->saveTemplate($data, $woo_template_id, $domain);
     }
 
-    private function autoScanEsty($website_id, $template_id, $store_id, $woo_template_id, $category_name, $text_exclude, $domain)
+    private function autoScanEsty($website_id, $template_id, $store_id, $woo_template_id, $category_name, $text_exclude, $domain, $first_title)
     {
         echo "<pre>";
         // so sanh product cu. trung thi se k lay nua
@@ -598,6 +599,7 @@ class NameStory extends Command
         $page = 1;
         $data = array();
         $text_exclude = ucwords($text_exclude);
+        $tag_name = ucwords($first_title);
         $links = array();
         do {
             echo $page . '-page' . "\n";
@@ -613,7 +615,7 @@ class NameStory extends Command
             if ($products > 0) {
                 $crawler->filter('ul.listing-cards li.block-grid-item')
                     ->each(function ($node) use (&$data, &$website_id, &$template_id, &$store_id, &$url,
-                        &$products_old, &$links, &$category_name ,&$text_exclude) {
+                        &$products_old, &$links, &$category_name ,&$text_exclude, &$tag_name) {
                         $link = trim($node->filter('a.listing-link')->attr('href'));
                         if (!in_array($link, $products_old))
                         {
@@ -622,7 +624,6 @@ class NameStory extends Command
                                 $links[] = $link;
                                 $name = ucwords(trim($node->filter('a')->text()));
                                 $name = str_replace($text_exclude, '', $name);
-                                $tag_name = null;
                                 $data[] = [
                                     'category_name' => $category_name,
                                     'tag_name' => $tag_name,
