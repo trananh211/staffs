@@ -1046,7 +1046,12 @@ class ScrapProducts extends Command
             $http = $tmp_http['scheme'];
             $response = $client->request('GET', $link);
             $crawler = $response;
-            $try = true;
+            try {
+                $product_name_1 = trim($crawler->filterXPath('//div[contains(@data-component, "listing-page-title-component")]')->text());
+                $try = true;
+            } catch (\Exception $exception) {
+                $try = false;
+            }
             if ($try)
             {
                 //kiem tra xem co anh hay khong
