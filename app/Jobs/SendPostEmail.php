@@ -36,17 +36,17 @@ class SendPostEmail implements ShouldQueue
      */
     public function handle()
     {
-//        $email_from = $this->info->email;
-//        $password = $this->info->password;
-//        $host = $this->info->host;
-//        $port = $this->info->port;
-//        $security = $this->info->security;
-//        $title = $this->info->title;
-//        $body = $this->info->body;
-//        $file = $this->info->file;
-//        $email_to = $this->info->email_to;
-//
-////        echo "Gui email tu: ".$email_from." den :".$email_to." - Host: ".$host." - port: ".$port." - Security: ".$security. ' - title : '.$title.' - file : '.$file.' - het'."\n";
-//        sendEmail($email_from, $password, $host, $port, $security, $email_to, $title, $body, $file);
+        $email_from = $this->info->email;
+        $password = $this->info->password;
+        $host = $this->info->host;
+        $port = $this->info->port;
+        $security = $this->info->security;
+        $title = $this->info->title;
+        $body = $this->info->body;
+        $file = $this->info->file;
+        $email_to = $this->info->email_to;
+
+//        echo "Gui email tu: ".$email_from." den :".$email_to." - Host: ".$host." - port: ".$port." - Security: ".$security. ' - title : '.$title.' - file : '.$file.' - het'."\n";
+        sendEmail($email_from, $password, $host, $port, $security, $email_to, $title, $body, $file);
     }
 }
