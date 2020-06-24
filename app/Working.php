@@ -993,7 +993,7 @@ class Working extends Model
     /*Todo: Xây dựng hàm gửi email tới khách hàng ở đây */
     private function sendEmailToCustomer($data)
     {
-        $info = (object) array();
+        $info = (object) $data;
         $info->email_to = $data['customer_email'];
         $info->title = '[ ' . $data['name'] . ' ] Update information about order ' . $data['number'];
         $info->file = $data['file'];
