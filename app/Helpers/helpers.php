@@ -860,6 +860,8 @@ function createFileExcel($name_file, $data, $path, $sheet_name = null)
 {
     if ($sheet_name == null) {
         $sheet_name = 'Sheet 1';
+    } else {
+        $sheet_name = (strlen($sheet_name) > 30) ? 'Sheet 1' : $sheet_name;
     }
     $check = Excel::create($name_file, function ($excel) use ($data, $sheet_name) {
         $excel->sheet($sheet_name, function ($sheet) use ($data) {

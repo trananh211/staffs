@@ -3603,9 +3603,9 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     ]);
                     if ($result && $excel_fulfill_id)
                     {
-                        $message .= 'Tạo file excel '.$item['info']['tool_category_name'].' thành công'."\n";
+                        $message .= 'Tạo file excel '.$item['info']['tool_category_name'].' thành công'."<br>";
                     } else {
-                        $message .= 'Tạo file excel '.$item['info']['tool_category_name'].' thất bại'."\n";
+                        $message .= 'Tạo file excel '.$item['info']['tool_category_name'].' thất bại'."<br>";
                     }
                 }
             }
