@@ -3569,8 +3569,9 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     //Sắp xếp thứ tự order theo thứ tự file excel
                     foreach ($item_excel['sort'] as $key_title => $template_excel)
                     {
+                        $value_key_tittle = (isset($item_data[$key_title])) ? $item_data[$key_title] : '';
                         // nếu fixed cứng dữ liệu từ trước thì gửi ra dữ liệu fix cứng
-                        $tmp[$template_excel['title']] = ($template_excel['fixed'] != '') ? $template_excel['fixed'] : $item_data[$key_title];
+                        $tmp[$template_excel['title']] = ($template_excel['fixed'] != '') ? $template_excel['fixed'] : $value_key_tittle;
                     }
                     $files[$tool_category_id]['data'][$woo_order_id] = $tmp;
                 }
