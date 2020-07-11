@@ -63,10 +63,10 @@ class TestCommand extends Command
 //        $check = $api_controller->imgThumbProduct();
 //        $check = $api_controller->checkPaymentAgain();
 //        $check = $api_controller->reCheckProductInfo();
-//        $check = $tracking_controller->getInfoTracking();
+        $check = $tracking_controller->getInfoTracking();
 //        $check = $tracking_controller->getInfoTrackingUpPaypal();
 //        $check = $api_controller->getCategoryChecking();
-        $check = $api_controller->uploadImageScrap();
+//        $check = $api_controller->uploadImageScrap();
         var_dump($check);
 //        $check = $tracking_controller->deleteFulfillFile();
 
