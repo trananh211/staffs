@@ -831,8 +831,8 @@ class Api extends Model
                         // Quét thông tin variations gửi vào database
                         $insert_variation = array();
                         if (sizeof($variation_list) > 0) {
-                            for ($i = 0; $i < sizeof($variation_list); $i++) {
-                                $varid = $variation_list[$i];
+                            for ($j = 0; $j < sizeof($variation_list); $j++) {
+                                $varid = $variation_list[$j];
                                 $variation_path = $path . 'variation_' . $varid . '.json';
                                 $variation_data = $woocommerce->get('products/' . $template_id . '/variations/' . $varid);
                                 $result = writeFileJson($variation_path, $variation_data);
@@ -1909,10 +1909,10 @@ class Api extends Model
             }
             $product_name = ucwords(trim($rq['product_name']));
             $product_code = ($rq['product_code'] != '') ? trim($rq['product_code']) : NULL;
-            $sale_price = ($rq['product_code'] != '') ? trim($rq['sale_price']) : 0;
-            $origin_price = ($rq['product_code'] != '') ? trim($rq['origin_price']) : 0;
-            $product_name_exclude = ($rq['product_code'] != '') ? ucwords(trim($rq['product_name_exclude'])) : NULL;
-            $product_name_change = ($rq['product_code'] != '') ? ucwords(trim($rq['product_name_change'])) : NULL;
+            $sale_price = ($rq['sale_price'] != '') ? trim($rq['sale_price']) : 0;
+            $origin_price = ($rq['origin_price'] != '') ? trim($rq['origin_price']) : 0;
+            $product_name_exclude = ($rq['product_name_exclude'] != '') ? ucwords(trim($rq['product_name_exclude'])) : NULL;
+            $product_name_change = ($rq['product_name_change'] != '') ? ucwords(trim($rq['product_name_change'])) : NULL;
             $id = trim($rq['id']);
             $woo_info = \DB::table('woo_templates')
                 ->join('woo_infos', 'woo_templates.store_id', '=', 'woo_infos.id')
@@ -1922,6 +1922,11 @@ class Api extends Model
                 )
                 ->where('woo_templates.id', $id)
                 ->first();
+            $check_variations_exist = \DB::table('woo_variations')
+                ->select('variation_id', 'variation_path')
+                ->where('woo_template_id', $id)
+                ->get()->toArray();
+            $result_variations = false;
             try {
                 $woocommerce = $this->getConnectStore($woo_info->url, $woo_info->consumer_key, $woo_info->consumer_secret);
                 $template_old = readFileJson($woo_info->template_path);
@@ -1931,12 +1936,41 @@ class Api extends Model
                     'regular_price' => ($origin_price > 0) ? $origin_price : $template_old['regular_price'],
                     'sale_price' => ($sale_price > 0) ? $sale_price : $template_old['sale_price']
                 ];
+                if (sizeof($check_variations_exist) > 0)
+                {
+                    foreach ($check_variations_exist as $item)
+                    {
+                        $update_variation[] = [
+                            'id' => $item->variation_id,
+                            'price' => ($sale_price > 0) ? $sale_price : $template_old['price'],
+                            'regular_price' => ($origin_price > 0) ? $origin_price : $template_old['regular_price'],
+                            'sale_price' => ($sale_price > 0) ? $sale_price : $template_old['sale_price']
+                        ];
+                    }
+                    $data_update_variation['update'] = $update_variation;
+                    $result_variations = $woocommerce->post('products/'.$woo_info->template_id.'/variations/batch', $data_update_variation);
+                }
+
                 $update_template = $woocommerce->put('products/' . $woo_info->template_id, $update);
                 $try = true;
             } catch (\Exception $e) {
                 $try = false;
             }
             if ($try) {
+                $data_ud_variations = array();
+                if ($result_variations)
+                {
+                    foreach ($result_variations->update as $item)
+                    {
+                        $result = $this->makeFileTemplate_variation($item, $woo_info->store_id, $woo_info->template_id, $item->id);
+                        if ($result['result'])
+                        {
+                            $data_ud_variations[$item->id]['variation_path'] = $result['template_path'];
+                        } else {
+                            $message .= 'Variation ID: '.$item->id.' Không thể tạo mới được file '.$result['path']." <br>";
+                        }
+                    }
+                }
                 $r = $this->makeFileTemplate($update_template, $woo_info->store_id, $woo_info->template_id);
                 $result = $r['result'];
                 $template_path = $r['template_path'];
@@ -1952,6 +1986,17 @@ class Api extends Model
                     'updated_at' => date("Y-m-d H:i:s")
                 ];
                 if ($result) {
+                    if (sizeof($data_ud_variations) > 0)
+                    {
+                        foreach ($data_ud_variations as $variation_id => $data_update)
+                        {
+                            \DB::table('woo_variations')
+                                ->where('store_id', $woo_info->store_id)
+                                ->where('template_id', $woo_info->template_id)
+                                ->where('variation_id', $variation_id)
+                                ->update($data_update);
+                        }
+                    }
                     $result_update = \DB::table('woo_templates')->where('id', $id)->update($update_db);
                     \DB::table('scrap_products')
                         ->where('template_id',$woo_info->template_id)
@@ -2006,6 +2051,28 @@ class Api extends Model
         return $return;
     }
 
+    private function makeFileTemplate_variation($templates, $id_store, $template_id, $variation_id)
+    {
+        $template_data = json_decode(json_encode($templates), True);
+        $description = htmlentities(str_replace("\n", "<br />", $template_data['description']));
+        $template_data['description'] = $description;
+        //tao thu muc de luu template
+        $path = storage_path('app/public') . '/template/' . $id_store . '/' . $template_id . '/';
+        makeFolder(($path));
+        $count_file = sizeof(array_diff(scandir($path), array('.', '..'))) + 1;
+        // Write File
+        $template_path = $path . 'variation_' . $variation_id .'_'.$count_file. '.json';
+        $template_data['meta_data'] = [];
+        $result = writeFileJson($template_path, $template_data);
+        chmod($template_path, 777);
+        $return = [
+            'result' => $result,
+            'template_path' => $template_path,
+            'path' => $path
+        ];
+        return $return;
+    }
+
     public function changeInfoProduct()
     {
         $return = false;
@@ -2021,7 +2088,7 @@ class Api extends Model
                     'scp.id as scrap_product_id', 'scp.template_id', 'scp.woo_product_id', 'scp.store_id',
                     'scp.woo_product_name', 'scp.woo_slug',
                     'wtp.product_name as temp_product_name', 'wtp.product_code', 'wtp.product_name_change',
-                    'wtp.product_name_exclude', 'wtp.template_path'
+                    'wtp.product_name_exclude', 'wtp.template_path', 'wtp.origin_price', 'wtp.sale_price'
                 )
                 ->where('scp.status_tool', 1)
                 ->where('scp.status', 1)
@@ -2063,8 +2130,23 @@ class Api extends Model
                             'regular_price' => $info_template['regular_price'],
                             'sale_price' => $info_template['sale_price']
                         ];
+                        $data_update_variations = array();
                         try {
                             $result_change = $woocommerce->put('products/' . $item['woo_product_id'], $update);
+                            $variations_id = $result_change->variations;
+                            if (sizeof($variations_id) > 0)
+                            {
+                                foreach ($variations_id as $vari_id)
+                                {
+                                    $data_update_variations['update'][] = [
+                                        'id' => $vari_id,
+                                        'price' => $item['sale_price'],
+                                        'regular_price' => $item['origin_price'],
+                                        'sale_price' => $item['sale_price']
+                                    ];
+                                }
+                                $result_variations = $woocommerce->post('products/'.$item['woo_product_id'].'/variations/batch', $data_update_variations);
+                            }
                             $check = true;
                         } catch (\Exception $e) {
                             $check = false;
@@ -2121,256 +2203,6 @@ class Api extends Model
         }
         return $return;
     }
-
-    /*Hafm tam thoi. sau nay se xoa*/
-    public function getAllOrderOld()
-    {
-        $full_order = array(
-            76878,76874,76870,76865,76862,76859,76855,76848,76842,76838,76836,76833,76830,76825,76822,76819,76800,76797,76778,76767,76744,76529,76505
-        );
-
-        echo "<pre>";
-        $list_order_exists = \DB::table('woo_orders')->pluck('order_id')->toArray();
-        echo sizeof($full_order) - sizeof($list_order_exists)." >= ";
-
-        $list_order_thieu = array_diff($full_order, $list_order_exists);
-        echo sizeof($list_order_thieu)."\n";
-
-        $info = \DB::table('woo_infos')->select('*')->where('id',4)->first();
-        $woocommerce = $this->getConnectStore($info->url, $info->consumer_key, $info->consumer_secret);
-        foreach ($list_order_thieu as $order_id)
-        {
-            try {
-                $try = true;
-                $result = ($woocommerce->get('orders/'.$order_id));
-            } catch (\Exception $e)
-            {
-                $try = false;
-            }
-            if ($try)
-            {
-                $result = json_decode(json_encode($result, true), true);
-                logfile_system('-- Tồn tại order Id: '. $order_id);
-                $this->createOrder($result, $info->id);
-            } else {
-                logfile_system('-- Không tồn tại order Id: '. $order_id);
-            }
-        }
-    }
-
-    public function changeNameProduct()
-    {
-        $store_id = 4;
-        $products = \DB::table('woo_products')->select('id','product_id')
-            ->where('woo_info_id',$store_id)->get()->toArray();
-        $info = \DB::table('woo_infos')->select('*')->where('id',$store_id)->first();
-        $woocommerce = $this->getConnectStore($info->url, $info->consumer_key, $info->consumer_secret);
-        foreach ($products  as $item)
-        {
-            $product_id = $item->product_id;
-            try {
-                $try = true;
-                $result = ($woocommerce->get('products/'.$product_id));
-            } catch (\Exception $e)
-            {
-                $try = false;
-            }
-            if ($try)
-            {
-                $result = json_decode(json_encode($result, true), true);
-                logfile_system('-- Tồn tại product Id: '. $product_id);
-                \DB::table('woo_orders')->where('woo_info_id',$store_id)->where('product_id',$product_id)->
-                    update(['product_name' => $result['name']]);
-                \DB::table('woo_products')->where('woo_info_id',$store_id)->where('product_id',$product_id)->
-                    update(['name'  => $result['name'], 'permalink' => $result['permalink']]);
-            } else {
-                logfile_system('-- Không tồn tại product Id: '. $product_id);
-            }
-        }
-    }
-
-    public function changeSkuWooOrder()
-    {
-        $store_id = 4;
-        $woo_orders = \DB::table('woo_orders')
-            ->select(
-                'id','product_name', 'sku', 'variation_detail', 'variation_full_detail', 'product_id'
-            )
-            ->where('woo_info_id',$store_id)->get()->toArray();
-        foreach ($woo_orders as $item)
-        {
-            $tmp = explode('-;-;-', $item->variation_full_detail);
-            $tmp = array_filter($tmp);
-            $tmp_detail = ltrim(str_replace($item->variation_detail,'',implode('-', $tmp)), '-');
-            if (strlen($tmp_detail) > 0)
-            {
-                $str_sku = $tmp_detail;
-            } else {
-                $str_sku = '';
-            }
-            $sku = $this->getSku($store_id, $item->product_id, $item->product_name, $str_sku);
-            if ($sku != $item->sku)
-            {
-                \DB::table('woo_orders')->where('id',$item->id)->update(['sku' => $sku]);
-            }
-        }
-    }
-
-    public function changeVaritaionWooOrder()
-    {
-        $store_id = 4;
-        $variation_change = [
-            'us10_eu42' => 'season_boots_us10_eu42',
-            'us105_eu425' => 'season_boots_us10_5_eu42_5',
-            'us11_eu43' => 'season_boots_us11_eu43',
-            'us45_eu35' => 'season_boots_us4_5_eu35',
-            'us65_eu37' => 'season_boots_us6_5_eu37',
-            'us75_eu39' => 'season_boots_us7_5_eu39',
-            'us85_eu40' => 'season_boots_us8_5_eu40',
-            'us95_eu41' => 'season_boots_us9_5_eu41',
-            'us11_eu45' => 'season_boots_us11_eu45',
-            'us8_eu41' => 'season_boots_us8_eu41'
-        ];
-        $woo_orders = \DB::table('woo_orders')
-            ->select(
-                'id','number','product_name', 'sku', 'variation_detail', 'variation_full_detail', 'detail'
-            )
-            ->where('woo_info_id',$store_id)->get()->toArray();
-        foreach ($woo_orders as $item)
-        {
-            $update = array();
-            foreach ($variation_change as $variation_store => $variation_new)
-            {
-                if (strpos($item->variation_detail, $variation_store) !== false && strpos($item->product_name, "Season Boots") !== false)
-                {
-                    $variation_detail = str_replace($variation_store, $variation_new, $item->variation_detail);
-                    $variation_full_detail = str_replace($variation_store, $variation_new, $item->variation_full_detail);
-                    $detail = str_replace($variation_store, $variation_new, $item->detail);
-                    $update = [
-                        'variation_detail' => $variation_detail,
-                        'variation_full_detail' => $variation_full_detail,
-                        'detail' => $detail
-                    ];
-                    break;
-                }
-            }
-            if (sizeof($update) > 0)
-            {
-                $result = \DB::table('woo_orders')->where('id',$item->id)->update($update);
-                if ($result)
-                {
-                    logfile_system('-- Update thanh cong variation cua order '.$item->number);
-                } else {
-                    logfile_system('-- Update that bai variation cua order '.$item->number);
-                }
-            }
-        }
-    }
-
-    public function imgThumbProduct()
-    {
-        $products = \DB::table('woo_products')
-            ->select('id','woo_info_id','product_id', 'image')
-            ->where('woo_info_id', 4)
-            ->where('type', 0)
-            ->limit(4)
-            ->get()->toArray();
-        $data_update = array();
-        if (sizeof($products) > 0)
-        {
-            foreach ($products as $item)
-            {
-                $tmp = explode(',', $item->image);
-                $img_update = "";
-                foreach( $tmp as $img)
-                {
-                    if (strpos($img, 'v1/thumb/') == false)
-                    {
-                        $extension = strtolower(pathinfo($img)['extension']);
-                        $rand = strRandom();
-                        $img_update .= env('URL_LOCAL').genThumb($item->woo_info_id.$item->product_id.'_'.$rand.'.'.$extension, $img, env('THUMB')) . ",";
-                    }
-                }
-                $img_update = substr(trim($img_update), 0, -1);
-                if (strlen($img_update) > 0)
-                {
-                    logfile_system('-- Tao file thumb thanh cong cua product id: '. $item->product_id);
-                    $data_update[$item->id] = [
-                        'image' => $img_update,
-                        'type' => 24
-                    ];
-                }
-            }
-            if(sizeof($data_update) > 0)
-            {
-                foreach ($data_update as $woo_product_id => $data)
-                {
-                    $result = \DB::table('woo_products')->where('id',$woo_product_id)->update($data);
-                    if ($result)
-                    {
-                        logfile_system('--- Đổi thumb của '.sizeof($data_update). ' thành công');
-                    } else {
-                        logfile_system('--- Đổi thumb của '.sizeof($data_update). ' thất bại');
-                    }
-                }
-            }
-            $return = false;
-        } else {
-            $return = true;
-        }
-        return $return;
-    }
-
-    public function fixedSkuWrong()
-    {
-        echo "<pre>";
-        $lists = \DB::table('woo_orders')
-            ->select('id','woo_info_id as store_id','product_id','product_name','sku','variation_detail','detail')
-            ->get()->toArray();
-        $list_wrongs = array();
-        foreach ($lists as $item)
-        {
-            if (strpos($item->detail, '_add_') !== false)
-            {
-                $tmp = explode('-;-;-', $item->detail);
-                foreach ($tmp as $value)
-                {
-                    if (strpos($value, '_add_') !== false)
-                    {
-                        $name = trim(explode(':', $value)[1]);
-                    }
-                }
-            } else {
-                $name = null;
-            }
-            $sku = $this->getSku('', $item->product_id, $item->product_name, $name);
-            if ($sku !== $item->sku)
-            {
-                $list_wrongs[] = [
-                    'id' => $item->id,
-                    'store_id' => $item->store_id,
-                    'product_id' => $item->product_id,
-                    'product_name' => $item->product_name,
-                    'old_sku' => $item->sku,
-                    'sku' => $sku,
-                    'variation_detail' => $item->variation_detail,
-                    'detail' => $item->detail
-                ];
-                $resutl = \DB::table('woo_orders')->where('id',$item->id)->update([
-                    'sku' => $sku,
-                    'design_id' => null
-                ]);
-            }
-        }
-
-        if (sizeof($list_wrongs) > 0)
-        {
-            /*get designs SKU*/
-            $this->getDesignNew();
-        }
-    }
-    /* End ham tam thoi sau nay se xoa*/
-
     /*End WooCommerce API*/
 
     /*cập nhật thông tin sản phẩm đối thủ mới liên tục*/
