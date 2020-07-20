@@ -2076,8 +2076,8 @@ class Api extends Model
     public function changeInfoProduct()
     {
         $return = false;
-//        \DB::beginTransaction();
-//        try {
+        \DB::beginTransaction();
+        try {
             logfile_system('==== Bắt đầu thay đổi thông tin product =========================');
             $products = \DB::table('scrap_products as scp')
                 ->leftjoin('woo_templates as wtp', function ($join) {
@@ -2088,7 +2088,7 @@ class Api extends Model
                     'scp.id as scrap_product_id', 'scp.template_id', 'scp.woo_product_id', 'scp.store_id',
                     'scp.woo_product_name', 'scp.woo_slug',
                     'wtp.product_name as temp_product_name', 'wtp.product_code', 'wtp.product_name_change',
-                    'wtp.product_name_exclude', 'wtp.template_path'
+                    'wtp.product_name_exclude', 'wtp.template_path', 'wtp.origin_price', 'wtp.sale_price'
                 )
                 ->where('scp.status_tool', 1)
                 ->where('scp.status', 1)
@@ -2130,9 +2130,23 @@ class Api extends Model
                             'regular_price' => $info_template['regular_price'],
                             'sale_price' => $info_template['sale_price']
                         ];
-
+                        $data_update_variations = array();
                         try {
                             $result_change = $woocommerce->put('products/' . $item['woo_product_id'], $update);
+                            $variations_id = $result_change->variations;
+                            if (sizeof($variations_id) > 0)
+                            {
+                                foreach ($variations_id as $vari_id)
+                                {
+                                    $data_update_variations['update'][] = [
+                                        'id' => $vari_id,
+                                        'price' => $item['sale_price'],
+                                        'regular_price' => $item['origin_price'],
+                                        'sale_price' => $item['sale_price']
+                                    ];
+                                }
+                                $result_variations = $woocommerce->post('products/'.$item['woo_product_id'].'/variations/batch', $data_update_variations);
+                            }
                             $check = true;
                         } catch (\Exception $e) {
                             $check = false;
@@ -2182,12 +2196,12 @@ class Api extends Model
                     'updated_at' => date("Y-m-d H:i:s")
                 ]);
             }
-//            \DB::commit(); // if there was no errors, your query will be executed
-//        } catch (\Exception $e) {
-//            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
-//            $message = 'Xảy ra lỗi nội bộ : ' . $e->getMessage();
-//        }
-//        return $return;
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+            $message = 'Xảy ra lỗi nội bộ : ' . $e->getMessage();
+        }
+        return $return;
     }
     /*End WooCommerce API*/
 
