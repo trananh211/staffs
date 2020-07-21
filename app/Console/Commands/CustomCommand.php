@@ -34,7 +34,7 @@ class CustomCommand extends Command
         parent::__construct();
     }
 
-    protected $array_minute = [59, 6, 4, 1];
+    protected $array_minute = [59, 7, 4, 1];
     /**
      * Execute the console command.
      *
@@ -67,8 +67,8 @@ class CustomCommand extends Command
             case 4:
                 $this->run4Minute();
                 break;
-            case 6:
-                $this->run6Minute();
+            case 7:
+                $this->run7Minute();
                 break;
 //            case 19:
 //                $this->run19Minute();
@@ -130,9 +130,9 @@ class CustomCommand extends Command
         }
     }
 
-    private function run6Minute()
+    private function run7Minute()
     {
-        echo 'run 6 phut';
+        echo 'run 7 phut';
         // delete file fulfill in system
         $tracking_controller = new TrackingController();
         $check = $tracking_controller->deleteFulfillFile();
