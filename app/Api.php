@@ -812,6 +812,7 @@ class Api extends Model
                     return back()->with($alert, $message);
                 } else {
                     $r = $this->makeFileTemplate($i, $id_store, $template_id);
+                    $template_data = json_decode(json_encode($i ,true),true);
                     $result = $r['result'];
                     $template_path = $r['template_path'];
                     $template_name = $r['template_name'];
