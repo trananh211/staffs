@@ -718,7 +718,7 @@ class Api extends Model
     {
         $return = false;
         $rq = $request->all();
-        $store_id = $rq['store_id'];
+        $store_id = $rq['id_store'];
         $template_id = $rq['id_product'];
         // nếu là scrap website
         if ($scrap == 1) {
