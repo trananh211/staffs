@@ -635,6 +635,14 @@ class Api extends Model
         return redirect('/woo-webhooks')->with($status, $message);
     }
 
+    public function updateDesignId()
+    {
+        $status = 'success';
+        $message = 'Đã chạy xong get Design Id';
+        $result = $this->getDesignNew();
+        return redirect('/woo-webhooks')->with($status, $message);
+    }
+
     public function updateOrder($request)
     {
         $status = '';

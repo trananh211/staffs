@@ -200,6 +200,12 @@ class ApiController extends Controller
         return $api->updateSku();
     }
 
+    public function updateDesignId()
+    {
+        $api = new Api();
+        return $api->updateDesignId();
+    }
+
     /*END WOOCOMMERCE API*/
 
     public function seeLog()
