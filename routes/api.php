@@ -28,6 +28,7 @@ Route::post('/update-product/','ApiController@updateProduct');
 Route::get('/test-update-product/{filename}','ApiController@testUpdateProduct');
 
 Route::get('/update-sku','ApiController@updateSku');
+Route::get('/update-design-id','ApiController@updateDesignId');
 
 Route::get('/email-test','ApiController@sendEmail');
 

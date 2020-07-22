@@ -41,6 +41,11 @@
                             <td>Update SKU Woocommerce Store</td>
                         </tr>
                         <tr>
+                            <td>2.1</td>
+                            <td><a href="{{ url('/api/update-design-id/') }}">{{ url('/api/update-design-id/') }}</a></td>
+                            <td>Update Design ID</td>
+                        </tr>
+                        <tr>
                             <td>3.1</td>
                             <td><a href="<?php echo e(url('/fulfillment/')); ?>"><?php echo e(url('/fulfillment/')); ?></a></td>
                             <td>Fulfillment By Hand</td>
