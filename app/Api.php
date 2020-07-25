@@ -1491,7 +1491,7 @@ class Api extends Model
                                 $m++;
                                 //down file về để up lên wordpress
                                 $rawData = Storage::cloud()->get($file['path']);
-                                $tmp_path = 'img_google/' . $val->name . '/' . $file['name'];
+                                $tmp_path = 'img_google/' . $val->name . '/' .basename($file['path'])."_". $file['name'];
                                 $local_path_image_public = public_path($tmp_path);
                                 makeFolder(dirname($local_path_image_public));
 //                                chmod(dirname($local_path_image_public), 0777);

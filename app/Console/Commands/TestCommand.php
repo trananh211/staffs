@@ -42,13 +42,14 @@ class TestCommand extends Command
     public function handle()
     {
         echo "<pre>\n";
-//        $controller = new ApiController(); // make sure to import the controller
-//        $controller->autoUploadProduct();
-//        $controller->autoUploadImage();
 
         $api_controller = new ApiController();
         $google_controller = new GoogleController();
         $tracking_controller = new TrackingController();
+
+        $check = $api_controller->autoUploadProduct();
+//        $check = $api_controller->autoUploadImage();
+
 //        $this->checkTemplateScrap();
 //        $check0 = $google_controller->uploadFileWorkingGoogle();
 //        if($check0)
@@ -63,7 +64,7 @@ class TestCommand extends Command
 //        $check = $api_controller->imgThumbProduct();
 //        $check = $api_controller->checkPaymentAgain();
 //        $check = $api_controller->reCheckProductInfo();
-        $check = $tracking_controller->getInfoTracking();
+//        $check = $tracking_controller->getInfoTracking();
 //        $check = $tracking_controller->getInfoTrackingUpPaypal();
 //        $check = $api_controller->getCategoryChecking();
 //        $check = $api_controller->uploadImageScrap();
