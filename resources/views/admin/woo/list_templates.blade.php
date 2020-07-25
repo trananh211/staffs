@@ -129,10 +129,16 @@
                                     @endif
                                 </td>
                                 <td>
+                                    @if ($list->website_id == '')
+                                        <a onclick="newWindow('{{ url('view-deleted-product-of-folder/'.$list->id) }}', 1200, 800)"
+                                           class="waves-effect waves-light btn orange m-b-xs">
+                                            <i class="material-icons left">present_to_all</i>Folder
+                                        </a>
+                                    @endif
                                     @if (! in_array($list->status, $deleted))
                                     <a onclick="return confirm('Bạn có chắc chắn muốn xóa toàn bộ sản phẩm của Template này?');"
                                        href="{{ url('woo-deleted-all-product/'.$list->id.'&'.(($list->website_id != '') ? 1 : 0 )) }}"
-                                       class="waves-effect waves-light btn orange ">
+                                       class="waves-effect waves-light btn blue-grey ">
                                         All Products
                                     </a>
                                     @else

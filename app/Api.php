@@ -1363,6 +1363,7 @@ class Api extends Model
         $temps = \DB::table('woo_templates')->select('id', 'template_id', 'store_id', 'website_id')->where('status', 23)->first();
         if ($temps != NULL) {
             $where = [
+                ['status', '=', 23],
                 ['template_id', '=', $temps->template_id],
                 ['store_id', '=', $temps->store_id]
             ];

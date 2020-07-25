@@ -410,6 +410,18 @@ class WooController extends Controller
         return $work->actionDeletedCategories($request);
     }
 
+    public function viewDeleteProductOfFolder($woo_template_id)
+    {
+        $work = new Working();
+        return $work->viewDeleteProductOfFolder($woo_template_id);
+    }
+
+    public function wooDeletedDriverFolder($woo_driver_folder_id)
+    {
+        $work = new Working();
+        return $work->wooDeletedDriverFolder($woo_driver_folder_id);
+    }
+
     public function getListTemplate()
     {
         $lists = \DB::table('woo_templates as w_temp')
