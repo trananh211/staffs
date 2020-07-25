@@ -93,7 +93,7 @@ class CustomCommand extends Command
             $check1 = $google_controller->getFileFulfill(); // download file fulfill từ driver về local
             if ($check1)
             {
-                // upload image from google driver to product
+                // upload image from google driver to product, delete product auto create
                 $check2 = $api_controller->autoUploadImage();
                 if ($check2) {
                     // tạo feed check feed đầu tiên

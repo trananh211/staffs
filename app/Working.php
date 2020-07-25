@@ -2393,6 +2393,76 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         return redirect('woo-get-template')->with($alert, $message);
     }
 
+    public function viewDeleteProductOfFolder($woo_template_id)
+    {
+        $templates = \DB::table('woo_templates as w_temp')
+            ->leftjoin('woo_infos', 'w_temp.store_id', '=', 'woo_infos.id')
+            ->leftjoin('woo_folder_drivers as wfd', 'w_temp.template_id', '=', 'wfd.template_id')
+            ->select(
+                'w_temp.id', 'w_temp.product_name', 'w_temp.store_id', 'w_temp.template_id',
+                'w_temp.website_id', 'w_temp.status', 'w_temp.product_code',
+                'woo_infos.name as store_name',
+                'wfd.id as woo_driver_folder_id', 'wfd.name as woo_driver_folder_name',
+                'wfd.status as woo_driver_folder_status', 'wfd.created_at'
+            )
+            ->where('w_temp.id', $woo_template_id)
+            ->get()->toArray();
+        $data = array();
+        return view('popup/list_template_folder',compact('templates', 'data'));
+    }
+
+    public function wooDeletedDriverFolder($woo_driver_folder_id)
+    {
+        \DB::beginTransaction();
+        try {
+            $alert = 'error';
+            $message = '';
+            $exists = \DB::table('woo_folder_drivers')
+                ->select('id', 'template_id', 'store_id')->where('id', $woo_driver_folder_id)->first();
+            if ($exists != NULL) {
+                $woo_template_id = $exists->template_id;
+                $store_id = $exists->store_id;
+                $where = [
+                    ['woo_folder_driver_id', '=', $woo_driver_folder_id],
+                    ['store_id', '=', $store_id]
+                ];
+                // xoa driver folder tren he thong
+                $update = \DB::table('woo_folder_drivers')->where('id',$woo_driver_folder_id)->update(['status' => 23]);
+
+                // Delete all product not create in tool
+                $deleted = \DB::table('woo_product_drivers')->where($where)->where('status', 0)->delete();
+                $check_exist = \DB::table('woo_product_drivers')->where($where)->count();
+                $where_template = [
+                    ['template_id', '=', $woo_template_id],
+                    ['store_id', '=', $store_id]
+                ];
+                if ($check_exist > 0) {
+                    $update = \DB::table('woo_product_drivers')->where($where)->update(['status' => 23]);
+                    if ($update) {
+                        $alert = 'success';
+                        $message = 'Thành công. Tất cả sản phẩm thuộc driver folder này sẽ được xóa vào thời gian tới.';
+                        \DB::table('woo_templates')->where($where_template)->update(['status' => 23]);
+                    } else {
+                        $message = 'Xảy ra lỗi. Không thể cập nhật sản phẩm đã up lên store vào danh sách phải xóa.';
+                    }
+                } else {
+                    $alert = 'success';
+                    $message = 'Thành công. Tất cả sản phẩm thuộc driver folder này sẽ được xóa vào thời gian tới.';
+                    \DB::table('woo_templates')->where($where_template)->update(['status' => 23]);
+                }
+            } else {
+                $alert = 'error';
+                $message = ' Xảy ra lỗi không thể xóa sản phẩm. Mời bạn thử lại sau';
+            }
+            \DB::commit(); // if there was no errors, your query will be executed
+        } catch (\Exception $e) {
+            \DB::rollback(); // either it won't execute any statements and rollback your database to previous state
+            logfile($e->getMessage());
+            echo $e->getMessage();
+        }
+        return back()->with($alert, $message);
+    }
+
     public function deleteAllProductTemplate($woo_template_id, $type)
     {
         \DB::beginTransaction();

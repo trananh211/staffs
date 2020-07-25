@@ -127,6 +127,8 @@ Route::middleware('auth')->group(function () {
     Route::post('scrap-save-template','ApiController@scrapSaveTemplate');
     Route::get('woo-deleted-all-template/{woo_template_id}','WooController@deleteAllTemplate');
     Route::get('woo-deleted-all-product/{woo_template_id}&{type}','WooController@deleteAllProductTemplate');
+    Route::get('view-deleted-product-of-folder/{woo_template_id}','WooController@viewDeleteProductOfFolder');
+    Route::get('woo-deleted-driver-folder/{woo_driver_folder_id}','WooController@wooDeletedDriverFolder');
     Route::post('ajax-redo-new-sku','WooController@axRedoNewSKU');
     Route::post('dashboard-date','WooController@dashboardDate');
     Route::post('update-tool-category','WooController@updateToolCategory');
