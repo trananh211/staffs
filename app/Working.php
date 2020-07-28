@@ -1415,6 +1415,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     }
                     // Update thong tin new design_id vao woo_orders
                     \DB::table('woo_orders')->where('id', $order_id)->update([
+                        'status' => env('STATUS_WORKING_NEW'),
                         'sku' => $sku,
                         'variation_detail' => $new_variation,
                         'design_id' => $check_exist_design->id,
@@ -1490,6 +1491,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                         }
                         // Update thong tin new design_id vao woo_orders
                         \DB::table('woo_orders')->where('id', $order_id)->update([
+                            'status' => env('STATUS_WORKING_NEW'),
                             'sku' => $sku,
                             'variation_detail' => $new_variation,
                             'design_id' => $new_design_id,
