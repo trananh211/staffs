@@ -580,6 +580,8 @@ class NameStory extends Command
                     $tmp_page = explode($text_split, $next_page_link)[1];
                     $next_page = preg_replace("/[^0-9]/", '', $tmp_page);
                     $page = $next_page;
+                } else {
+                    $next_page = 0;
                 }
             } else {
                 $next_page = 0;
