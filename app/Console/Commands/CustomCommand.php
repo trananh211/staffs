@@ -100,8 +100,12 @@ class CustomCommand extends Command
                     $check3 = $api_controller->reCheckProductInfo();
                     if ($check3)
                     {
-                        //Cào sản phẩm
-                        $this->call('scrap:product');
+                        $check4 = $api_controller->uploadImageScrap(); // upload anh scrap product len website
+                        if ($check4)
+                        {
+                            //Cào sản phẩm
+                            $this->call('scrap:product');
+                        }
                     }
                 }
             }
