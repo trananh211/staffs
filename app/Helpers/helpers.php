@@ -908,8 +908,9 @@ function filterFileUploadBefore($files, $str_compare = null, $ext_array = null)
     }
     $filter_files = array();
     foreach ($files as $file) {
-        $extension = strtolower($file->getClientOriginalExtension());
-        $filename = $file->getClientOriginalName();
+        $ext = pathinfo($file);
+        $extension = strtolower($ext['extension']);
+        $filename = $ext['filename'];
         if ($file->getSize() <= env('UPLOAD_SIZE_MAX')) {
             if (in_array(strtolower($extension), $ext)) {
                 if (strlen($str_compare) > 0 && strpos($filename, $str_compare) === false) {

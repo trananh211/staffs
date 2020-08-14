@@ -5,7 +5,7 @@
             <div class="card">
                 <div class="card-content">
                     <div class="row">
-                        <div class="col s10">
+                        <div class="col s8">
                             <form class="col s12" action="{{ route('search-tracking') }}" method="get">
                                 {{ csrf_field() }}
                                 <div class="input-field col s3">
@@ -33,6 +33,51 @@
                             <a href="{{ url('get-file-tracking-now'.$url_download) }}" class="waves-effect waves-light btn green">
                                 Download File</a>
                         </div>
+                        <div class="col s2">
+                            <!-- Modal Trigger -->
+                            <a class="waves-effect waves-light btn modal-trigger blue" href="#modal-uptracking">Up Tracking</a>
+                            <!-- Modal Structure -->
+                            <div id="modal-uptracking" class="modal">
+                                <div class="modal-content">
+                                    <ul id="js-noti" class="text-darken-2"></ul>
+                                    <form class="col s12" id="form-up-tracking" method="post" data-url="{{ url('action-up-tracking') }}">
+                                        {{ csrf_field() }}
+                                        <div class="row">
+                                            <div class="input-field col s6">
+                                                <input type="file" multiple name="files[]" required style="border:1px solid #ccc; padding: 60px;"/>
+                                            </div>
+                                            <div class="input-field col s6">
+
+                                                <div class="row">
+                                                    <!-- Switch -->
+                                                    <div class="switch m-b-md">
+                                                        <label>
+                                                            Status Shipping Default
+                                                            <input type="checkbox" name="fixed_shipping">
+                                                            <span class="lever"></span>
+                                                            Fixed Status Shipping
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+
+                                                    <select name="type_upload">
+                                                        <option value="1">Thay thế tracking cũ (1 order 1 item)</option>
+                                                        <option value="2">Thêm tracking mới ( 1 order nhiều item)</option>
+                                                    </select>
+                                                    <label>Dạng upload</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col s12">
+                                                <button type="submit" class="right waves-effect waves-light btn blue">Update</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -59,7 +104,7 @@
                             </ul>
                         </div>
                     </div>
-                    <table id="review-job" class="display responsive-table datatable-example">
+                    <table class="display responsive-table datatable-example">
                         <thead>
                         <tr>
                             <th class="center">#</th>

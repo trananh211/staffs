@@ -423,6 +423,8 @@ class Tracking extends Model
             $message = $tmp['message'];
             $files = $tmp['files'];
             $type_upload = $rq['type_upload']; // 1: Update 2: create new
+            $tracking_status = (isset($rq['fixed_shipping']) && $rq['fixed_shipping'] == 'on')? env('TRACK_INTRANSIT') : env('TRACK_NEW');
+            $payment_up_tracking_status = (isset($rq['fixed_shipping']) && $rq['fixed_shipping'] == 'on')? 1 : 0;
             if (sizeof($files) > 0) {
                 $tracking_check = array();
                 $tracking_new = array();
@@ -458,8 +460,9 @@ class Tracking extends Model
                                         'order_id' => $woo_order_id,
                                         'tracking_number' => $tracking_number,
                                         'shipping_method' => $shipping_method,
-                                        'status' => env('TRACK_NEW'),
+                                        'status' => $tracking_status,
                                         'is_check' => 0,
+                                        'payment_up_tracking' => $payment_up_tracking_status,
                                         'time_upload' => date("Y-m-d H:i:s"),
                                         'created_at' => date("Y-m-d H:i:s"),
                                         'updated_at' => date("Y-m-d H:i:s")
