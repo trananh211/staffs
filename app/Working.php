@@ -3806,7 +3806,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             )
             ->groupBy('woo_orders.excel_fulfill_id')
             ->orderBy('exf.created_at', 'DESC')
-            ->limit(10)
+            ->limit(40)
             ->get()->toArray();
         return view('/admin/fulfill_category', compact('data','fulfills'));
     }
