@@ -34,7 +34,7 @@ class CustomCommand extends Command
         parent::__construct();
     }
 
-    protected $array_minute = [59, 7, 4, 1];
+    protected $array_minute = [59, 58, 7, 4, 1];
     /**
      * Execute the console command.
      *
@@ -73,8 +73,8 @@ class CustomCommand extends Command
 //            case 19:
 //                $this->run19Minute();
 //                break;
-            case 59:
-                $this->run59Minute();
+            case 58:
+                $this->run58Minute();
                 break;
             default:
                 echo 'khong run duoc vao thoi gian nay '. $minute;
@@ -153,7 +153,7 @@ class CustomCommand extends Command
         $this->checkTemplateScrap();
     }
 
-    private function run59Minute()
+    private function run58Minute()
     {
         // Cào website
         $this->call('scan:website');

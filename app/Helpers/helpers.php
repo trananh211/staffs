@@ -14,7 +14,7 @@ function logfile_system($str)
 {
     $datetime = Carbon::now('Asia/Ho_Chi_Minh');
     $log_str = $datetime . '==> ' . $str;
-    \Log::channel('hasu')->info($log_str);
+//    \Log::channel('hasu')->info($log_str);
     echo $log_str."\n";
 }
 
@@ -78,6 +78,7 @@ function getListTitle()
     ];
     $product = [
         'variation_detail' => 'US6 (EU 41)',
+        'variation_full_detail' => 'female-;-;-white-;-;-low_top_us9_eu40-;-;-I-AM-MOTIFIAH-;-;-',
         'product_image' => 'https://mol...',
         'product_name' => 'Jame Low Top',
         'sku' => 'JameZA003B41',
@@ -908,8 +909,9 @@ function filterFileUploadBefore($files, $str_compare = null, $ext_array = null)
     }
     $filter_files = array();
     foreach ($files as $file) {
-        $extension = strtolower($file->getClientOriginalExtension());
-        $filename = $file->getClientOriginalName();
+        $ext = pathinfo($file);
+        $extension = strtolower($ext['extension']);
+        $filename = $ext['filename'];
         if ($file->getSize() <= env('UPLOAD_SIZE_MAX')) {
             if (in_array(strtolower($extension), $ext)) {
                 if (strlen($str_compare) > 0 && strpos($filename, $str_compare) === false) {

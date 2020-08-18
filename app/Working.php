@@ -3376,8 +3376,9 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         $order_status = order_status();
         // lấy danh sách design id
         $lst_design_id = \DB::table('woo_orders')
-            ->where('status', env('STATUS_WORKING_DONE'))
+            ->where('status', '<=' ,env('STATUS_WORKING_DONE'))
             ->whereIn('order_status', $order_status)
+            ->whereNull('excel_fulfill_id')
             ->distinct()->pluck('design_id')->toArray();
         if (sizeof($lst_design_id) > 0) {
             $designs = \DB::table('workings')
@@ -3397,6 +3398,11 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 ->where('working_files.is_mockup', 1)
                 ->get()->toArray();
             if (sizeof($designs) > 0) {
+                $list_design_id_done = array();
+                foreach ($designs as $item)
+                {
+                    $list_design_id_done[$item->design_id] = $item->design_id;
+                }
                 $woo_orders = \DB::table('woo_orders')
                     ->leftjoin('file_fulfills as ff','woo_orders.id','=', 'ff.woo_order_id')
                     ->select(
@@ -3406,11 +3412,12 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                         'woo_orders.postcode', 'woo_orders.phone', 'woo_orders.customer_note',
                         'woo_orders.product_name', 'woo_orders.design_id', 'woo_orders.variation_detail',
                         'woo_orders.quantity', 'woo_orders.price', 'woo_orders.shipping_cost', 'woo_orders.product_id',
-                        'woo_orders.woo_info_id', 'woo_orders.sku',
+                        'woo_orders.woo_info_id', 'woo_orders.sku', 'woo_orders.variation_full_detail',
                         'ff.tool_category_id', 'ff.web_path_file', 'ff.web_path_folder'
                     )
-                    ->where('woo_orders.status', env('STATUS_WORKING_DONE'))
+                    ->where('woo_orders.status','<=', env('STATUS_WORKING_DONE'))
                     ->whereIn('woo_orders.order_status', $order_status)
+                    ->whereIn('woo_orders.design_id', $list_design_id_done)
                     ->get()->toArray();
                 $data_fulfills = $this->sortDataFulfill($designs, $woo_orders);
             }
@@ -3454,7 +3461,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                         'woo_orders.postcode', 'woo_orders.phone', 'woo_orders.customer_note',
                         'woo_orders.product_name', 'woo_orders.design_id', 'woo_orders.variation_detail',
                         'woo_orders.quantity', 'woo_orders.price', 'woo_orders.shipping_cost', 'woo_orders.product_id',
-                        'woo_orders.woo_info_id', 'woo_orders.sku',
+                        'woo_orders.woo_info_id', 'woo_orders.sku', 'woo_orders.variation_full_detail',
                         'ff.tool_category_id', 'ff.web_path_file', 'ff.web_path_folder'
                     )
                     ->whereIn('woo_orders.id',$list_woo_order_id)->get()->toArray();
@@ -3564,6 +3571,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     'shipping' => '',
                     'customer_note' => $order->customer_note,
                     'variation_detail' => $variation_detail,
+                    'variation_full_detail' => $order->variation_full_detail,
                     'product_name' => $order->product_name,
                     'sku' => $sku,
                     'design_id' => $order->design_id,
