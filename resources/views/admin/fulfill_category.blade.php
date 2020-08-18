@@ -18,11 +18,26 @@
                                     <input type="file" multiple name="files[]" required style="border:1px solid #ccc; padding: 60px;"/>
                                 </div>
                                 <div class="input-field col s6">
-                                    <select name="type_upload">
-                                        <option value="1">Thay thế tracking cũ (1 order 1 item)</option>
-                                        <option value="2">Thêm tracking mới ( 1 order nhiều item)</option>
-                                    </select>
-                                    <label>Dạng upload</label>
+
+                                    <div class="row">
+                                        <!-- Switch -->
+                                        <div class="switch m-b-md">
+                                            <label>
+                                                Status Shipping Default
+                                                <input type="checkbox" name="fixed_shipping">
+                                                <span class="lever"></span>
+                                                Fixed Status Shipping
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+
+                                        <select name="type_upload">
+                                            <option value="1">Thay thế tracking cũ (1 order 1 item)</option>
+                                            <option value="2">Thêm tracking mới ( 1 order nhiều item)</option>
+                                        </select>
+                                        <label>Dạng upload</label>
+                                    </div>
                                 </div>
                             </div>
                             <div class="row">
