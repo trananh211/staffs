@@ -3412,7 +3412,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                         'woo_orders.postcode', 'woo_orders.phone', 'woo_orders.customer_note',
                         'woo_orders.product_name', 'woo_orders.design_id', 'woo_orders.variation_detail',
                         'woo_orders.quantity', 'woo_orders.price', 'woo_orders.shipping_cost', 'woo_orders.product_id',
-                        'woo_orders.woo_info_id', 'woo_orders.sku',
+                        'woo_orders.woo_info_id', 'woo_orders.sku', 'woo_orders.variation_full_detail',
                         'ff.tool_category_id', 'ff.web_path_file', 'ff.web_path_folder'
                     )
                     ->where('woo_orders.status','<=', env('STATUS_WORKING_DONE'))
@@ -3461,7 +3461,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                         'woo_orders.postcode', 'woo_orders.phone', 'woo_orders.customer_note',
                         'woo_orders.product_name', 'woo_orders.design_id', 'woo_orders.variation_detail',
                         'woo_orders.quantity', 'woo_orders.price', 'woo_orders.shipping_cost', 'woo_orders.product_id',
-                        'woo_orders.woo_info_id', 'woo_orders.sku',
+                        'woo_orders.woo_info_id', 'woo_orders.sku', 'woo_orders.variation_full_detail',
                         'ff.tool_category_id', 'ff.web_path_file', 'ff.web_path_folder'
                     )
                     ->whereIn('woo_orders.id',$list_woo_order_id)->get()->toArray();
@@ -3571,6 +3571,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                     'shipping' => '',
                     'customer_note' => $order->customer_note,
                     'variation_detail' => $variation_detail,
+                    'variation_full_detail' => $order->variation_full_detail,
                     'product_name' => $order->product_name,
                     'sku' => $sku,
                     'design_id' => $order->design_id,
