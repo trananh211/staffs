@@ -109,6 +109,7 @@
                         <tr>
                             <th class="center">#</th>
                             <th class="center">Order</th>
+                            <th class="center">Product Name</th>
                             <th class="center">Design Done</th>
                             <th class="center">Time Up Tracking</th>
                             <th class="center">Tracking</th>
@@ -121,6 +122,7 @@
                         <tr>
                             <th class="center">#</th>
                             <th class="center">Order</th>
+                            <th class="center">Product Name</th>
                             <th class="center">Design Done</th>
                             <th class="center">Time Up Tracking</th>
                             <th class="center">Tracking</th>
@@ -136,6 +138,7 @@
                                 <tr>
                                     <td class="center">{{ $i++ }}</td>
                                     <td class="center"> {{ $list['number'] }}</td>
+                                    <td class="center"> {{ $list['product_name'] }}</td>
                                     <td class="center">
                                         {!! compareTime($list['updated_at'], date("Y-m-d H:i:s")) !!}
                                     </td>
