@@ -137,7 +137,7 @@ class Tracking extends Model
             $lists = \DB::table('woo_orders as wod')
                 ->leftJoin('trackings as t', 't.order_id', '=', 'wod.number')
                 ->select(
-                    'wod.number', 'wod.created_at', 'wod.updated_at', 'wod.status',
+                    'wod.number', 'wod.created_at', 'wod.updated_at', 'wod.status', 'wod.product_name',
                     't.id as tracking_id','t.tracking_number', 't.status as tracking_status', 't.time_upload',
                     't.shipping_method', 't.note'
                 )
@@ -153,7 +153,7 @@ class Tracking extends Model
                     $list_trackings_available = \DB::table('trackings')
                         ->where('status','>',env('TRACK_NOTFOUND'))->pluck('order_id')->toArray();
                     $lists = \DB::table('woo_orders as wod')
-                        ->select('wod.number', 'wod.created_at', 'wod.updated_at', 'wod.status')
+                        ->select('wod.number', 'wod.created_at', 'wod.updated_at', 'wod.status', 'wod.product_name')
                         ->whereNotIn('number', $list_trackings_available)
                         ->whereBetween('wod.status', [env('STATUS_WORKING_DONE'), env('STATUS_WORKING_MOVE')])
                         ->whereIn('order_status', $order_status)
@@ -229,7 +229,7 @@ class Tracking extends Model
                     $lists = \DB::table('woo_orders as wod')
                         ->leftJoin('trackings as t', 't.order_id', '=', 'wod.number')
                         ->select(
-                            'wod.number', 'wod.created_at', 'wod.updated_at', 'wod.status',
+                            'wod.number', 'wod.created_at', 'wod.updated_at', 'wod.status', 'wod.product_name',
                             't.id as tracking_id','t.tracking_number', 't.status as tracking_status', 't.time_upload',
                             't.shipping_method', 't.note'
                         )
@@ -254,7 +254,7 @@ class Tracking extends Model
                 $lists = \DB::table('woo_orders as wod')
                     ->leftJoin('trackings as t', 't.order_id', '=', 'wod.number')
                     ->select(
-                        'wod.number', 'wod.created_at', 'wod.updated_at', 'wod.status',
+                        'wod.number', 'wod.created_at', 'wod.updated_at', 'wod.status', 'wod.product_name',
                         't.id as tracking_id','t.tracking_number', 't.status as tracking_status', 't.time_upload',
                         't.shipping_method', 't.note'
                     )
