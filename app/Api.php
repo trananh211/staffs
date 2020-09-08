@@ -1244,7 +1244,6 @@ class Api extends Model
                         'status' => env('STATUS_SKIP')
                     ]);
                 }
-
                 if (sizeof($stores) > 0)
                 {
                     $woo_image_upload_success = array();
@@ -1965,7 +1964,6 @@ class Api extends Model
                     $data_update_variation['update'] = $update_variation;
                     $result_variations = $woocommerce->post('products/'.$woo_info->template_id.'/variations/batch', $data_update_variation);
                 }
-
                 $update_template = $woocommerce->put('products/' . $woo_info->template_id, $update);
                 $try = true;
             } catch (\Exception $e) {
@@ -2137,11 +2135,10 @@ class Api extends Model
                         $product_name = str_replace($item['product_code'], '', $item['woo_product_name']);
                         $product_name = str_replace(ucwords($item['product_name_exclude']), ucwords($item['product_name_change']), $product_name);
                         $product_name = trim(trim($product_name) . " " . trim($item['product_code']));
-
                         $update = [
                             'name' => $product_name,
                             'permalink' => $item['woo_slug'],
-                            'price' => $info_template['price'],
+                            'price' => ($info_template['sale_price'] == '')? '' : $info_template['price'],
                             'regular_price' => $info_template['regular_price'],
                             'sale_price' => $info_template['sale_price']
                         ];
