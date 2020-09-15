@@ -12,7 +12,6 @@
                         <form action="{{url('woo-save-create-template')}}" method="post" class="col s12">
                             {{ csrf_field() }}
                             <div class="row">
-
                                 <div class="input-field col s2">
                                     <input type="text" value="{{ $rq['template_id'] }}" name="template_id" class="validate" required>
                                     <label for="email">Template ID</label>
@@ -39,13 +38,26 @@
                                     <input value="{{ $rq['woo_category_id'] }}" name="woo_category_id" type="text" class="validate">
                                     <label for="active">Woo Category Id</label>
                                 </div>
+
+                            </div>
+                            <div class="row">
+                                <div class="input-field col s4">
+                                    <input value="{{ $rq['sku_auto_id'] }}" name="sku_auto_id" type="text" class="validate">
+                                    <label for="active">SKU Auto Id</label>
+                                </div>
+                                <div class="input-field col s4">
+                                    <input value="{{ $rq['tag_name'] }}" name="tag_name" type="text" class="validate">
+                                    <label for="active">Product Tag
+                                        <small class="blue-text text-darken-1">Nếu SKU Auto > 0. Bắt buộc phải chọn trường này để hệ thống không lấy tag tự động</small>
+                                    </label>
+                                </div>
                             </div>
                             <div class="row">
                                 <div class="input-field col s4">
                                     <input type="text" value="{{ $rq['name_driver'] }}" name="name_driver" placeholder="Tên của thư mục Google Driver" class="validate" required>
                                     <label for="email">Tên thư mục</label>
                                 </div>
-                                <div class="input-field col s8">
+                                <div class="input-field col s6">
                                     <input type="text" value="{{ $rq['path_driver'] }}" name="path_driver" placeholder="Đường dẫn đến thư mục Google Driver" class="validate" required>
                                     <label for="email">Đường dẫn thư mục</label>
                                 </div>

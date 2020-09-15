@@ -2064,6 +2064,15 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     {
         $rq = $request->all();
         $name = $rq['name'];
+        if(array_key_exists('template_tool_status', $rq) && $rq['template_tool_status'] == env('TEMPLATE_STATUS_REMOVE_TITLE'))
+        {
+            $where = [
+                ['template_id', '=', $rq['template_id']],
+                ['store_id', '=', $rq['store_id']]
+            ];
+            //cập nhật trạng thái xóa title vào template
+            \DB::table('woo_templates')->where($where)->update(['t_status' => $rq['template_tool_status']]);
+        }
         $name_driver = trim($rq['name_driver']);
         $path_driver = env("GOOGLE_PRODUCTS") . '/' . trim($rq['path_driver']);
         $check_exist = \DB::table('woo_folder_drivers')
@@ -2128,7 +2137,9 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             $category_id = trim($rq['category_id']);
             $category_name = trim($rq['category_name']);
             $woo_category_id = trim($rq['woo_category_id']);
+            $tag_name = trim(strtolower($rq['tag_name']));
             $store_id = trim($rq['store_id']);
+            $tmp_sku = getInfoSkuName(trim($rq['sku_auto_id']), $template_id, $store_id);
             $path_driver = env("GOOGLE_PRODUCTS") . '/' . trim($rq['path_driver']);
             $woo_folder_driver_id = \DB::table('woo_folder_drivers')->insertGetId([
                 'name' => $name_driver,
@@ -2145,7 +2156,9 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                 $lists = scanGoogleDir($path_driver, 'dir');
                 $woo_product_driver_data = array();
                 if ($lists) {
+                    $i = 1;
                     foreach ($lists as $product) {
+                        $sku_auto_string = (sizeof($tmp_sku) > 0)? $tmp_sku['sku'].($tmp_sku['count'] + $i).$tmp_sku['last_prefix'] : NULL;
                         $woo_product_driver_data[] = [
                             'name' => strtolower($product['filename']),
                             'path' => $product['path'],
@@ -2153,12 +2166,14 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
                             'category_id' => $category_id,
                             'category_name' => $category_name,
                             'woo_category_id' => $woo_category_id,
-                            'tag_name' => strtolower($product['filename']),
+                            'tag_name' => (strlen($tag_name) > 0)? $tag_name : strtolower($product['filename']),
                             'store_id' => $store_id,
                             'woo_folder_driver_id' => $woo_folder_driver_id,
+                            'sku_auto_string' => $sku_auto_string,
                             'created_at' => date("Y-m-d H:i:s"),
                             'updated_at' => date("Y-m-d H:i:s")
                         ];
+                        $i++;
                     }
                     if (sizeof($woo_product_driver_data) > 0) {
                         \DB::table('woo_product_drivers')->insert($woo_product_driver_data);

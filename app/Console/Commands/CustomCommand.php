@@ -34,7 +34,7 @@ class CustomCommand extends Command
         parent::__construct();
     }
 
-    protected $array_minute = [59, 58, 7, 4, 1];
+    protected $array_minute = [59, 58, 57, 7, 4, 1];
     /**
      * Execute the console command.
      *
@@ -73,8 +73,12 @@ class CustomCommand extends Command
 //            case 19:
 //                $this->run19Minute();
 //                break;
+            case 57:
+                $this->run57Minute();
+                break;
             case 58:
-                $this->run58Minute();
+            case 59:
+                $this->run0Minute();
                 break;
             default:
                 echo 'khong run duoc vao thoi gian nay '. $minute;
@@ -117,11 +121,11 @@ class CustomCommand extends Command
         echo 'run 4 phut';
         $api_controller = new ApiController(); // make sure to import the controller
         $tracking_controller = new TrackingController();
-        $check = $api_controller->autoUploadProduct();
+        $check = $api_controller->autoUploadProduct(); // upload product google driver
         if ($check) {
             $check1 = $api_controller->changeInfoProduct(); // thay đổi thông tin product theo template
             if ($check1) {
-                $check2 = $api_controller->getCategoryChecking();
+                $check2 = $api_controller->getCategoryChecking(); // google feed
                 if ($check2)
                 {
                     $check3 = $tracking_controller->getInfoTrackingUpPaypal(); // update tracking to paypal
@@ -153,10 +157,15 @@ class CustomCommand extends Command
         $this->checkTemplateScrap();
     }
 
-    private function run58Minute()
+    private function run57Minute()
     {
         // Cào website
         $this->call('scan:website');
+    }
+
+    private function run0Minute()
+    {
+        return 1;
     }
 
 
