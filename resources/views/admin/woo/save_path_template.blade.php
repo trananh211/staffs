@@ -38,6 +38,28 @@
                                     <input value="{{ $category_data['woo_category_id'] }}" name="woo_category_id" type="text" class="validate">
                                     <label for="active">Woo Category Id</label>
                                 </div>
+
+                            </div>
+                            <div class="row">
+                                <div class="input-field col s4">
+                                    <input value="{{ $category_data['sku_auto_id'] }}" name="sku_auto_id" type="text" class="validate">
+                                    <label for="active">SKU Auto Id</label>
+                                </div>
+                                <div class="input-field col s5">
+                                    <input value="" name="tag_name" type="text" class="validate" placeholder="ao doi, couple, ...">
+                                    <label for="active">Product Tag
+                                        <small class="blue-text text-darken-1">Nếu SKU Auto > 0. Bắt buộc phải chọn trường này để hệ thống không lấy tag tự động</small>
+                                    </label>
+                                </div>
+                                <div class="input-field col s3">
+                                    <select name="template_tool_status">
+                                        <option value="" disabled selected>Choose your option</option>
+                                        @foreach ($template_tool_status as $tool_status => $value_status)
+                                            <option value="{{ $tool_status }}">{{ $value_status }}</option>
+                                        @endforeach
+                                    </select>
+                                    <label>Title Status Select</label>
+                                </div>
                             </div>
                             <div class="row">
                                 <div class="input-field col s4">

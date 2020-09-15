@@ -41,7 +41,7 @@
                                     </div>
                                 </div>
                                 <div class="row">
-                                    <div class="input-field col s4">
+                                    <div class="input-field col s3">
                                         <select id="woo-tem-choose-store" name="store_id">
                                             <option value="" disabled selected>Choose your option</option>
                                             @foreach($stores as $store)
@@ -54,10 +54,23 @@
                                         </select>
                                         <label>Store Select</label>
                                     </div>
-                                    <div class="input-field col s4">
+                                    <div class="input-field col s3">
                                         <input name="id_product" placeholder="Nhập mã ID của product mẫu ở đây" type="text" class="validate"
                                                required>
                                         <label class="active">Id Product Template</label>
+                                    </div>
+                                    <div class="input-field col s2">
+                                        <input name="first_title" type="text" class="validate" placeholder="CanvasABC">
+                                        <label class="active">
+                                            Fixed ký tự đầu<br>
+                                            <small class="blue-text text-darken-1">Chọn khi không phải name, age</small>
+                                        </label>
+                                    </div>
+                                    <div class="input-field col s4">
+                                        <input value="" name="auto_sku" type="text" class="validate" placeholder="Điền mã sku của sản phẩm">
+                                        <label for="active">Auto SKU
+                                            <small class="blue-text text-darken-1">Nếu sản phẩm không có SKU cố định. Hãy chọn trường này để hệ thống gen tự động mã SKU</small>
+                                        </label>
                                     </div>
                                 </div>
                                 <div class="row">
@@ -76,13 +89,7 @@
                                             <small class="blue-text text-darken-1">Chọn số thứ tự ảnh muốn thêm vào store. Phân cách bởi dấu , </small>
                                         </label>
                                     </div>
-                                    <div class="input-field col s2">
-                                        <input name="first_title" type="text" class="validate" placeholder="CanvasABC">
-                                        <label class="active">
-                                            Fixed ký tự đầu<br>
-                                            <small class="blue-text text-darken-1">Chọn khi không phải name, age</small>
-                                        </label>
-                                    </div>
+
                                     <div class="input-field col s2">
                                         <label class="active">
                                             Từ khóa thêm tự động<span class="red-text text-darken-1">(*)</span><br>

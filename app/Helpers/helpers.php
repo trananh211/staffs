@@ -14,7 +14,7 @@ function logfile_system($str)
 {
     $datetime = Carbon::now('Asia/Ho_Chi_Minh');
     $log_str = $datetime . '==> ' . $str;
-    \Log::channel('hasu')->info($log_str);
+//    \Log::channel('hasu')->info($log_str);
     echo $log_str."\n";
 }
 
@@ -146,6 +146,15 @@ function categories()
         '6' => 'Boots'
     ];
     return $categories;
+}
+
+function getTemplateStatus()
+{
+    $template_status = [
+        env('TEMPLATE_STATUS_KEEP_TITLE') => 'Keep tittle template',
+        env('TEMPLATE_STATUS_REMOVE_TITLE') => 'Remove tittle template',
+    ];
+    return $template_status;
 }
 
 function getMessage($message)
@@ -386,6 +395,41 @@ function strRandom()
 {
     $permitted_chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
     return substr(str_shuffle($permitted_chars), 0, 10);
+}
+
+function charRandom($limit = null)
+{
+    $limit = ($limit == null) ? 10 : $limit;
+    $permitted_chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    return substr(str_shuffle($permitted_chars), 0, $limit);
+}
+
+/*
+     *  Hàm lấy thông tin ra xem có phải là sku auto hay là sku fixed cứng hay không.
+     * */
+function getInfoSkuName($sku_auto_id, $template_id, $store_id)
+{
+    $array = [];
+    // lấy ra tên của sku auto id
+    $sku_auto = \DB::table('sku_autos')->select('sku')->where('id',$sku_auto_id)->first();
+    if ($sku_auto != NULL)
+    {
+        // đếm số lượng product đã sử dụng sku này
+        $where = [
+            ['template_id', '=', $template_id],
+            ['store_id', '=', $store_id]
+        ];
+        $scrap_count = \DB::table('scrap_products')->where($where)->count();
+        $driver_count = \DB::table('woo_product_drivers')->where($where)->count();
+        $count = 100 + $scrap_count + $driver_count;
+        $last_Prefix = strtoupper(charRandom(1));
+        $array = [
+            'sku' => $sku_auto->sku,
+            'count' => $count,
+            'last_prefix' => $last_Prefix
+        ];
+    }
+    return $array;
 }
 
 function compareTime($from, $to)

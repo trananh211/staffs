@@ -719,6 +719,26 @@ class Api extends Model
         return $sku;
     }
 
+
+    private function getSkuAutoId($string = null)
+    {
+        $sku_auto_id = 0;
+        if ($string != '')
+        {
+            $sku_auto_string = strtoupper('A'.$string);
+            $check_exists = \DB::table("sku_autos")->select('id')->where('sku',$sku_auto_string)->first();
+            if($check_exists == NULL) {
+                $sku_auto_id = \DB::table('sku_autos')->insertGetId([
+                    'sku' => $sku_auto_string,
+                    'created_at' => date("Y-m-d H:i:s"),
+                    'updated_at' => date("Y-m-d H:i:s")
+                ]);
+            } else {
+                $sku_auto_id = $check_exists->id;
+            }
+        }
+        return $sku_auto_id;
+    }
     /*
      * Kiem tra template da ton tai hay chua. Neu chua thi luu vao database
      * */
@@ -732,6 +752,7 @@ class Api extends Model
         } else {
             $store_id = $rq['id_store'];
         }
+        $sku_auto_id = $this->getSkuAutoId(trim($rq['auto_sku']));
         $template_id = $rq['id_product'];
         // nếu là scrap website
         if ($scrap == 1) {
@@ -839,6 +860,7 @@ class Api extends Model
                             'store_id' => $id_store,
                             'website_id' => $website_id,
                             'template_path' => $template_path,
+                            'sku_auto_id' => $sku_auto_id,
                             'created_at' => date("Y-m-d H:i:s"),
                             'updated_at' => date("Y-m-d H:i:s")
                         ]);
@@ -907,13 +929,16 @@ class Api extends Model
                 $category_data = [
                     'category_id' => $category_id,
                     'category_name' => $category_name,
-                    'woo_category_id' => $woo_category_id
+                    'woo_category_id' => $woo_category_id,
+                    'sku_auto_id' => $sku_auto_id
                 ];
+                $template_tool_status = getTemplateStatus();
                 $data = array();
                 if ($scrap != null) {
                     return redirect('scrap-create-template')->with('success', 'Connect với template thành công');
                 } else {
-                    return view("/admin/woo/save_path_template", compact('data', "template_data", 'rq', 'category_data'));
+                    return view("/admin/woo/save_path_template",
+                        compact('data', "template_data", 'rq', 'category_data', 'template_tool_status'));
                 }
             } else {
                 $alert = 'error';
@@ -1442,9 +1467,9 @@ class Api extends Model
                     })
                     ->select(
                         'wopd.id as woo_product_driver_id', 'wopd.name', 'wopd.path', 'wopd.template_id', 'wopd.store_id',
-                        'wopd.woo_category_id',
+                        'wopd.woo_category_id', 'wopd.sku_auto_string',
                         'woo_tags.woo_tag_id', 'woo_tags.name as tag_name', 'woo_tags.slug as tag_slug',
-                        'woo_temp.template_path',
+                        'woo_temp.template_path', 'woo_temp.t_status',
                         'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret'
                     )
                     ->where([
@@ -1460,10 +1485,15 @@ class Api extends Model
                         $prod_data = array();
                         // Tìm template
                         $template_json = readFileJson($val->template_path);
-                        $woo_product_name = ucwords($val->name) . ' ' . $template_json['name'];
+                        if ($val->t_status == env('TEMPLATE_STATUS_REMOVE_TITLE'))
+                        {
+                            $woo_product_name = ucwords($val->name).' '.$val->sku_auto_string;
+                        } else {
+                            $woo_product_name = ucwords($val->name) . ' ' . $template_json['name'].' '.$val->sku_auto_string;
+                        }
                         logfile_system("-- Đang tạo sản phẩm mới : " . $woo_product_name);
                         $prod_data = $template_json;
-                        $prod_data['name'] = ucwords($val->name) . ' ' . $template_json['name'];
+                        $prod_data['name'] = $woo_product_name;
                         $prod_data['status'] = 'draft';
                         $prod_data['categories'] = [
                             ['id' => $val->woo_category_id]
