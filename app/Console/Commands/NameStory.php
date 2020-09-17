@@ -54,7 +54,8 @@ class NameStory extends Command
                         ->select(
                             'ws.id as website_id', 'ws.platform_id','ws.url', 'ws.exclude_text', 'ws.first_title',
                             'wc.woo_category_id', 'wc.name as category_name', 'wc.slug as category_slug',
-                            'wtp.id as woo_template_id', 'wtp.product_name', 'wtp.template_id', 'wtp.template_path'
+                            'wtp.id as woo_template_id', 'wtp.product_name', 'wtp.template_id', 'wtp.template_path',
+                            'wtp.t_status','wtp.sku_auto_id'
                         )
                         ->where('ws.id',$website_id)->first();
                     if($info != NULL)
@@ -63,12 +64,16 @@ class NameStory extends Command
                         $category_name = ucwords($info->category_name);
                         $domain = $info->url;
                         $first_title = $info->first_title;
+                        $pre_data = [
+                            't_status' => $info->t_status,
+                            'sku_auto_id' => $info->sku_auto_id,
+                        ];
                         switch ($info->platform_id) {
                             case 2:
-                                $this->autoScanMerchKing($website_id, $template_id, $store_id, $woo_template_id, $category_name ,$exclude_text, $domain);
+                                $this->autoScanMerchKing($pre_data ,$website_id, $template_id, $store_id, $woo_template_id, $category_name ,$exclude_text, $domain);
                                 break;
                             case 3:
-                                $this->autoScanEsty($website_id, $template_id, $store_id, $woo_template_id, $category_name ,$exclude_text, $domain, $first_title);
+                                $this->autoScanEsty($pre_data ,$website_id, $template_id, $store_id, $woo_template_id, $category_name ,$exclude_text, $domain, $first_title);
                                 break;
                             default:
                                 $str = "-- Không tồn tại platform nào cần được cào.";
@@ -507,9 +512,17 @@ class NameStory extends Command
         $this->saveTemplate($data, $woo_template_id, $domain);
     }
 
-    private function autoScanMerchKing($website_id, $template_id, $store_id, $woo_template_id, $category_name, $text_exclude, $domain)
+    private function preDataBeforScrap($pre_data) {
+        $info = array();
+        if ($pre_data['sku_auto_id'] > 0)
+        {
+            $info = getInfoSkuName($pre_data['sku_auto_id']);
+        }
+        return $info;
+    }
+
+    private function autoScanMerchKing($pre_data, $website_id, $template_id, $store_id, $woo_template_id, $category_name, $text_exclude, $domain)
     {
-        echo "<pre>";
         // so sanh product cu. trung thi se k lay nua
         $products_old = $this->checkProductExist($template_id, $store_id);
         $domain_origin = explode('/search', $domain)[0];
@@ -518,6 +531,8 @@ class NameStory extends Command
         $page = 1;
         $data = array();
         $text_exclude = ucwords($text_exclude);
+        $pre_info = $this->preDataBeforScrap($pre_data);
+        $i = 1;
         $links = array();
         do {
             echo $page . '-page' . "\n";
@@ -526,19 +541,26 @@ class NameStory extends Command
             $client = new \Goutte\Client();
             $response = $client->request('GET', $url);
             $crawler = $response;
-
             // kiem tra xem co ton tai product nao ở page hiện tại hay không
             $products = ($crawler->filter('section.site-content div.container div.col-md-3')->count() > 0) ?
                 $crawler->filter('section.site-content div.container div.col-md-3')->count() : 0;
             if ($products > 0) {
                 $crawler->filter('section.site-content div.container div.col-md-3')
                     ->each(function ($node) use (&$data, &$website_id, &$template_id, &$store_id, &$url, &$domain_origin,
-                        &$products_old, &$links, &$category_name ,&$text_exclude) {
+                        &$products_old, &$links, &$category_name ,&$text_exclude, &$i, &$pre_info) {
                         $link = $domain_origin . trim($node->filter('a')->attr('href'));
                         if (!in_array($link, $products_old))
                         {
                             if (!in_array($link, $links))
                             {
+                                // kiểm tra xem có sku tự động hay không
+                                $sku_auto_string = null;
+                                if (sizeof($pre_info) > 0)
+                                {
+                                    $count = $pre_info['count'] + $i;
+                                    $sku_auto_string = $pre_info['sku'].$count.$pre_info['last_prefix'];
+                                }
+                                // end kiểm tra xem có sku tự động hay không
                                 $links[] = $link;
                                 $name = ucwords(trim($node->filter('a')->text()));
                                 $name = str_replace($text_exclude, '', $name);
@@ -559,10 +581,12 @@ class NameStory extends Command
                                     'website' => $url,
                                     'template_id' => $template_id,
                                     'store_id' => $store_id,
+                                    'sku_auto_string' => $sku_auto_string,
                                     'status' => 0,
                                     'created_at' => date("Y-m-d H:i:s"),
                                     'updated_at' => date("Y-m-d H:i:s")
                                 ];
+                                $i++;
                             }
                         }
                     });
@@ -591,9 +615,8 @@ class NameStory extends Command
         $this->saveTemplate($data, $woo_template_id, $domain);
     }
 
-    private function autoScanEsty($website_id, $template_id, $store_id, $woo_template_id, $category_name, $text_exclude, $domain, $first_title)
+    private function autoScanEsty($pre_data, $website_id, $template_id, $store_id, $woo_template_id, $category_name, $text_exclude, $domain, $first_title)
     {
-        echo "<pre>";
         // so sanh product cu. trung thi se k lay nua
         $products_old = $this->checkProductExist($template_id, $store_id);
         $link = $domain.'&page=';
@@ -602,6 +625,8 @@ class NameStory extends Command
         $data = array();
         $text_exclude = ucwords($text_exclude);
         $tag_name = ucwords($first_title);
+        $pre_info = $this->preDataBeforScrap($pre_data);
+        $i = 1;
         $links = array();
         do {
             echo $page . '-page' . "\n";
@@ -617,12 +642,20 @@ class NameStory extends Command
             if ($products > 0) {
                 $crawler->filter('ul.listing-cards li.block-grid-item')
                     ->each(function ($node) use (&$data, &$website_id, &$template_id, &$store_id, &$url,
-                        &$products_old, &$links, &$category_name ,&$text_exclude, &$tag_name) {
+                        &$products_old, &$links, &$category_name ,&$text_exclude, &$tag_name, &$i, &$pre_info) {
                         $link = trim($node->filter('a.listing-link')->attr('href'));
                         if (!in_array($link, $products_old))
                         {
                             if (!in_array($link, $links))
                             {
+                                // kiểm tra xem có sku tự động hay không
+                                $sku_auto_string = null;
+                                if (sizeof($pre_info) > 0)
+                                {
+                                    $count = $pre_info['count'] + $i;
+                                    $sku_auto_string = $pre_info['sku'].$count.$pre_info['last_prefix'];
+                                }
+                                // end kiểm tra xem có sku tự động hay không
                                 $links[] = $link;
                                 $name = ucwords(trim($node->filter('a')->text()));
                                 $name = str_replace($text_exclude, '', $name);
@@ -638,6 +671,7 @@ class NameStory extends Command
                                     'created_at' => date("Y-m-d H:i:s"),
                                     'updated_at' => date("Y-m-d H:i:s")
                                 ];
+                                $i++;
                             }
                         }
                     });

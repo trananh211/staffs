@@ -753,6 +753,11 @@ class Api extends Model
             $store_id = $rq['id_store'];
         }
         $sku_auto_id = $this->getSkuAutoId(trim($rq['auto_sku']));
+        $t_status = env('TEMPLATE_STATUS_KEEP_TITLE');
+        if(array_key_exists('template_tool_status', $rq) && $rq['template_tool_status'] == env('TEMPLATE_STATUS_REMOVE_TITLE'))
+        {
+            $t_status = env('TEMPLATE_STATUS_REMOVE_TITLE');
+        }
         $template_id = $rq['id_product'];
         // nếu là scrap website
         if ($scrap == 1) {
@@ -861,6 +866,7 @@ class Api extends Model
                             'website_id' => $website_id,
                             'template_path' => $template_path,
                             'sku_auto_id' => $sku_auto_id,
+                            't_status' => $t_status,
                             'created_at' => date("Y-m-d H:i:s"),
                             'updated_at' => date("Y-m-d H:i:s")
                         ]);

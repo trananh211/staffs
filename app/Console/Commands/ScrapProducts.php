@@ -188,9 +188,10 @@ class ScrapProducts extends Command
             ->leftjoin('websites as ws','spd.website_id', '=', 'ws.id')
             ->select(
                 'spd.id', 'spd.website_id', 'spd.store_id', 'spd.website', 'spd.link', 'spd.category_name', 'spd.tag_name',
+                'spd.sku_auto_string',
                 'woo_cat.woo_category_id', 'woo_cat.id as category_id',
                 'woo_tag.woo_tag_id',
-                'woo_temp.template_path', 'woo_temp.template_id',
+                'woo_temp.template_path', 'woo_temp.template_id', 'woo_temp.t_status',
                 'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret',
                 'ws.platform_id', 'ws.exclude_text','ws.image_array', 'ws.keyword_import', 'ws.first_title', 'ws.exclude_image'
             )
@@ -643,17 +644,30 @@ class ScrapProducts extends Command
                 }
             }
             $db_image = array();
+            $sort_image = array();
             foreach ($data as $key => $val) {
                 $prod_data = array();
                 // Tìm template
                 $template_json = readFileJson($val['template_path']);
                 // Chọn name
                 $woo_product_name = ucwords(trim($val['product_name'] . ' ' . $template_json['name']));
+                if ($val['t_status'] == env('TEMPLATE_STATUS_REMOVE_TITLE'))
+                {
+                    $woo_product_name = trim(ucwords(trim($val['product_name'])) .' '.$val['sku_auto_string']);
+                } else {
+                    $woo_product_name = trim(ucwords(trim($val['product_name'])) .' '. trim($template_json['name']).' '.$val['sku_auto_string']);
+                }
 
                 //chon image. Luu vao data base
                 $images = $val['images'];
-                $db_image[$val['id'].'_'.$val['store_id']] = $images;
-
+                /* Todo: cần sắp xếp lại thứ tự image ở đây*/
+                if ($val['image_array'] == '')
+                {
+                    $image_array = '1,2,3,4';
+                } else {
+                    $image_array = $val['image_array'];
+                }
+                $db_image[$val['id'].'_'.$val['store_id'].'_'.$image_array] = $images;
                 // Kết thúc chọn name
                 logfile_system("-- Đang tạo sản phẩm mới : " . $woo_product_name);
                 $prod_data = $this->preProductData($template_json);
@@ -746,7 +760,7 @@ class ScrapProducts extends Command
             'reviews_allowed' => $json['reviews_allowed'],
             'tags' => $json['tags'],
             'attributes' => $json['attributes'],
-            'date_created' => date("Y-m-d H:i:s", strtotime(" -3 days"))
+            'date_created' => date("Y-m-d H:i:s", strtotime(" -1 days"))
         ];
         return $data;
     }
@@ -756,24 +770,29 @@ class ScrapProducts extends Command
         if(sizeof($data) > 0)
         {
             $db = array();
+            $db2 = array();
             foreach($data as $key => $value)
             {
                 $tmp = explode('_',$key);
                 $scrap_product_id = $tmp[0];
                 $store_id = $tmp[1];
-                foreach ($value as $img)
+                $sort_image = explode(',', $tmp[2]);
+                foreach ($sort_image as $position)
                 {
-                    $db[] = [
-                        'path' => '',
-                        'url' => $img['src'],
-                        'image_name' => $img['name'],
-                        'woo_product_driver_id' => 0,
-                        'woo_scrap_product_id' => $scrap_product_id,
-                        'store_id' => $store_id,
-                        'status' => 0,
-                        'created_at' => date("Y-m-d H:i:s"),
-                        'updated_at' => date("Y-m-d H:i:s")
-                    ];
+                    if (array_key_exists($position, $value))
+                    {
+                        $db[] = [
+                            'path' => '',
+                            'url' => $value[$position]['src'],
+                            'image_name' => $value[$position]['name'],
+                            'woo_product_driver_id' => 0,
+                            'woo_scrap_product_id' => $scrap_product_id,
+                            'store_id' => $store_id,
+                            'status' => 0,
+                            'created_at' => date("Y-m-d H:i:s"),
+                            'updated_at' => date("Y-m-d H:i:s")
+                        ];
+                    }
                 }
             }
             if (sizeof($db) > 0)
@@ -986,11 +1005,10 @@ class ScrapProducts extends Command
                                 if (sizeof($tmp) > 1)
                                 {
                                     $size_img = explode('&height=',$tmp[1]);
-                                    $width = ((int) $size_img[0])*7;
-                                    $height = ((int) $size_img[1])*7;
-//                                $image = $http.':' . explode('&width=', $tmp_img)[0] . '&width='.$width.'&height='.$height;
-                                    $image = $http.':' . explode('&width=', $tmp_img)[0] . '&width=600&height=600';
-//                                $image = 'http:' . explode('&width=', $tmp_img)[0];
+                                    $width = ((int) $size_img[0])*8;
+                                    $height = ((int) $size_img[1])*8;
+                                $image = $http.':' . explode('&width=', $tmp_img)[0] . '&width='.$width.'&height='.$height;
+//                                    $image = $http.':' . explode('&width=', $tmp_img)[0] . '&width=600&height=600';
                                 } else {
                                     $image = $tmp_img;
                                 }

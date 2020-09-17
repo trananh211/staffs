@@ -2044,8 +2044,9 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
         $stores = \DB::table('woo_infos')
             ->select('id', 'name', 'url', 'consumer_key', 'consumer_secret')
             ->get()->toArray();
+        $template_tool_status = getTemplateStatus();
         return view('/admin/scrap/view_create_template')
-            ->with(compact('data', 'stores', 'lst_web', 'lst_auto_webs'));
+            ->with(compact('data', 'stores', 'lst_web', 'lst_auto_webs', 'template_tool_status'));
     }
     /*End Scrap web*/
 
@@ -2139,7 +2140,7 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
             $woo_category_id = trim($rq['woo_category_id']);
             $tag_name = trim(strtolower($rq['tag_name']));
             $store_id = trim($rq['store_id']);
-            $tmp_sku = getInfoSkuName(trim($rq['sku_auto_id']), $template_id, $store_id);
+            $tmp_sku = getInfoSkuName(trim($rq['sku_auto_id']));
             $path_driver = env("GOOGLE_PRODUCTS") . '/' . trim($rq['path_driver']);
             $woo_folder_driver_id = \DB::table('woo_folder_drivers')->insertGetId([
                 'name' => $name_driver,
