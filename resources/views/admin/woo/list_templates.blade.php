@@ -53,7 +53,6 @@
                                 <td>{{ $list->template_id }}</td>
                                 <td>{{ $list->store_name }}</td>
                                 <td>
-                                    @if ($list->website_id != '')
                                     <a class="waves-effect waves-light btn modal-trigger" href="#modal{{$list->id}}">Edit</a>
                                     <!-- Modal Structure -->
                                     <div id="modal{{$list->id}}" class="modal">
@@ -65,34 +64,51 @@
                                                 {{ csrf_field() }}
                                                 <div class="row">
                                                     <input type="text" name="id" value="{{ $list->id }}" hidden>
+                                                    <input type="text" name="website_id" value="{{ $list->website_id }}" hidden>
                                                 </div>
                                                 <div class="row">
-                                                    <div class="input-field col s6">
+                                                    <div class="input-field col s4">
                                                         <input placeholder="Ex: Low top ZA103" name="product_name"
                                                                value="{{ $list->product_name }}"
                                                                type="text" class="validate" required>
                                                         <label for="first_name">Product Name</label>
                                                     </div>
+                                                </div>
+                                                <div class="row">
+                                                    <p>Cảnh Báo: Chỉ được chọn 1 trong 2 trường SKU dưới đây. Dữ liệu mới sẽ xóa toàn bộ dữ liệu cũ đã tạo trước đó.</p>
                                                     <div class="input-field col s6">
                                                         <input placeholder="Ex: ZA103" name="product_code"
                                                                value="{{ $list->product_code }}"
                                                                type="text" class="validate">
-                                                        <label for="first_name">Product Code</label>
+                                                        <label for="first_name">SKU Fixed
+                                                            <small class="blue-text text-darken-1">Phù hợp với sản phẩm có SKU cố định</small>
+                                                        </label>
+                                                    </div>
+                                                    <div class="input-field col s6">
+                                                        <input placeholder="Ex: AZA103W" name="auto_sku"
+                                                               value="{{ ltrim($list->auto_sku, 'A') }}"
+                                                               type="text" class="validate">
+                                                        <label for="first_name">SKU Auto
+                                                            <small class="blue-text text-darken-1">Chọn trường này để hệ thống gen tự động mã SKU</small>
+                                                        </label>
                                                     </div>
                                                 </div>
-
                                                 <div class="row">
                                                     <div class="input-field col s4">
                                                         <input placeholder="Ex: 26.99" name="sale_price"
                                                                value="{{ ($list->sale_price > 0)? $list->sale_price : '' }}"
-                                                               type="text" class="validate">
-                                                        <label for="first_name">Sale Price (USD)</label>
+                                                               type="text" class="validate" required>
+                                                        <label for="first_name">Sale Price (USD)
+                                                            <small class="blue-text text-darken-1">Bắt buộc phải điền giá</small>
+                                                        </label>
                                                     </div>
                                                     <div class="input-field col s4">
                                                         <input placeholder="Ex: 26.99" name="origin_price"
                                                                value="{{ ($list->origin_price > 0)? $list->origin_price : '' }}"
-                                                               type="text" class="validate">
-                                                        <label for="first_name">Origin Price (USD)</label>
+                                                               type="text" class="validate" required>
+                                                        <label for="first_name">Origin Price (USD)
+                                                            <small class="blue-text text-darken-1">Bắt buộc phải điền giá</small>
+                                                        </label>
                                                     </div>
                                                 </div>
                                                 <div class="row">
@@ -120,7 +136,7 @@
                                             </form>
                                         </div>
                                     </div>
-
+                                    @if ($list->website_id != '')
                                         <a onclick="return confirm('Bạn có chắc chắn muốn cập nhật template này?');"
                                            href="{{ url('woo-scan-template/'.$list->id) }}"
                                            class="waves-effect waves-light btn green">

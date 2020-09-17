@@ -427,12 +427,14 @@ class WooController extends Controller
         $lists = \DB::table('woo_templates as w_temp')
             ->leftjoin('woo_infos', 'w_temp.store_id', '=', 'woo_infos.id')
             ->leftjoin('suppliers as sup', 'w_temp.supplier_id', '=', 'sup.id')
+            ->leftjoin('sku_autos as sa', 'w_temp.sku_auto_id', '=', 'sa.id')
             ->select(
                 'w_temp.id', 'w_temp.product_name', 'w_temp.store_id', 'w_temp.template_id',
                 'w_temp.website_id', 'w_temp.status', 'w_temp.product_code',
                 'w_temp.product_name_change', 'w_temp.product_name_exclude', 'w_temp.origin_price', 'w_temp.sale_price',
                 'woo_infos.name as store_name',
-                'sup.name as sup_name'
+                'sup.name as sup_name',
+                'sa.sku as auto_sku'
             )
             ->orderBy('w_temp.store_id')
             ->get()->toArray();

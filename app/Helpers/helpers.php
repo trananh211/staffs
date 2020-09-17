@@ -420,8 +420,10 @@ function getInfoSkuName($sku_auto_id)
         if (sizeof($list_woo_template_id) > 0)
         {
             // đếm số lượng product đã sử dụng sku này
-            $scrap_count = \DB::table('scrap_products')->whereIn('template_id', $list_woo_template_id)->count();
-            $driver_count = \DB::table('woo_product_drivers')->whereIn('template_id', $list_woo_template_id)->count();
+            $scrap_count = \DB::table('scrap_products')->whereIn('template_id', $list_woo_template_id)
+                ->whereNotNull('sku_auto_string')->count();
+            $driver_count = \DB::table('woo_product_drivers')->whereIn('template_id', $list_woo_template_id)
+                ->whereNotNull('sku_auto_string')->count();
         }
         $count = 100 + $scrap_count + $driver_count;
         $last_Prefix = strtoupper(charRandom(1));
@@ -432,6 +434,27 @@ function getInfoSkuName($sku_auto_id)
         ];
     }
     return $array;
+}
+
+/*Hàm check sku string đã tồn tại chưa*/
+function getSkuAutoId($string = null)
+{
+    $sku_auto_id = 0;
+    if ($string != '')
+    {
+        $sku_auto_string = strtoupper('A'.$string);
+        $check_exists = \DB::table("sku_autos")->select('id')->where('sku',$sku_auto_string)->first();
+        if($check_exists == NULL) {
+            $sku_auto_id = \DB::table('sku_autos')->insertGetId([
+                'sku' => $sku_auto_string,
+                'created_at' => date("Y-m-d H:i:s"),
+                'updated_at' => date("Y-m-d H:i:s")
+            ]);
+        } else {
+            $sku_auto_id = $check_exists->id;
+        }
+    }
+    return $sku_auto_id;
 }
 
 function compareTime($from, $to)

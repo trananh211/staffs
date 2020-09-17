@@ -719,26 +719,6 @@ class Api extends Model
         return $sku;
     }
 
-
-    private function getSkuAutoId($string = null)
-    {
-        $sku_auto_id = 0;
-        if ($string != '')
-        {
-            $sku_auto_string = strtoupper('A'.$string);
-            $check_exists = \DB::table("sku_autos")->select('id')->where('sku',$sku_auto_string)->first();
-            if($check_exists == NULL) {
-                $sku_auto_id = \DB::table('sku_autos')->insertGetId([
-                    'sku' => $sku_auto_string,
-                    'created_at' => date("Y-m-d H:i:s"),
-                    'updated_at' => date("Y-m-d H:i:s")
-                ]);
-            } else {
-                $sku_auto_id = $check_exists->id;
-            }
-        }
-        return $sku_auto_id;
-    }
     /*
      * Kiem tra template da ton tai hay chua. Neu chua thi luu vao database
      * */
@@ -752,7 +732,7 @@ class Api extends Model
         } else {
             $store_id = $rq['id_store'];
         }
-        $sku_auto_id = $this->getSkuAutoId(trim($rq['auto_sku']));
+        $sku_auto_id = getSkuAutoId(trim($rq['auto_sku']));
         $t_status = env('TEMPLATE_STATUS_KEEP_TITLE');
         if(array_key_exists('template_tool_status', $rq) && $rq['template_tool_status'] == env('TEMPLATE_STATUS_REMOVE_TITLE'))
         {
@@ -1957,8 +1937,15 @@ class Api extends Model
             if ($rq['product_code'] != '' || $rq['sale_price'] != '' || $rq['origin_price'] != '' || $rq['product_name_exclude'] != '' || $rq['product_name_change'] != '') {
                 $status = 2;
             }
-            $product_name = ucwords(trim($rq['product_name']));
             $product_code = ($rq['product_code'] != '') ? trim($rq['product_code']) : NULL;
+            if ($product_code != NULL)
+            {
+                $auto_sku = '';
+            } else {
+                $auto_sku = $rq['auto_sku'];
+            }
+            $sku_auto_id = getSkuAutoId(trim($auto_sku));
+            $product_name = ucwords(trim($rq['product_name']));
             $sale_price = ($rq['sale_price'] != '') ? trim($rq['sale_price']) : 0;
             $origin_price = ($rq['origin_price'] != '') ? trim($rq['origin_price']) : 0;
             $product_name_exclude = ($rq['product_name_exclude'] != '') ? ucwords(trim($rq['product_name_exclude'])) : NULL;
@@ -1967,7 +1954,7 @@ class Api extends Model
             $woo_info = \DB::table('woo_templates')
                 ->join('woo_infos', 'woo_templates.store_id', '=', 'woo_infos.id')
                 ->select(
-                    'woo_templates.template_id', 'woo_templates.template_path',
+                    'woo_templates.template_id', 'woo_templates.template_path','woo_templates.sku_auto_id',
                     'woo_infos.id as store_id', 'woo_infos.url', 'woo_infos.consumer_key', 'woo_infos.consumer_secret'
                 )
                 ->where('woo_templates.id', $id)
@@ -1977,6 +1964,13 @@ class Api extends Model
                 ->where('woo_template_id', $id)
                 ->get()->toArray();
             $result_variations = false;
+            // Kiểm tra xem auto_sku mới có trùng với auto_sku cũ hay không.
+            $result_change = false;
+            if ($sku_auto_id != $woo_info->sku_auto_id)
+            {
+                $result_change = true;
+            }
+            // End kiểm tra xem auto_sku mới có trùng với auto_sku cũ hay không.
             try {
                 $woocommerce = $this->getConnectStore($woo_info->url, $woo_info->consumer_key, $woo_info->consumer_secret);
                 $template_old = readFileJson($woo_info->template_path);
@@ -2032,6 +2026,7 @@ class Api extends Model
                     'product_name_change' => $product_name_change,
                     'template_path' => $template_path,
                     'status' => $status,
+                    'sku_auto_id' => $sku_auto_id,
                     'updated_at' => date("Y-m-d H:i:s")
                 ];
                 if ($result) {
@@ -2047,11 +2042,29 @@ class Api extends Model
                         }
                     }
                     $result_update = \DB::table('woo_templates')->where('id', $id)->update($update_db);
-                    \DB::table('scrap_products')
-                        ->where('template_id',$woo_info->template_id)
-                        ->whereNotNull('woo_product_id')
-                        ->update(['status_tool' => 1]);
+                    // Đang thay đổi woo driver product
+                    if ($rq['website_id'] == '')
+                    {
+                        \DB::table('woo_product_drivers')
+                            ->where('template_id',$woo_info->template_id)
+                            ->where('store_id',$woo_info->store_id)
+                            ->whereNotNull('woo_product_id')
+                            ->update(['status_tool' => env('STATUS_TOOL_EDITING')]);
+                    } else { // Đang thay đổi scrap product
+                        \DB::table('scrap_products')
+                            ->where('template_id',$woo_info->template_id)
+                            ->where('store_id',$woo_info->store_id)
+                            ->whereNotNull('woo_product_id')
+                            ->update(['status_tool' => env('STATUS_TOOL_EDITING')]);
+                    }
+
                     if ($result_update) {
+                        var_dump($result_change);
+                        // nếu sku auto thay đổi hoặc đổi sang sku fixed thì thay đổi toàn bộ
+                        if ($result_change)
+                        {
+                            $this->startChangeSkuAuto($sku_auto_id, $woo_info->template_id, $woo_info->store_id, $rq['website_id']);
+                        }
                         $message_status = 'success';
                         $message = 'Cập nhật template thành công.';
                     } else {
@@ -2067,6 +2080,57 @@ class Api extends Model
             $message = 'Xảy ra lỗi nội bộ : ' . $e->getMessage();
         }
         return redirect('woo-get-template')->with($message_status, $message);
+    }
+
+    // đổi trạng thái sku auto hoặc sku fixed
+    private function startChangeSkuAuto($sku_auto_id, $template_id, $store_id, $website_id)
+    {
+        // Mặc định đưa trạng thái về trạng thái không dùng sku auto
+        $where = [
+            ['template_id', '=', $template_id],
+            ['store_id', '=', $store_id]
+        ];
+        $update = [
+            'sku_auto_string' => NULL,
+            'updated_at' => date("Y-m-d H:i:s")
+        ];
+        // driver product
+        if ($website_id == '') {
+            \DB::table('woo_product_drivers')->where($where)->update($update);
+        } else { // scrap product
+            \DB::table('scrap_products')->where($where)->update($update);
+        }
+        // Nếu vẫn giữ sku auto
+        if ($sku_auto_id != 0) {
+            $tmp_sku = getInfoSkuName($sku_auto_id);
+            print_r($tmp_sku);
+            // driver product
+            if ($website_id == '') {
+                $products = \DB::table('woo_product_drivers')
+                    ->select('id')
+                    ->where($where)
+                    ->get()->toArray();
+            } else { // scrap product
+                $products = \DB::table('scrap_products')
+                    ->select('id')
+                    ->where($where)
+                    ->get()->toArray();
+            }
+            $i = 1;
+            $update_data = array();
+            foreach ($products as $p_id)
+            {
+                $sku_new = $tmp_sku['sku'].($tmp_sku['count']+$i).$tmp_sku['last_prefix'];
+                $update_data[$p_id->id] = $sku_new;
+                // driver product
+                if ($website_id == '') {
+                    \DB::table('woo_product_drivers')->where('id', $p_id->id)->update(['sku_auto_string' => $sku_new]);
+                } else { // scrap product
+                    \DB::table('scrap_products')->where('id', $p_id->id)->update(['sku_auto_string' => $sku_new]);
+                }
+                $i++;
+            }
+        }
     }
 
     private function makeFileTemplate($templates, $id_store, $template_id)
@@ -2139,7 +2203,7 @@ class Api extends Model
                     'wtp.product_name as temp_product_name', 'wtp.product_code', 'wtp.product_name_change',
                     'wtp.product_name_exclude', 'wtp.template_path', 'wtp.origin_price', 'wtp.sale_price'
                 )
-                ->where('scp.status_tool', 1)
+                ->where('scp.status_tool', env('STATUS_TOOL_EDITING'))
                 ->where('scp.status', 1)
                 ->limit(19)
                 ->get()->toArray();
@@ -2218,7 +2282,7 @@ class Api extends Model
                 if (sizeof($scrap_id_success) > 0) {
                     $check_feed_products = \DB::table('feed_products')->whereIn('scrap_product_id', $scrap_id_success)
                         ->pluck('id', 'scrap_product_id')->toArray();
-                    \DB::table('scrap_products')->whereIn('id', $scrap_id_success)->update(['status_tool' => 0]);
+                    \DB::table('scrap_products')->whereIn('id', $scrap_id_success)->update(['status_tool' => env('STATUS_TOOL_DEFAULT')]);
                     foreach ($scrap_success as $scrap_product_id => $update) {
                         \DB::table('scrap_products')->where('id', $scrap_product_id)->update($update);
                         if (array_key_exists($scrap_product_id, $check_feed_products)) {
