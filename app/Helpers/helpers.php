@@ -400,27 +400,29 @@ function strRandom()
 function charRandom($limit = null)
 {
     $limit = ($limit == null) ? 10 : $limit;
-    $permitted_chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $permitted_chars = 'abcdefghijklmnpqrstuvwxyzABCDEFGHIJKLMNPQRSTUVWXYZ';
     return substr(str_shuffle($permitted_chars), 0, $limit);
 }
 
 /*
      *  Hàm lấy thông tin ra xem có phải là sku auto hay là sku fixed cứng hay không.
      * */
-function getInfoSkuName($sku_auto_id, $template_id, $store_id)
+function getInfoSkuName($sku_auto_id)
 {
     $array = [];
     // lấy ra tên của sku auto id
     $sku_auto = \DB::table('sku_autos')->select('sku')->where('id',$sku_auto_id)->first();
     if ($sku_auto != NULL)
     {
-        // đếm số lượng product đã sử dụng sku này
-        $where = [
-            ['template_id', '=', $template_id],
-            ['store_id', '=', $store_id]
-        ];
-        $scrap_count = \DB::table('scrap_products')->where($where)->count();
-        $driver_count = \DB::table('woo_product_drivers')->where($where)->count();
+        $list_woo_template_id = \DB::table('woo_templates')->where('sku_auto_id',$sku_auto_id)->pluck('template_id')->toArray();
+        $scrap_count = 0;
+        $driver_count = 0;
+        if (sizeof($list_woo_template_id) > 0)
+        {
+            // đếm số lượng product đã sử dụng sku này
+            $scrap_count = \DB::table('scrap_products')->whereIn('template_id', $list_woo_template_id)->count();
+            $driver_count = \DB::table('woo_product_drivers')->whereIn('template_id', $list_woo_template_id)->count();
+        }
         $count = 100 + $scrap_count + $driver_count;
         $last_Prefix = strtoupper(charRandom(1));
         $array = [
