@@ -124,6 +124,9 @@ Route::middleware('auth')->group(function () {
     Route::post('js-woo-convert-variation', 'WooController@ajaxPutConvertVariation');
     Route::post('js-check-variation-exist', 'WooController@ajaxCheckVariationExist');
     Route::get('scrap-create-template','WooController@viewFromCreateTemplate');
+    Route::get('scrap-custom-create-template','WooController@viewCreateCustomTemplate');
+    Route::post('check-custom-template','ApiController@checkCustomTemplate');
+    Route::post('make-custom-template','ApiController@makeCustomTemplate');
     Route::post('scrap-save-template','ApiController@scrapSaveTemplate');
     Route::get('woo-deleted-all-template/{woo_template_id}','WooController@deleteAllTemplate');
     Route::get('woo-deleted-all-product/{woo_template_id}&{type}','WooController@deleteAllProductTemplate');

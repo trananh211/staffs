@@ -386,6 +386,12 @@ class WooController extends Controller
         return $work->viewFromCreateTemplate();
     }
 
+    public function viewCreateCustomTemplate()
+    {
+        $work = new Working();
+        return $work->viewCreateCustomTemplate();
+    }
+
     public function deleteAllTemplate($template_id)
     {
         $work = new Working();

@@ -719,6 +719,552 @@ class Api extends Model
         return $sku;
     }
 
+    private function checkExistWebsite($platform_id, $rq, $store_id)
+    {
+        $return = false;
+        $alert = '';
+        $message = '';
+        $website_id = false;
+        // kiểm tra đã tồn tại website thuộc store đã chọn hay chưa
+        $check_exist = \DB::table('websites')
+            ->where([
+                ['store_id', '=', $store_id],
+                ['url', '=', $rq['web_link']],
+                ['platform_id', '=', $platform_id]
+            ])->first();
+        if ($check_exist == NULL) // nếu chưa tồn tại thì tạo mới
+        {
+            $website_id = \DB::table('websites')->insertGetId([
+                'store_id' => $store_id,
+                'platform_id' => $platform_id,
+                'exclude_text' => $rq['text_exclude'],
+                'url' => $rq['web_link'],
+                'image_array' => trim($rq['image_choose']),
+                'keyword_import' => (isset($rq['keyword_import']) && $rq['keyword_import'] == 'on')? 1 : 0,
+                'first_title' => (isset($rq['first_title']) && $rq['first_title'] != '')? trim($rq['first_title']) : NULL,
+                'exclude_image' => ($rq['exclude_image'] != '')? trim($rq['exclude_image']) : NULL,
+                'created_at' => date("Y-m-d H:i:s"),
+                'updated_at' => date("Y-m-d H:i:s")
+            ]);
+            $new_website_id = $website_id;
+            if (!$website_id) {
+                $return = true;
+                $alert = 'error';
+                $message = 'Xảy ra lỗi nội bộ. Không thể tạo được website ID để crawler. Mời bạn tải lại trang và thử lại.';
+            }
+        } else { // nếu tồn tại rồi thì thoát ra
+            $return = true;
+            $alert = 'error';
+            $message = 'Bạn đã chọn website này crawler trước đó rồi. Mời thử website khác.';
+        }
+        $data = [
+            'return' => $return,
+            'alert' => $alert,
+            'message' => $message,
+            'website_id' => $website_id
+        ];
+        return $data;
+    }
+
+    private function saveFileTemplate($info_product, $store_id, $template_id, $woocommerce, $website_id, $sku_auto_id, $t_status, $result_category, $custom_template_id)
+    {
+        $r = $this->makeFileTemplate($info_product, $store_id, $template_id);
+        $template_data = json_decode(json_encode($info_product ,true),true);
+        $result = $r['result'];
+        $template_path = $r['template_path'];
+        $template_name = $r['template_name'];
+        $variation_list = $r['variation_list'];
+        $path = $r['path'];
+        // Nếu tạo file json thành công. Luu thông tin template vao database
+        if ($result) {
+            $woo_template_id = \DB::table('woo_templates')->insertGetId([
+                'product_name' => $template_name,
+                'template_id' => $template_id,
+                'store_id' => $store_id,
+                'website_id' => $website_id,
+                'custom_template_id' => $custom_template_id,
+                'template_path' => $template_path,
+                'sku_auto_id' => $sku_auto_id,
+                't_status' => $t_status,
+                'created_at' => date("Y-m-d H:i:s"),
+                'updated_at' => date("Y-m-d H:i:s")
+            ]);
+            // Quét thông tin variations gửi vào database
+            $insert_variation = array();
+            if (sizeof($variation_list) > 0) {
+                for ($j = 0; $j < sizeof($variation_list); $j++) {
+                    $varid = $variation_list[$j];
+                    $variation_path = $path . 'variation_' . $varid . '.json';
+                    $variation_data = $woocommerce->get('products/' . $template_id . '/variations/' . $varid);
+                    $result = writeFileJson($variation_path, $variation_data);
+                    chmod($variation_path, 0777);
+                    $insert_variation[] = [
+                        'variation_id' => $varid,
+                        'woo_template_id' => $woo_template_id,
+                        'template_id' => $template_id,
+                        'store_id' => $store_id,
+                        'variation_path' => $variation_path,
+                        'created_at' => date("Y-m-d H:i:s"),
+                        'updated_at' => date("Y-m-d H:i:s")
+                    ];
+                }
+            }
+            if (sizeof($insert_variation) > 0) {
+                \DB::table('woo_variations')->insert($insert_variation);
+            }
+        }
+        // lấy tên và id của category
+        if (isset($info_product->categories[0])) {
+            $tem_category = $info_product->categories[0];
+            $category_name = $tem_category->name;
+            $woo_category_id = $tem_category->id;
+            $result_category = true;
+        } else {
+            $category_name = null;
+            $woo_category_id = null;
+        }
+        $data = [
+            'category_name' => $category_name,
+            'woo_category_id' => $woo_category_id,
+            'result_category' => $result_category
+        ];
+        return $data;
+    }
+
+    private function saveDataCategory($data_category, $store_id, $woocommerce, $website_id)
+    {
+        $category_name = $data_category['category_name'];
+        $woo_category_id = $data_category['woo_category_id'];
+        // kiểm tra với woo_categories có sẵn tại tool xem tồn tại chưa.
+        $check_category = \DB::table('woo_categories')->select('id')
+            ->where([
+                ['name', '=', $category_name],
+                ['store_id', '=', $store_id]
+            ])->first();
+        // nếu tồn tại category ở database rồi
+        if ($check_category != NULL) {
+            $category_id = $check_category->id;
+        } else { // nếu chưa tồn tại thì kết nối với store để lấy thông tin tạo mới ở database
+            $data = ['slug' => $category_name];
+            // kết nối tới woocommerce store để lấy thông tin
+            $result = $woocommerce->get('products/categories', $data);
+            $woo_category_id = $result[0]->id;
+            $data = [
+                'woo_category_id' => $woo_category_id,
+                'name' => $category_name,
+                'slug' => $result[0]->slug,
+                'store_id' => $store_id,
+                'created_at' => date("Y-m-d H:i:s"),
+                'updated_at' => date("Y-m-d H:i:s")
+            ];
+            $category_id = \DB::table('woo_categories')->insertGetId($data);
+        }
+        \DB::table('websites')->where('id',$website_id)->update(['woo_category_id' => $category_id]);
+        $category_data = [
+            'category_id' => $category_id,
+            'category_name' => $category_name,
+            'woo_category_id' => $woo_category_id
+        ];
+        $alert = 'success';
+        $message = 'Connect với template thành công';
+        $result = [
+            'category_data' => $category_data,
+            'alert' => $alert,
+            'message' => $message
+        ];
+        return $result;
+    }
+
+    /*
+     * Kiểm tra website và class có tồn tại và crawl được hay không
+     * */
+    private function checkUrlExist($info)
+    {
+        $web_link = $info['web_link'];
+        $page_string = trim($info['page_string']);
+        $last_page = trim($info['last_page_catalog_number']);
+        $domain_origin = trim($info['domain_origin']);
+        $title_product_class = trim($info['title_product_class']);
+        $product_tag = trim($info['product_tag']);
+        $auto_sku = strtoupper(trim($info['auto_sku']));
+        $text_exclude = trim(ucwords($info['text_exclude']));
+        $pre_info = [
+            'count' => 1000,
+            'sku' => $auto_sku,
+            'last_prefix' => 'W'
+        ];
+        if (strlen($page_string) > 0)
+        {
+            $tmp_page = explode($page_string.'1', $web_link);
+            $last_link = trim($tmp_page[0].$page_string.$last_page.$tmp_page[1]);
+        } else {
+            $last_link = $web_link;
+        }
+        $client = new \Goutte\Client();
+        $response = $client->request('GET', $web_link);
+        $crawler = $response;
+
+        $title_catalog_class = $info['title_catalog_class'];
+        // kiem tra xem co ton tai product nao ở page hiện tại hay không
+        $products = ($crawler->filter($title_catalog_class)->count() > 0) ? $crawler->filter($title_catalog_class)->count() : 0;
+        $data = array();
+        $return = false;
+        $alert = 'error';
+        $message = 'Chưa phát hiện ra lỗi';
+        if ($products > 0)
+        {
+            $i = 1;
+            try {
+                $crawler->filter($title_catalog_class)->each(function ($node) use (
+                    &$domain_origin, &$text_exclude, &$data, &$title_product_class, &$product_tag, &$pre_info, &$i
+                ){
+                    $link = $domain_origin . trim($node->filter('a')->attr('href'));
+                    // kiểm tra xem có sku tự động hay không
+                    $sku_auto_string = null;
+                    if (strlen($pre_info['sku']) > 0)
+                    {
+                        $count = $pre_info['count'] + $i;
+                        $sku_auto_string = 'A'.$pre_info['sku'].$count.$pre_info['last_prefix'];
+                    }
+                    $name = ucwords(trim($node->filter($title_product_class)->text()));
+                    $name = str_replace($text_exclude, '', $name);
+
+                    if (strlen($product_tag) > 0)
+                    {
+                        $tag_name = strtolower($product_tag);
+                    } else {
+                        $tmp_tag = explode(' ', strtolower($name));
+                        if (sizeof($tmp_tag) > 0 && $tmp_tag[0] != '')
+                        {
+                            $tag = explode(' ', strtolower($name))[0];
+                        } else {
+                            $tag = $tmp_tag[1];
+                        }
+                        $tag_name = preg_replace('/[^a-z\d]/i', '-', sanitizer($tag));
+                        $tag_name = rtrim($tag_name, '-');
+                    }
+                    $tmp = [
+                        'link' => $link,
+                        'name' => $name,
+                        'tag_name' => $tag_name,
+                        'sku' => $sku_auto_string
+                    ];
+                    $data[] = $tmp;
+                    $i++;
+                });
+                if (sizeof($data) > 0)
+                {
+                    $return_link = true;
+                }
+            } catch (\Exception $e) {
+                $return_link = false;
+            }
+
+            // nếu link dùng được. chuyển sang check pagi
+            if ($return_link)
+            {
+                $page_catalog_class = trim($info['page_catalog_class']);
+                $last_page_catalog_class = trim($info['last_page_catalog_class']);
+                $page_exclude_string = trim($info['page_exclude_string']);
+                if (strlen($page_catalog_class) == 0 || strlen($last_page_catalog_class) == 0)
+                {
+                    $return = true;
+                    $alert = 'success';
+                    $message = 'Website không có nhiều trang. Đã đủ điều kiện chỉ quét sản phẩm từ trang đầu tiên';
+                } else { // nếu có khai báo kiểm tra pagination
+
+
+                    /*Trang đầu tiên*/
+                    // kiểm tra xem đây có phải là trang cuối cùng hay không
+                    $check = $crawler->filter($last_page_catalog_class)->count();
+                    if ($check == 0)
+                    {
+                        $return_last_page_check = false;
+                        try {
+                            $next_page_link = $crawler->filter($page_catalog_class)->attr('href');
+                            $page_link = str_replace($page_exclude_string, '', $next_page_link);
+                            $next_page = preg_replace("/[^0-9]/", '', $page_link);
+                            if ($next_page > 1)
+                            {
+                                $return_last_page_check = true;
+                            } else {
+                                $return = false;
+                                $alert = 'error';
+                                $message = 'Page class '.$page_catalog_class.' được tìm thấy nhưng không lấy được số Page. Mời bạn kiểm tra lại';
+                            }
+                        } catch (\Exception $e) {
+                            $return = false;
+                            $alert = 'error';
+                            $message = 'Page class '.$page_catalog_class.' không được tìm thấy. Mời bạn kiểm tra lại';
+                        }
+                        // nếu được check trang cuối cùng
+                        if ($return_last_page_check)
+                        {
+                            $response2 = false;
+                            try {
+                                $response2 = $client->request('GET', $last_link);
+                            } catch (\Exception $e) {
+                                $return = false;
+                                $alert = 'error';
+                                $message = 'Không truy cập được trang cuối cùng: '.$last_link.'. Mời bạn kiểm tra lại';
+                            }
+                            if ($response2)
+                            {
+                                // kiểm tra xem đây có phải là trang cuối cùng hay không
+                                $check = $response2->filter($last_page_catalog_class)->count();
+                                if ($check == 0)
+                                {
+                                    $return = true;
+                                    $alert = 'success';
+                                    $message = 'Mọi thông tin đều chính xác và quét được qua hệ thống. Bạn có thể crawl website này';
+                                } else {
+                                    $return = false;
+                                    $alert = 'error';
+                                    $message = 'Không tìm thấy class page cuối cùng: '.$last_page_catalog_class.'. Mời bạn kiểm tra lại';
+                                }
+                            }
+                        }
+                    } else {
+                        $next_page = 0;
+                        $return = false;
+                        $alert = 'error';
+                        $message = 'Đây là website chỉ có 1 page. Nên xóa page catalog class đi để tránh lỗi về sau';
+                    }
+                }
+            } else {
+                $return = false;
+                $alert = 'error';
+                $message = 'Page Class '.$title_catalog_class.' không chứa link a để scrap link và title product. Mời bạn kiểm tra lại';
+            }
+        } else {
+            $return = false;
+            $alert = 'error';
+            $message = 'Page Class '.$title_catalog_class.' không hoạt động. Mời bạn kiểm tra lại';
+        }
+        $data_return = [
+            'return' => $return,
+            'alert' => $alert,
+            'message' => $message,
+            'data' => $data
+        ];
+        return $data_return;
+    }
+
+    private function checkUrlProductPage($info, $data)
+    {
+        $link = $info['data'][0]['link'];
+        $return = false;
+        $alert = 'error';
+        $data_image = array();
+        $client = new \Goutte\Client();
+        try {
+            $crawler3 = $client->request('GET', $link);
+        } catch (\Exception $e) {
+            $message = 'Không thể truy cập được link sản phẩm: '.$link;
+        }
+        if (isset($crawler3)){
+            $image_class = $data['image_class'];
+            $element_link = $data['element_link'];
+            $attr_link = $data['attr_link'];
+
+            $images_count = $crawler3->filter($image_class)->count();
+            //kiem tra xem co anh hay khong
+            if ($images_count > 0) {
+                $i = 0;
+                $crawler3->filter($image_class)->each(function ($node) use (&$i, &$element_link, &$attr_link, &$data_image) {
+                    if ($i < 4)
+                    {
+                        try {
+                            $tmp_img = $node->filter($element_link)->attr($attr_link);
+                            if (strlen($tmp_img) > 0)
+                            {
+                                $data_image[] = $tmp_img;
+                            }
+                        } catch (\Exception $e) {}
+                    }
+                    $i++;
+                });
+                if (sizeof($data_image) > 0)
+                {
+                    $return = true;
+                    $alert = 'success';
+                    $message = 'Website đủ điều kiện để crawl sản phẩm.';
+                } else {
+                    $message = 'Không tồn tại ảnh sản phẩm. Mời bạn kiểm tra lại element_link: '.$element_link.' và attr_link: '.$attr_link;
+                }
+            } else {
+                $message = 'Không tồn tại image class : '.$image_class.' tại trang '.$link.' Mời bạn kiểm tra lại';
+            }
+        }
+        $info['data'][0]['image'] = $data_image;
+        $data_return = [
+            'return' => $return,
+            'alert' => $alert,
+            'message' => $message,
+            'info' => $info['data']
+        ];
+        return $data_return;
+    }
+
+    public function checkCustomTemplate($request)
+    {
+        $rq = $request->all();
+        $result_website = $this->checkUrlExist($rq);
+        if ($result_website['return'])
+        {
+            $return_product_page = $this->checkUrlProductPage($result_website, $rq);
+            $alert = $return_product_page['alert'];
+            $message = $return_product_page['message'];
+            if ($return_product_page['return'])
+            {
+                $check_done = true;
+                $data = infoShop();
+                $stores = \DB::table('woo_infos')
+                    ->select('id', 'name', 'url', 'consumer_key', 'consumer_secret')
+                    ->get()->toArray();
+                $template_tool_status = getTemplateStatus();
+                $info = $return_product_page['info'];
+                return view('/admin/scrap/view_create_custom_template',
+                    compact('data', 'rq', 'stores', 'template_tool_status', 'check_done', 'info'))
+                    ->with($alert, $message);
+            } else {
+                return redirect()->back()->with($alert, $message)->withInput();
+            }
+        } else {
+            $alert = $result_website['alert'];
+            $message = $result_website['message'];
+            return redirect()->back()->with($alert, $message)->withInput();
+        }
+    }
+
+    private function checkExistCustomTemplate($info)
+    {
+        $custom_template_id = false;
+        // kiểm tra đã tồn tại website thuộc store đã chọn hay chưa
+        $check_exist = \DB::table('custom_templates')
+            ->select('id')
+            ->where([
+                ['web_link', '=', trim($info['web_link'])]
+            ])->first();
+        if ($check_exist == NULL) // nếu chưa tồn tại thì tạo mới
+        {
+            $custom_template_id = \DB::table('custom_templates')->insertGetId([
+                'web_link' => trim($info['web_link']),
+                'title_catalog_class' => trim($info['title_catalog_class']),
+                'title_product_class' => trim($info['title_product_class']),
+                'domain_origin' => ($info['domain_origin'] != '')? trim($info['domain_origin']) : NULL,
+                'page_catalog_class' => ($info['page_catalog_class'] != '')? trim($info['page_catalog_class']) : NULL,
+                'last_page_catalog_class' => ($info['last_page_catalog_class'] != '')? trim($info['last_page_catalog_class']) : NULL,
+                'page_string' => ($info['page_string'] != '')? trim($info['page_string']) : NULL,
+                'last_page_catalog_number' => ($info['last_page_catalog_number'] != '')? trim($info['last_page_catalog_number']) : NULL,
+                'page_exclude_string' => ($info['page_exclude_string'] != '')? trim($info['page_exclude_string']) : NULL,
+                'image_class' => trim($info['image_class']),
+                'element_link' => trim($info['element_link']),
+                'attr_link' => trim($info['attr_link']),
+                'created_at' => date("Y-m-d H:i:s"),
+                'updated_at' => date("Y-m-d H:i:s")
+            ]);
+            if (!$custom_template_id) {
+                $custom_template_id = false;
+            }
+        } else { // nếu tồn tại rồi thì thoát ra
+            $custom_template_id = $check_exist->id;
+        }
+        return $custom_template_id;
+    }
+
+    public function makeCustomTemplate($request)
+    {
+        $rq = $request->all();
+        $store_id = $rq['store_id'];
+        $platform_id = 1;
+        $data = $this->checkExistWebsite($platform_id, $rq, $store_id);
+        // nếu xảy ra lỗi phải return thì return lại trang trước đó
+        if ($data['return'] == true) {
+            $alert = $data['alert'];
+            $message = $data['message'];
+            return redirect('scrap-custom-create-template')->with($alert, $message);
+        } else { // nếu không xảy ra lỗi. lưu website id vào database và kiểm tra id product có tồn tại hay chưa
+            $website_id = $data['website_id'];
+            $new_website_id = $data['website_id'];
+            $custom_template_id = $this->checkExistCustomTemplate($rq);
+            if ($custom_template_id) {
+                $sku_auto_id = getSkuAutoId(trim($rq['auto_sku']));
+                $t_status = env('TEMPLATE_STATUS_KEEP_TITLE');
+                if (array_key_exists('template_tool_status', $rq) && $rq['template_tool_status'] == env('TEMPLATE_STATUS_REMOVE_TITLE')) {
+                    $t_status = env('TEMPLATE_STATUS_REMOVE_TITLE');
+                }
+                $template_id = $rq['id_product'];
+                $result_category = false;
+
+                $check_exist = \DB::table('woo_templates')
+                    ->where('template_id', $template_id)
+                    ->where('store_id', $store_id)
+                    ->select('template_path')
+                    ->first();
+                // neu khong ton tai template id trong he thong.
+                if (!is_null($check_exist)) {
+                    $template_path = $check_exist->template_path;
+                    $template_data = readFileJson($template_path);
+                    // lấy tên và id của category
+                    if (isset($template_data['categories'][0])) {
+                        $tem_category = $template_data['categories'][0];
+                        $category_name = $tem_category['name'];
+                        $woo_category_id = $tem_category['id'];
+                        $result_category = true;
+                    } else {
+                        $category_name = null;
+                        $woo_category_id = null;
+                    }
+                } else {
+                    $woocommerce = $this->getConnectStore($rq['url'], $rq['consumer_key'], $rq['consumer_secret']);
+                    try {
+                        $results = true;
+                        $i = $woocommerce->get('products/' . $rq['id_product']);
+                    } catch (\Exception $e) {
+                        $results = false;
+                    }
+                    if (!$results) {
+                        // xóa website id vừa tạo
+                        if (isset($new_website_id)) {
+                            \DB::table('websites')->where('id', $new_website_id)->delete();
+                        }
+                        $alert = 'error';
+                        $message = 'Không tìm thấy product Id ' . $rq['id_product'] . ' ở store : ' . $rq['url'];
+                        return redirect('scrap-custom-create-template')->with($alert, $message);
+                    } else {
+                        $r_template_data = $this->saveFileTemplate($i, $store_id, $template_id, $woocommerce, $website_id, $sku_auto_id, $t_status, $result_category, $custom_template_id);
+                        $result_category = $r_template_data['result_category'];
+                        $category_name = $r_template_data['category_name'];
+                        $woo_category_id = $r_template_data['woo_category_id'];
+                    }
+                }
+                if ($result_category) {
+                    $data_category = [
+                        'category_name' => $category_name,
+                        'woo_category_id' => $woo_category_id
+                    ];
+                    $woocommerce = $this->getConnectStore($rq['url'], $rq['consumer_key'], $rq['consumer_secret']);
+                    // save info category vao database
+                    $r_category = $this->saveDataCategory($data_category, $store_id, $woocommerce, $website_id);
+                    $category_data = $r_category['category_data'];
+                    $category_data['sku_auto_id'] = $sku_auto_id;
+                    $alert = $r_category['alert'];
+                    $message = $r_category['message'];
+                    return redirect('scrap-custom-create-template')->with($alert, $message);
+                } else {
+                    $alert = 'error';
+                    $message = 'Template không tìm thấy category. Kiểm tra lại template của website: ' . $rq['url'] . ' với product id: ' . $rq['id_product'];
+                    return redirect('scrap-custom-create-template')->with($alert, $message);
+                }
+            } else {
+                $alert = 'error';
+                $message = 'Không thể tạo được custom template. Mời bạn thử lại';
+                return redirect('scrap-custom-create-template')->with($alert, $message);
+            }
+        }
+    }
+
     /*
      * Kiem tra template da ton tai hay chua. Neu chua thi luu vao database
      * */
@@ -752,37 +1298,15 @@ class Api extends Model
                 }
             } else { // Chọn website cần crawler từ danh sách platform đã có
                 $platform_id = $rq['platform_id'];
-                // kiểm tra đã tồn tại website thuộc store đã chọn hay chưa
-                $check_exist = \DB::table('websites')
-                    ->where([
-                        ['store_id', '=', $store_id],
-                        ['url', '=', $rq['web_link']],
-                        ['platform_id', '=', $platform_id]
-                    ])->first();
-                if ($check_exist == NULL) // nếu chưa tồn tại thì tạo mới
+                $data = $this->checkExistWebsite($platform_id, $rq, $store_id);
+                $return = $data['return'];
+                $alert = $data['alert'];
+                $message = $data['message'];
+                $website_id = $data['website_id'];
+                // nếu xảy ra lỗi phải return thì return lại trang trước đó
+                if ($data['return'] != true)
                 {
-                    $website_id = \DB::table('websites')->insertGetId([
-                        'store_id' => $store_id,
-                        'platform_id' => $platform_id,
-                        'exclude_text' => $rq['text_exclude'],
-                        'url' => $rq['web_link'],
-                        'image_array' => trim($rq['image_choose']),
-                        'keyword_import' => (isset($rq['keyword_import']) && $rq['keyword_import'] == 'on')? 1 : 0,
-                        'first_title' => ($rq['first_title'] != '')? trim($rq['first_title']) : NULL,
-                        'exclude_image' => ($rq['exclude_image'] != '')? trim($rq['exclude_image']) : NULL,
-                        'created_at' => date("Y-m-d H:i:s"),
-                        'updated_at' => date("Y-m-d H:i:s")
-                    ]);
-                    $new_website_id = $website_id;
-                    if (!$website_id) {
-                        $return = true;
-                        $alert = 'error';
-                        $message = 'Xảy ra lỗi nội bộ. Không thể tạo được website ID để crawler. Mời bạn tải lại trang và thử lại.';
-                    }
-                } else { // nếu tồn tại rồi thì thoát ra
-                    $return = true;
-                    $alert = 'error';
-                    $message = 'Bạn đã chọn website này crawler trước đó rồi. Mời thử website khác.';
+                    $new_website_id = $data['website_id'];
                 }
             }
         } else {
