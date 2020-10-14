@@ -3,6 +3,7 @@
     <div class="row">
         <div class="col s12">
             <div class="page-title">Connect Template</div>
+            <div class="right"><a href="{{ url('scrap-custom-create-template') }}">Tạo custom template</a></div>
         </div>
         <div class="col s12">
             <div class="card">
@@ -93,8 +94,8 @@
                                         </label>
                                     </div>
                                 </div>
-                                <div class="row">
 
+                                <div class="row">
                                     <div class="input-field col s4">
                                         <input name="image_choose" type="text" class="validate" placeholder="1,2,3,4,5">
                                         <label class="active">

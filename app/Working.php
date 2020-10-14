@@ -2050,6 +2050,20 @@ Thank you for your purchase at our store. Wish you a good day and lots of luck.
     }
     /*End Scrap web*/
 
+    /*Scrap web */
+    public function viewCreateCustomTemplate()
+    {
+        $data = infoShop();
+        $stores = \DB::table('woo_infos')
+            ->select('id', 'name', 'url', 'consumer_key', 'consumer_secret')
+            ->get()->toArray();
+        $check_done = false;
+        $template_tool_status = getTemplateStatus();
+        return view('/admin/scrap/view_create_custom_template')
+            ->with(compact('data', 'stores', 'template_tool_status', 'check_done'));
+    }
+    /*End Scrap web*/
+
     /* Automatic create product*/
     public function viewCreateTemplate()
     {

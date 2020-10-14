@@ -243,6 +243,18 @@ class ApiController extends Controller
         return $api->checkTemplate($request,1);
     }
 
+    public function makeCustomTemplate(Request $request)
+    {
+        $api = new Api();
+        return $api->makeCustomTemplate($request);
+    }
+
+    public function checkCustomTemplate(Request $request)
+    {
+        $api = new Api();
+        return $api->checkCustomTemplate($request);
+    }
+
     /*Product automatic create*/
     public function checkTemplate(Request $request)
     {

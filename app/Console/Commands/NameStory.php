@@ -55,7 +55,7 @@ class NameStory extends Command
                             'ws.id as website_id', 'ws.platform_id','ws.url', 'ws.exclude_text', 'ws.first_title',
                             'wc.woo_category_id', 'wc.name as category_name', 'wc.slug as category_slug',
                             'wtp.id as woo_template_id', 'wtp.product_name', 'wtp.template_id', 'wtp.template_path',
-                            'wtp.t_status','wtp.sku_auto_id'
+                            'wtp.t_status','wtp.sku_auto_id', 'wtp.custom_template_id'
                         )
                         ->where('ws.id',$website_id)->first();
                     if($info != NULL)
@@ -67,8 +67,12 @@ class NameStory extends Command
                         $pre_data = [
                             't_status' => $info->t_status,
                             'sku_auto_id' => $info->sku_auto_id,
+                            'custom_template_id' => $info->custom_template_id
                         ];
                         switch ($info->platform_id) {
+                            case 1:
+                                $this->autoScanCustomPlatform($pre_data ,$website_id, $template_id, $store_id, $woo_template_id, $category_name ,$exclude_text, $domain);
+                                break;
                             case 2:
                                 $this->autoScanMerchKing($pre_data ,$website_id, $template_id, $store_id, $woo_template_id, $category_name ,$exclude_text, $domain);
                                 break;
@@ -519,6 +523,146 @@ class NameStory extends Command
             $info = getInfoSkuName($pre_data['sku_auto_id']);
         }
         return $info;
+    }
+
+    private function autoScanCustomPlatform($pre_data ,$website_id, $template_id, $store_id, $woo_template_id, $category_name ,$text_exclude, $domain)
+    {
+        if ($pre_data['custom_template_id'] > 0)
+        {
+            $info = \DB::table('custom_templates')
+                ->select('*')
+                ->where('id',$pre_data['custom_template_id'])
+                ->first();
+            $web_link = $info->web_link;
+            $page_string = $info->page_string;
+            $title_catalog_class = $info->title_catalog_class;
+            $title_product_class = $info->title_product_class;
+            $product_tag = $info->product_tag;
+            $domain_origin = $info->domain_origin;
+            $page_catalog_class = $info->page_catalog_class;
+            $last_page_catalog_class = $info->last_page_catalog_class;
+            $page_exclude_string = $info->page_exclude_string;
+            if (strlen($page_string) > 0)
+            {
+                $tmp_page = explode($page_string.'1', $web_link);
+                $link_first = trim($tmp_page[0]);
+                $link_last = trim($tmp_page[1]);
+            } else {
+                $link_first = $web_link;
+                $link_last = '';
+            }
+            // so sanh product cu. trung thi se k lay nua
+            $products_old = $this->checkProductExist($template_id, $store_id);
+            if (strlen($page_catalog_class) > 0 && strlen($last_page_catalog_class) > 0)
+            {
+                $page = 1;
+            } else {
+                $page = '';
+            }
+            $data = array();
+            $text_exclude = ucwords($text_exclude);
+            $pre_info = $this->preDataBeforScrap($pre_data);
+            $i = 1;
+            $links = array();
+            do {
+                echo $page . '-page' . "\n";
+                $url = $link_first.$page_string.$page.$link_last;
+                $curent_page = $page;
+                $client = new \Goutte\Client();
+                $response = $client->request('GET', $url);
+                $crawler = $response;
+                // kiem tra xem co ton tai product nao ở page hiện tại hay không
+                $products = ($crawler->filter($title_catalog_class)->count() > 0) ? $crawler->filter($title_catalog_class)->count() : 0;
+                if ($products > 0) {
+                    try {
+                        $crawler->filter($title_catalog_class)
+                            ->each(function ($node) use (&$data, &$website_id, &$template_id, &$store_id, &$url, &$domain_origin,
+                                &$products_old, &$links, &$category_name ,&$text_exclude, &$i, &$pre_info, &$title_product_class,
+                                &$product_tag
+                            ) {
+                                $link = $domain_origin . trim($node->filter('a')->attr('href'));
+                                if (!in_array($link, $products_old))
+                                {
+                                    if (!in_array($link, $links))
+                                    {
+                                        // kiểm tra xem có sku tự động hay không
+                                        $sku_auto_string = null;
+                                        if (sizeof($pre_info) > 0)
+                                        {
+                                            $count = $pre_info['count'] + $i;
+                                            $sku_auto_string = $pre_info['sku'].$count.$pre_info['last_prefix'];
+                                        }
+                                        // end kiểm tra xem có sku tự động hay không
+                                        $links[] = $link;
+                                        $name = ucwords(trim($node->filter($title_product_class)->text()));
+                                        $name = str_replace($text_exclude, '', $name);
+                                        if (strlen($product_tag) > 0)
+                                        {
+                                            $tag_name = $product_tag;
+                                        } else {
+                                            $tmp_tag = explode(' ', strtolower($name));
+                                            if (sizeof($tmp_tag) > 0 && $tmp_tag[0] != '')
+                                            {
+                                                $tag = explode(' ', strtolower($name))[0];
+                                            } else {
+                                                $tag = $tmp_tag[1];
+                                            }
+                                            $tag_name = preg_replace('/[^a-z\d]/i', '-', sanitizer($tag));
+                                            $tag_name = rtrim($tag_name, '-');
+                                        }
+
+                                        $data[] = [
+                                            'category_name' => $category_name,
+                                            'tag_name' => $tag_name,
+                                            'link' => $link,
+                                            'website_id' => $website_id,
+                                            'website' => $url,
+                                            'template_id' => $template_id,
+                                            'store_id' => $store_id,
+                                            'sku_auto_string' => $sku_auto_string,
+                                            'status' => 0,
+                                            'created_at' => date("Y-m-d H:i:s"),
+                                            'updated_at' => date("Y-m-d H:i:s")
+                                        ];
+                                        $i++;
+                                    }
+                                }
+                            });
+                    } catch (\Exception $e) {}
+                } else {
+                    logfile('Website: '.$domain.' Không tồn tại sản phẩm nào với class : '.$title_catalog_class);
+                }
+
+                //Phần cuối cùng. Không được chèn thêm ở đây nữa
+                // Nếu không khai báo pagination class thì chỉ quét trang đầu tiên
+                if (strlen($last_page_catalog_class) > 0 && strlen($page_catalog_class) > 0)
+                {
+                    // kiểm tra xem đây có phải là trang cuối cùng hay không
+                    $check = $crawler->filter($last_page_catalog_class)->count();
+                    if ($check == 0)
+                    {
+                        try {
+                            $next_page_link = $crawler->filter($page_catalog_class)->attr('href');
+                            $page_link = str_replace($page_exclude_string, '', $next_page_link);
+                            $next_page = preg_replace("/[^0-9]/", '', $page_link);
+                            $page = $next_page;
+                        } catch (\Exception $e) {
+                            $next_page = 0;
+                        }
+                    } else {
+                        $next_page = 0;
+                    }
+                } else {
+                    $next_page = 0;
+                }
+            } while ($next_page > $curent_page);
+            // Lưu dữ liệu vào database
+            $this->saveTemplate($data, $woo_template_id, $domain);
+        } else {
+            logfile('-- Platform không tồn tại info về class custom. Chuyển sang website khác');
+            \DB::table('websites')->where('id',$website_id)->update(['status' => 2]);
+            \DB::table('woo_templates')->where('id',$woo_template_id)->update(['status' => 25]);
+        }
     }
 
     private function autoScanMerchKing($pre_data, $website_id, $template_id, $store_id, $woo_template_id, $category_name, $text_exclude, $domain)
