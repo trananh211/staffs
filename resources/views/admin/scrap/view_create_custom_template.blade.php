@@ -114,7 +114,16 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="input-field col s6">
+                            <div class="input-field col s7">
+                                <input value="{{ ($r)? $rq['product_page_title_class'] : '' }}" required name="product_page_title_class" type="text" class="validate" placeholder="h1.title-product, ...">
+                                <label class="active">
+                                    Product Page Title Class<br>
+                                    <small class="blue-text text-darken-1">Chọn title nhận dạng của product trong product page</small>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="input-field col s5">
                                 <input value="{{ ($r)? $rq['image_class'] : '' }}" name="image_class" type="text" class="validate" required placeholder="li.product-single__thumbnails-item a.product-single__thumbnail">
                                 <label class="active">List Image Class</label>
                             </div>
@@ -125,6 +134,13 @@
                             <div class="input-field col s2">
                                 <input value="{{ ($r)? $rq['attr_link'] : '' }}" name="attr_link" type="text" class="validate" required placeholder="href, src, thumb...">
                                 <label class="active">Attr Link</label>
+                            </div>
+                            <div class="input-field col s3">
+                                <input value="{{ ($r)? $rq['http_image'] : '' }}" name="http_image" type="text" class="validate" placeholder="https:, http:, ...">
+                                <label class="active">
+                                    Http Image<br>
+                                    <small class="blue-text text-darken-1">Chọn trường này nếu ảnh của sản phẩm không chứa http</small>
+                                </label>
                             </div>
                         </div>
 

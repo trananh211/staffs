@@ -24,9 +24,12 @@ class NewCustomTemplates extends Migration
             $table->text('page_string')->nullable(true);
             $table->integer('last_page_catalog_number')->nullable(true);
             $table->text('page_exclude_string')->nullable(true);
+            $table->text('product_page_title_class')->nullable(true);
             $table->text('image_class')->nullable(true);
             $table->text('element_link')->nullable(true);
             $table->text('attr_link')->nullable(true);
+            $table->string('http_image', 50)->nullable(true);
+            $table->string('product_tag', 255)->nullable(true);
             $table->timestamps();
         });
     }

@@ -81,13 +81,18 @@ class ScrapProducts extends Command
         // tồn tại sản phẩm chưa up lên trên shop
         if (is_array($products)) {
             $data = array();
+            $custom_templates_array = array();
             // gộp các website_id vào chung 1 mảng
             foreach ($products as $value) {
                 $data[$value['website_id']][$value['platform_id']][] = $value;
+                if ($value['custom_template_id'] > 0)
+                {
+                    $custom_templates_array[$value['custom_template_id']] = $value['custom_template_id'];
+                }
             }
             // gửi mảng data sang bộ phận chuẩn bị dữ liệu
             if (sizeof($data) > 0) {
-                $this->preProduct($data);
+                $this->preProduct($data, $custom_templates_array);
             }
         } else {
             logfile_system('Đã hết product để import vào website');
@@ -95,7 +100,7 @@ class ScrapProducts extends Command
         logfile_system('========================= [ Kết thúc scrap products ] =========================');
     }
 
-    private function preProduct($datas)
+    private function preProduct($datas, $custom_templates_array)
     {
         $check = $this->checkCategory();
         $check_tag = false;
@@ -111,6 +116,9 @@ class ScrapProducts extends Command
                     foreach ($data as $platform_id => $dt)
                     {
                         switch ($platform_id) {
+                            case 1:
+                                $this->getProductAutoCustom($dt, $custom_templates_array);
+                                break;
                             case 2:
                                 $this->getProductAutoMerchKing($dt);
                                 break;
@@ -191,7 +199,7 @@ class ScrapProducts extends Command
                 'spd.sku_auto_string',
                 'woo_cat.woo_category_id', 'woo_cat.id as category_id',
                 'woo_tag.woo_tag_id',
-                'woo_temp.template_path', 'woo_temp.template_id', 'woo_temp.t_status',
+                'woo_temp.template_path', 'woo_temp.template_id', 'woo_temp.t_status', 'woo_temp.custom_template_id',
                 'woo_info.url', 'woo_info.consumer_key', 'woo_info.consumer_secret',
                 'ws.platform_id', 'ws.exclude_text','ws.image_array', 'ws.keyword_import', 'ws.first_title', 'ws.exclude_image'
             )
@@ -936,6 +944,144 @@ class ScrapProducts extends Command
                 logfile_system('-- Không thể xóa scrap id: '.implode(",",$delete_scrap_id));
             }
         }
+        if (sizeof($data) > 0) {
+            try {
+                $this->createProduct($data, $variation_id);
+            } catch (\Exception $e) {
+                logfile_system($e->getMessage());
+            }
+        }
+    }
+
+    private function getInfoCustomTemplate($custom_templates_array){
+        $lists = array();
+        $lst = \DB::table('custom_templates')
+            ->select('*')
+            ->whereIn('id',$custom_templates_array)
+            ->get()->toArray();
+        if (sizeof($lst) > 0)
+        {
+            foreach ($lst as $value)
+            {
+                $lists[$value->id] = $value;
+            }
+        }
+        return $lists;
+    }
+
+    private function getProductAutoCustom($data, $custom_templates_array)
+    {
+        $lst_custom_templates = array();
+        if (sizeof($custom_templates_array) > 0)
+        {
+            $lst_custom_templates = $this->getInfoCustomTemplate($custom_templates_array);
+        }
+//        print_r($lst_custom_templates);
+        $client = new \Goutte\Client();
+        $db = array();
+        $variation_id = array();
+        $delete_scrap_id = array();
+        foreach ($data as $key => $dt) {
+//            print_r($dt);
+//            var_dump($dt['custom_template_id']);
+//            die();
+            // nếu không có list custom class thì bỏ qua
+            if (sizeof($lst_custom_templates) == 0)
+            {
+                $delete_scrap_id[] = $dt['id'];
+                logfile_system('-- Không có list custom class. Xóa link : '.$dt['link']);
+                continue;
+            }
+            // nếu không tồn tại key là custom template id thi bỏ qua
+            if (! array_key_exists($dt['custom_template_id'], $lst_custom_templates))
+            {
+                $delete_scrap_id[] = $dt['id'];
+                logfile_system('-- Không tồn tại key là custom template. Xóa link : '.$dt['link']);
+                continue;
+            }
+
+            /*Đinh nghia cac class đê quét*/
+            $image_class = $lst_custom_templates[$dt['custom_template_id']]->image_class;
+            $product_page_title_class = $lst_custom_templates[$dt['custom_template_id']]->product_page_title_class;
+            $element_link = $lst_custom_templates[$dt['custom_template_id']]->element_link;
+            $attr_link = $lst_custom_templates[$dt['custom_template_id']]->attr_link;
+            $http_image = $lst_custom_templates[$dt['custom_template_id']]->http_image;
+
+            // nếu đủ điều kiện thì bắt đầu quét sản phẩm
+            $text_exclude = ucwords($dt['exclude_text']);
+            $link = $dt['link'];
+            $tmp_http = parse_url($link);
+            $http = $tmp_http['scheme'];
+            $response = $client->request('GET', $link);
+            $crawler = $response;
+
+            //kiem tra xem co anh hay khong
+            if ($crawler->filter($product_page_title_class)->count() > 0) {
+                //get name
+                $name = $crawler->filter($product_page_title_class)->text();
+                $name = str_replace(strtolower($text_exclude),'', strtolower($name));
+                $product_name = ucwords(strtolower(trim($name)));
+                $data[$key]['product_name'] = trim($dt['first_title'].' '.trim(preg_replace('/[^a-z\d ]/i', '', $product_name)));
+
+                //get image to variation color
+                $i = 1;
+                if ($dt['image_array'] != '')
+                {
+                    $array_image = explode(',', $dt['image_array']);
+                } else {
+                    $array_image = [1,2,3,4];
+                }
+                $exclude_image = array();
+                if ($dt['exclude_image'] != '')
+                {
+                    $tmp = str_replace(" ","",$dt['exclude_image']);
+                    $exclude_image = explode(',',$tmp);
+                }
+                if ($crawler->filter($image_class)->count() > 0)
+                {
+                    $crawler->filter($image_class)
+                        ->each(function ($node) use (&$data, &$key, &$i, &$product_name, &$array_image, &$http,
+                            &$exclude_image, &$element_link, &$attr_link, &$http_image
+                        ){
+                            if (in_array($i, $array_image)) {
+                                $image = $http_image.$node->filter($element_link)->attr($attr_link);
+                                if (!in_array($image, $exclude_image)){
+                                    /*Không tạo image cùng lúc tạo sản phẩm*/
+                                    $data[$key]['images'][$i]['src'] = $image;
+                                    $data[$key]['images'][$i]['name'] = $product_name . "_" . basename($image);
+                                    $data[$key]['images'][$i]['alt'] = $product_name . "_" . basename($image);
+
+                                    $data[$key]['img'][$i]['url'] = $image;
+                                    $data[$key]['img'][$i]['name'] = $product_name;
+                                }
+                            }
+                            $i++;
+                        });
+                } else {
+                    $delete_scrap_id[] = $dt['id'];
+                    logfile_system('-- Không tồn tại image ở product page. Xóa link : '.$dt['link']);
+                    continue;
+                }
+
+            } else {
+                $delete_scrap_id[] = $dt['id'];
+                logfile_system('-- Không tồn tại title ở product page. Xóa link : '.$dt['link']);
+                continue;
+            }
+            $variation_id[$dt['template_id']] = $dt['template_id'];
+        }
+
+        if (sizeof($delete_scrap_id) > 0)
+        {
+            $result_delete = \DB::table('scrap_products')->whereIn('id',$delete_scrap_id)->delete();
+            if ($result_delete)
+            {
+                logfile_system('-- Xóa thành công '.sizeof($delete_scrap_id).' scrap id');
+            } else {
+                logfile_system('-- Không thể xóa scrap id: '.implode(",",$delete_scrap_id));
+            }
+        }
+
         if (sizeof($data) > 0) {
             try {
                 $this->createProduct($data, $variation_id);

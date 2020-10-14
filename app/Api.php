@@ -973,7 +973,6 @@ class Api extends Model
                     $message = 'Website không có nhiều trang. Đã đủ điều kiện chỉ quét sản phẩm từ trang đầu tiên';
                 } else { // nếu có khai báo kiểm tra pagination
 
-
                     /*Trang đầu tiên*/
                     // kiểm tra xem đây có phải là trang cuối cùng hay không
                     $check = $crawler->filter($last_page_catalog_class)->count();
@@ -1012,7 +1011,7 @@ class Api extends Model
                             {
                                 // kiểm tra xem đây có phải là trang cuối cùng hay không
                                 $check = $response2->filter($last_page_catalog_class)->count();
-                                if ($check == 0)
+                                if ($check > 0)
                                 {
                                     $return = true;
                                     $alert = 'success';
@@ -1025,7 +1024,6 @@ class Api extends Model
                             }
                         }
                     } else {
-                        $next_page = 0;
                         $return = false;
                         $alert = 'error';
                         $message = 'Đây là website chỉ có 1 page. Nên xóa page catalog class đi để tránh lỗi về sau';
@@ -1063,39 +1061,54 @@ class Api extends Model
             $message = 'Không thể truy cập được link sản phẩm: '.$link;
         }
         if (isset($crawler3)){
+
+            $product_page_title_class = $data['product_page_title_class'];
             $image_class = $data['image_class'];
             $element_link = $data['element_link'];
             $attr_link = $data['attr_link'];
 
-            $images_count = $crawler3->filter($image_class)->count();
-            //kiem tra xem co anh hay khong
-            if ($images_count > 0) {
-                $i = 0;
-                $crawler3->filter($image_class)->each(function ($node) use (&$i, &$element_link, &$attr_link, &$data_image) {
-                    if ($i < 4)
+
+            // kiểm tra title của sản phẩm trước
+            try {
+                $product_name = $crawler3->filter($product_page_title_class)->text();
+            } catch (\Exception $e) {
+                $product_name = '';
+            }
+            if (strlen($product_name) > 0)
+            {
+                $images_count = $crawler3->filter($image_class)->count();
+                //kiem tra xem co anh hay khong
+                if ($images_count > 0) {
+                    $i = 0;
+                    $crawler3->filter($image_class)->each(function ($node) use (&$i, &$element_link, &$attr_link, &$data_image) {
+                        if ($i < 4)
+                        {
+                            try {
+                                $tmp_img = $node->filter($element_link)->attr($attr_link);
+                                if (strlen($tmp_img) > 0)
+                                {
+                                    $data_image[] = $tmp_img;
+                                }
+                            } catch (\Exception $e) {}
+                        }
+                        $i++;
+                    });
+                    if (sizeof($data_image) > 0)
                     {
-                        try {
-                            $tmp_img = $node->filter($element_link)->attr($attr_link);
-                            if (strlen($tmp_img) > 0)
-                            {
-                                $data_image[] = $tmp_img;
-                            }
-                        } catch (\Exception $e) {}
+                        $return = true;
+                        $alert = 'success';
+                        $message = 'Website đủ điều kiện để crawl sản phẩm.';
+                    } else {
+                        $message = 'Không tồn tại ảnh sản phẩm. Mời bạn kiểm tra lại element_link: '.$element_link.' và attr_link: '.$attr_link;
                     }
-                    $i++;
-                });
-                if (sizeof($data_image) > 0)
-                {
-                    $return = true;
-                    $alert = 'success';
-                    $message = 'Website đủ điều kiện để crawl sản phẩm.';
                 } else {
-                    $message = 'Không tồn tại ảnh sản phẩm. Mời bạn kiểm tra lại element_link: '.$element_link.' và attr_link: '.$attr_link;
+                    $message = 'Không tồn tại image class : '.$image_class.' tại trang '.$link.' Mời bạn kiểm tra lại';
                 }
             } else {
-                $message = 'Không tồn tại image class : '.$image_class.' tại trang '.$link.' Mời bạn kiểm tra lại';
+                $message = 'Không thể tìm thấy title product của trang product Page. Mời bạn kiểm tra lại : '.$product_page_title_class;
             }
         }
+
         $info['data'][0]['image'] = $data_image;
         $data_return = [
             'return' => $return,
@@ -1158,9 +1171,12 @@ class Api extends Model
                 'page_string' => ($info['page_string'] != '')? trim($info['page_string']) : NULL,
                 'last_page_catalog_number' => ($info['last_page_catalog_number'] != '')? trim($info['last_page_catalog_number']) : NULL,
                 'page_exclude_string' => ($info['page_exclude_string'] != '')? trim($info['page_exclude_string']) : NULL,
+                'product_page_title_class' => ($info['product_page_title_class'] != '')? trim($info['product_page_title_class']) : NULL,
                 'image_class' => trim($info['image_class']),
                 'element_link' => trim($info['element_link']),
                 'attr_link' => trim($info['attr_link']),
+                'http_image' => trim($info['http_image']),
+                'product_tag' => trim($info['product_tag']),
                 'created_at' => date("Y-m-d H:i:s"),
                 'updated_at' => date("Y-m-d H:i:s")
             ]);
