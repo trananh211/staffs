@@ -2675,8 +2675,9 @@ class Api extends Model
     {
         $template_data = json_decode(json_encode($templates), True);
         $template_name = $template_data['name'];
-        $description = htmlentities(str_replace("\n", "<br />", $template_data['description']));
-        $template_data['description'] = $description;
+//        $description = htmlentities(str_replace("\n", "<br />", $template_data['description']));
+//        $description = htmlentities($template_data['description']);
+//        $template_data['description'] = $description;
         //xoa cac key khong can thiet
         $deleted = array('id', 'slug', 'permalink', 'price_html', 'images', '_links');
         $variation_list = $template_data['variations'];
