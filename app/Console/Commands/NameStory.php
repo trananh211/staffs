@@ -630,7 +630,7 @@ class NameStory extends Command
                             });
                     } catch (\Exception $e) {}
                 } else {
-                    logfile('Website: '.$domain.' Không tồn tại sản phẩm nào với class : '.$title_catalog_class);
+                    logfile_system('Website: '.$domain.' Không tồn tại sản phẩm nào với class : '.$title_catalog_class);
                 }
 
                 //Phần cuối cùng. Không được chèn thêm ở đây nữa
@@ -659,7 +659,7 @@ class NameStory extends Command
             // Lưu dữ liệu vào database
             $this->saveTemplate($data, $woo_template_id, $domain);
         } else {
-            logfile('-- Platform không tồn tại info về class custom. Chuyển sang website khác');
+            logfile_system('-- Platform không tồn tại info về class custom. Chuyển sang website khác');
             \DB::table('websites')->where('id',$website_id)->update(['status' => 2]);
             \DB::table('woo_templates')->where('id',$woo_template_id)->update(['status' => 25]);
         }
