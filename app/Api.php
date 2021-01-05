@@ -966,7 +966,7 @@ class Api extends Model
                 $page_catalog_class = trim($info['page_catalog_class']);
                 $last_page_catalog_class = trim($info['last_page_catalog_class']);
                 $page_exclude_string = trim($info['page_exclude_string']);
-                if (strlen($page_catalog_class) == 0 || strlen($last_page_catalog_class) == 0)
+                if (strlen($page_catalog_class) == 0)
                 {
                     $return = true;
                     $alert = 'success';
@@ -974,8 +974,14 @@ class Api extends Model
                 } else { // nếu có khai báo kiểm tra pagination
 
                     /*Trang đầu tiên*/
-                    // kiểm tra xem đây có phải là trang cuối cùng hay không
-                    $check = $crawler->filter($last_page_catalog_class)->count();
+                    // nếu không tồn tại class hoặc id nhận dạng page cuối cùng
+                    if (strlen($last_page_catalog_class) == 0)
+                    {
+                        $check = 0;
+                    } else {
+                        // kiểm tra xem đây có phải là trang cuối cùng hay không
+                        $check = $crawler->filter($last_page_catalog_class)->count();
+                    }
                     if ($check == 0)
                     {
                         $return_last_page_check = false;
@@ -999,6 +1005,7 @@ class Api extends Model
                         // nếu được check trang cuối cùng
                         if ($return_last_page_check)
                         {
+                            // chuyển đến trang cuối cùng để check
                             $response2 = false;
                             try {
                                 $response2 = $client->request('GET', $last_link);
@@ -1009,18 +1016,47 @@ class Api extends Model
                             }
                             if ($response2)
                             {
-                                // kiểm tra xem đây có phải là trang cuối cùng hay không
-                                $check = $response2->filter($last_page_catalog_class)->count();
-                                if ($check > 0)
+                                // nếu không tồn tại class hoặc id nhận dạng page cuối cùng
+                                if (strlen($last_page_catalog_class) == 0)
                                 {
-                                    $return = true;
-                                    $alert = 'success';
-                                    $message = 'Mọi thông tin đều chính xác và quét được qua hệ thống. Bạn có thể crawl website này';
+                                    // kiểm tra xem có tồn tại trang tiếp theo hay không. Nếu không thì đúng
+                                    $check = $response2->filter($page_catalog_class)->count();
+                                    if ($check == 0)
+                                    {
+                                        $return = true;
+                                        $alert = 'success';
+                                        $message = 'Mọi thông tin đều chính xác và quét được qua hệ thống. Bạn có thể crawl website này';
+                                    } else { // nếu phát hiện thì thử kiểm tra trang hiện tại có giống với trang đã khai báo không.
+                                        $next_page_link = $response2->filter($page_catalog_class)->attr('href');
+                                        $page_link = str_replace($page_exclude_string, '', $next_page_link);
+                                        $get_last_page = preg_replace("/[^0-9]/", '', $page_link);
+                                        // nếu trang hiện tại là trang cuối cùng bằng với trang đã khai báo thì trả về đúng
+                                        if ($get_last_page == $last_page)
+                                        {
+                                            $return = true;
+                                            $alert = 'success';
+                                            $message = 'Mọi thông tin đều chính xác và quét được trang cuối cùng. Bạn có thể crawl website này';
+                                        } else {
+                                            $return = false;
+                                            $alert = 'error';
+                                            $message = 'Page '.$last_page.' thực tế không phải là page cuối cùng. Chi tiết : '.$last_link.'. Mời bạn kiểm tra lại';
+                                        }
+                                    }
                                 } else {
-                                    $return = false;
-                                    $alert = 'error';
-                                    $message = 'Không tìm thấy class page cuối cùng: '.$last_page_catalog_class.'. Mời bạn kiểm tra lại';
+                                    // kiểm tra xem đây có phải là trang cuối cùng hay không
+                                    $check = $response2->filter($last_page_catalog_class)->count();
+                                    if ($check > 0)
+                                    {
+                                        $return = true;
+                                        $alert = 'success';
+                                        $message = 'Mọi thông tin đều chính xác và quét được qua hệ thống. Bạn có thể crawl website này';
+                                    } else {
+                                        $return = false;
+                                        $alert = 'error';
+                                        $message = 'Không tìm thấy class page cuối cùng: '.$last_page_catalog_class.'. Mời bạn kiểm tra lại';
+                                    }
                                 }
+
                             }
                         }
                     } else {

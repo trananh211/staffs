@@ -553,7 +553,7 @@ class NameStory extends Command
             }
             // so sanh product cu. trung thi se k lay nua
             $products_old = $this->checkProductExist($template_id, $store_id);
-            if (strlen($page_catalog_class) > 0 && strlen($last_page_catalog_class) > 0)
+            if (strlen($page_catalog_class) > 0)
             {
                 $page = 1;
             } else {
@@ -632,26 +632,45 @@ class NameStory extends Command
                 } else {
                     logfile_system('Website: '.$domain.' Không tồn tại sản phẩm nào với class : '.$title_catalog_class);
                 }
-
                 //Phần cuối cùng. Không được chèn thêm ở đây nữa
                 // Nếu không khai báo pagination class thì chỉ quét trang đầu tiên
-                if (strlen($last_page_catalog_class) > 0 && strlen($page_catalog_class) > 0)
+                if(strlen($page_catalog_class) > 0)
                 {
-                    // kiểm tra xem đây có phải là trang cuối cùng hay không
-                    $check = $crawler->filter($last_page_catalog_class)->count();
-                    if ($check == 0)
+                    if ( strlen($last_page_catalog_class) > 0) // check trang cuối cùng dựa theo dữ liệu đưa vào
                     {
-                        try {
-                            $next_page_link = $crawler->filter($page_catalog_class)->attr('href');
-                            $page_link = str_replace($page_exclude_string, '', $next_page_link);
-                            $next_page = preg_replace("/[^0-9]/", '', $page_link);
-                            $page = $next_page;
-                        } catch (\Exception $e) {
+                        // kiểm tra xem đây có phải là trang cuối cùng hay không
+                        $check = $crawler->filter($last_page_catalog_class)->count();
+                        if ($check == 0)
+                        {
+                            try {
+                                $next_page_link = $crawler->filter($page_catalog_class)->attr('href');
+                                $page_link = str_replace($page_exclude_string, '', $next_page_link);
+                                $next_page = preg_replace("/[^0-9]/", '', $page_link);
+                                $page = $next_page;
+                            } catch (\Exception $e) {
+                                $next_page = 0;
+                            }
+                        } else {
                             $next_page = 0;
                         }
-                    } else {
-                        $next_page = 0;
+                    } else { // nếu không khai báo last page. thì get trang tiếp theo dựa trên page class
+                        // kiểm tra xem có tồn tại page class ở trang hiện tại hay không
+                        $check = $crawler->filter($page_catalog_class)->count();
+                        if ($check > 0) // nếu tồn tại next page thì get giá trị
+                        {
+                            try {
+                                $next_page_link = $crawler->filter($page_catalog_class)->attr('href');
+                                $page_link = str_replace($page_exclude_string, '', $next_page_link);
+                                $next_page = preg_replace("/[^0-9]/", '', $page_link);
+                                $page = $next_page;
+                            } catch (\Exception $e) {
+                                $next_page = 0;
+                            }
+                        } else { // nếu không tồn tại next page thì chuyển về 0 và thoát khỏi vòng lặp
+                            $next_page = 0;
+                        }
                     }
+
                 } else {
                     $next_page = 0;
                 }

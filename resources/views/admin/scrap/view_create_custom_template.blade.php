@@ -46,12 +46,12 @@
                             <div class="input-field col s3">
                                 <input name="id_product" placeholder="Nhập mã ID của product mẫu ở đây" type="text" class="validate"
                                        value="{{ ($r)? $rq['id_product'] : '' }}" required>
-                                <label class="active">Id Product Template</label>
+                                <label class="active"> <span class="red-text">*</span>  Id Product Template</label>
                             </div>
                             <div class="input-field col s5">
                                 <input name="web_link" value="{{ ($r)? $rq['web_link'] : '' }}" placeholder="https://f4tool.xyz.test/catalog/search=vidu" type="text" class="validate" required>
                                 <label class="active">
-                                    Url
+                                    <span class="red-text">*</span> Url
                                     <small class="blue-text text-darken-1">Nhập url của website catalogs cần crawler vào đây</small>
                                 </label>
                             </div>
@@ -60,21 +60,21 @@
                             <div class="input-field col s5">
                                 <input name="title_catalog_class" value="{{ ($r)? $rq['title_catalog_class'] : '' }}" placeholder="section.site-content div.container div.col-md-3" type="text" class="validate" required>
                                 <label class="active">
-                                    Catalog Class
+                                    <span class="red-text">*</span> Catalog Class
                                     <small class="blue-text text-darken-1">Nhập class của product trong list catalog vào đây</small>
                                 </label>
                             </div>
                             <div class="input-field col s3">
                                 <input name="title_product_class" value="{{ ($r)? $rq['title_product_class'] : '' }}" placeholder="a .grid-view-item__title" type="text" class="validate" required>
                                 <label class="active">
-                                    Title Product Class
+                                    <span class="red-text">*</span> Title Product Class
                                     <small class="blue-text text-darken-1">Nhập class của product để lấy title</small>
                                 </label>
                             </div>
                             <div class="input-field col s4">
                                 <input value="{{ ($r)? $rq['domain_origin'] : '' }}" name="domain_origin" placeholder="https://republicandogs.com" type="text" class="validate">
                                 <label class="active">
-                                    Domain Origin
+                                    <span class="red-text">*</span> Domain Origin
                                     <small class="blue-text text-darken-1">Nếu link của catalog không chứa domain thì bắt buộc khai báo</small>
                                 </label>
                             </div>
@@ -82,8 +82,7 @@
                         <div class="row">
                             <div class="input-field col s4">
                                 <input value="{{ ($r)? $rq['page_catalog_class'] : '' }}" name="page_catalog_class" placeholder="ul.pager li:nth-last-child(1) a" type="text" class="validate" >
-                                <label class="active">
-                                    Page Class
+                                <label class="active">Page Class
                                     <small class="blue-text text-darken-1">Nhập class của page website cần crawler vào đây</small>
                                 </label>
                             </div>
@@ -91,7 +90,8 @@
                                 <input value="{{ ($r)? $rq['last_page_catalog_class'] : '' }}" name="last_page_catalog_class" placeholder="ul.pager li:nth-last-child(1) .disabled" type="text" class="validate" >
                                 <label class="active">
                                     Last Page Class
-                                    <small class="blue-text text-darken-1">Nhập class page nhận dạng trang cuối cùng</small>
+                                    <small class="blue-text text-darken-1">Nhập class page nhận dạng trang cuối cùng</small><br>
+                                    <small class="red-text text-darken-1">Nếu không có class nhận dạng thì bỏ trống, tool sẽ lấy page class ở trên để so sánh</small>
                                 </label>
                             </div>
                             <div class="input-field col s2">
@@ -117,7 +117,7 @@
                             <div class="input-field col s7">
                                 <input value="{{ ($r)? $rq['product_page_title_class'] : '' }}" required name="product_page_title_class" type="text" class="validate" placeholder="h1.title-product, ...">
                                 <label class="active">
-                                    Product Page Title Class<br>
+                                    <span class="red-text">*</span> Product Page Title Class
                                     <small class="blue-text text-darken-1">Chọn title nhận dạng của product trong product page</small>
                                 </label>
                             </div>
@@ -125,15 +125,15 @@
                         <div class="row">
                             <div class="input-field col s5">
                                 <input value="{{ ($r)? $rq['image_class'] : '' }}" name="image_class" type="text" class="validate" required placeholder="li.product-single__thumbnails-item a.product-single__thumbnail">
-                                <label class="active">List Image Class</label>
+                                <label class="active"><span class="red-text">*</span> List Image Class</label>
                             </div>
                             <div class="input-field col s2">
                                 <input value="{{ ($r)? $rq['element_link'] : '' }}" name="element_link" type="text" class="validate" required placeholder="a, span.link-thumb, div.link...">
-                                <label class="active">Element link</label>
+                                <label class="active"><span class="red-text">*</span> Element link</label>
                             </div>
                             <div class="input-field col s2">
                                 <input value="{{ ($r)? $rq['attr_link'] : '' }}" name="attr_link" type="text" class="validate" required placeholder="href, src, thumb...">
-                                <label class="active">Attr Link</label>
+                                <label class="active"><span class="red-text">*</span> Attr Link</label>
                             </div>
                             <div class="input-field col s3">
                                 <input value="{{ ($r)? $rq['http_image'] : '' }}" name="http_image" type="text" class="validate" placeholder="https:, http:, ...">
