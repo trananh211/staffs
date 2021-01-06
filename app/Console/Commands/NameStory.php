@@ -357,7 +357,7 @@ class NameStory extends Command
     private function checkProductExist($template_id, $store_id)
     {
         $products = \DB::table('scrap_products')
-            ->where('template_id',$template_id)
+//            ->where('template_id',$template_id)
             ->where('store_id',$store_id)
             ->pluck('link')
             ->toArray();
